@@ -1,0 +1,42 @@
+*******************************************************************
+*
+* ChangeLog : SW_PKG-NRC7394
+*
+*******************************************************************
+
+[2023-04-05]
+    Change summary for version 1.0:
+
+    New features
+        * HaLow certification features
+          o HaLow R1 mandatory features (v1.0)
+          o HaLow R1 optional features (v1.0)
+            - AP optional features: BSS color, fragmentation
+            - STA optional features: MCS 3-7, NDP probing, A-MPDU TX, power save
+        * Security features
+          o WPA3-SAE (v1.0)
+          o OWE (v1.0)
+          o Kr00k vulnerability (v1.0)
+        * Network stack features
+          o Channel switch announcement (CSA) (v1.0)
+          o Dynamic vendor IE (v1.0)
+          o WPS-PBC (v1.0)
+          o IEEE 802.11s mesh network (v1.0)
+          o Tree-based relay network (v1.0)
+          o Network bridge (v1.0)
+          o Self-configuration (v1.0)
+          o RSSI-based roaming (v1.0)
+          o Passive scan (v1.0)
+        * Regulation features
+          o Duty cycle (v1.0)
+        * System features
+          o Power save – deep sleep (v1.0)
+          o WDT/Recovery (v1.0)
+
+    Known Issues
+        * In multi-hop mesh network, DHCP may experience delays or failures. 
+          It is recommended to use static IP addresses for networks with more than three hops.
+        * Using a short guard interval on 1 or 2 MHz channels can lead to degraded performance.
+        * WDT reset recovery is not supported on concurrent mode devices such as MAP or relay.
+        * The issue of deauthentication frame delivery failure can occur 
+          between PMF-enabled NRC7394 and PMF-enabled NRC7292 devices.
