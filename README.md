@@ -6,9 +6,10 @@
 > The NRC7394 software package v1.0 includes an upgraded data structure for calibration and sysconfig. Therefore, to calibrate NRC7394 EVK, the v3.3.0 (Test Version 3.1) calibration tool (MFGT) should be used, and the EVK should be run on the NRC7394 software package v1.0 after it has been calibrated with the v3.3.0 (Test Version 3.1) calibration tool (MFGT). You can download this tool from the partner's FTP site.
 
 ### Release roadmap
-- v1.0 (2023.4.5)
+- (2023.04.12) v1.1-rc1
+- (2023.04.05) v1.0 
 
-### Latest release
+### Latest stable release
 - [NRC7394_SW_PKG_v1.0](https://github.com/newracom/nrc7394_sw_pkg/releases/tag/v1.0)
 
 ### Release package contents

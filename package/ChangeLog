@@ -4,6 +4,13 @@
 *
 *******************************************************************
 
+[2023-04-12]
+    Change summary for version 1.1-rc1:
+
+    New features
+        * Mutiple country code RF calibration support: US/JP/K1/K2 (v1.1)
+        * Temperature sensor and power offset compensation (v1.1)
+
 [2023-04-05]
     Change summary for version 1.0:
 
