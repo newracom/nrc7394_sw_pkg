@@ -396,7 +396,7 @@ static int _c_spi_read_regs(struct spi_device *spi,
 	arr_len = (size > 1) ? ARRAY_SIZE(xfer) : 2;
 	status = spi_sync_transfer(spi, xfer, arr_len);
 	if (status < 0) {
-		pr_err("[%s] reading spi failed(%d).", __func__, status);
+		pr_err("[%s] reading spi failed(%zd).", __func__, status);
 		return status;
 	}
 
@@ -441,7 +441,7 @@ static int _c_spi_write_reg(struct spi_device *spi, u8 addr, u8 data)
 
 	status = spi_sync_transfer(spi, xfer, 2);
 	if (status < 0) {
-		pr_err("[%s] writing spi failed(%d).", __func__, status);
+		pr_err("[%s] writing spi failed(%zd).", __func__, status);
 		return status;
 	}
 
@@ -489,7 +489,7 @@ static ssize_t _c_spi_read(struct spi_device *spi, u8 *buf, ssize_t size)
 	spi_set_transfer(&xfer[3], &dummy, NULL, sizeof(dummy));
 	status = spi_sync_transfer(spi, xfer, ARRAY_SIZE(xfer));
 	if (status < 0) {
-		pr_err("[%s] reading spi failed(%d).", __func__, status);
+		pr_err("[%s] reading spi failed(%zd).", __func__, status);
 		return status;
 	}
 
@@ -536,7 +536,7 @@ static ssize_t _c_spi_write(struct spi_device *spi, u8 *buf, ssize_t size)
 	status = spi_sync_transfer(spi, xfer, ARRAY_SIZE(xfer));
 	if (status < 0)
 	{
-		pr_err("[%s] writing spi failed(%d).", __func__, status);
+		pr_err("[%s] writing spi failed(%zd).", __func__, status);
 		return status;
 	}
 
