@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <time.h>
@@ -38,6 +39,7 @@
 #include "cli_util.h"
 #include "cli_key_list.h"
 #include "cli_xfer.h"
+#include "cli_config.h"
 
 /*******************************************************************************
 * Main commands
@@ -71,6 +73,7 @@ static int cmd_show_signal(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_maxagg(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_duty(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_autotxgain(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_show_cal_use(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_recovery(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_detection(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_temperature(cmd_tbl_t *t, int argc, char *argv[]);
@@ -78,10 +81,16 @@ static int cmd_show_wakeup_pin(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_wakeup_source(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_sta(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_ap(cmd_tbl_t *t, int argc, char *argv[]);
-static int cmd_show_cli_app_list_version(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_tx_time(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_cca_thresh(cmd_tbl_t *t, int argc, char *argv[]);
-static int cmd_show_halow(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_show_app_version(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_show_xtal_status(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_optimal_channel(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_show_sysconfig(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_show_bcn_mcs(cmd_tbl_t *t, int argc, char *argv[]);
+
+static int cmd_show_rc_pf(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_show_rc_param(cmd_tbl_t *t, int argc, char *argv[]);
 
 /* 2nd sub commands on show */
 static int cmd_show_stats_simple_rx(cmd_tbl_t *t, int argc, char *argv[]);
@@ -117,21 +126,28 @@ static int cmd_set_drop_frame(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_temp_sensor(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_s1g_freq(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_cca_thresh(cmd_tbl_t *t, int argc, char *argv[]);
-static int cmd_set_halow(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_color(cmd_tbl_t *t, int argc, char *argv[]);
-static int cmd_set_probe_resp_vendor_ie(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_set_deepsleep_gpio(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_set_report(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_set_support_ch_width(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_set_ampdu_mode(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_set_bcn_mcs(cmd_tbl_t *t, int argc, char *argv[]);
+
 
 /*******************************************************************************
 * sub commands on set and show
 *******************************************************************************/
 static int cmd_self_configuration(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_set_rc_pf(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_set_rc_param(cmd_tbl_t *t, int argc, char *argv[]);
 
 /*******************************************************************************
 * sub commands on test
 *******************************************************************************/
-/* 1st sub commands on set */
+/* 1st sub commands on test */
 static int cmd_test_mcs(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_test_country(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_test_cont_tx(cmd_tbl_t *t, int argc, char *argv[]);
 
 /*******************************************************************************
 * sub commands on gpio
@@ -152,7 +168,6 @@ void *showRxThreadRun();
 *******************************************************************************/
 #define STATS_TYPES_MAX 4
 #define STATS_STATUS_MAX 2
-#define STATS_MAX_AC 6
 #define STATS_MCS_MAX 9
 
 enum {
@@ -178,6 +193,8 @@ const char response_timeout_str[] = "Failed";
 const char no_self_conf_str[] = "no_self_conf";
 const char not_matched_cc_str[] = "not_matched_country";
 const char not_matched_cc_msg[] = "is not the currently set country";
+const char not_supported_cc_str[] = "not_supported_country";
+const char not_supported_cc_msg[] = "is not supported country";
 
 /*******************************************************************************
 * command list
@@ -185,8 +202,8 @@ const char not_matched_cc_msg[] = "is not the currently set country";
 /* main command list */
 cmd_tbl_t cli_list[] = {
 	{ "help", cmd_help, "show CLI tree", "help",  "", 0},
-	{ "read", cmd_memory, "read memory", "read <address> <size in byte>",  "", 1},
-	{ "write", cmd_memory, "write a 32-bit value to memory", "write <address> <data>",	"", 0},
+	{ "read", cmd_memory, "read memory", "read {address} {size in byte}",  "", 1},
+	{ "write", cmd_memory, "write a 32-bit value to memory", "write {address} {data}",	"", 0},
 	{ "show", cmd_show, "show information", "show subcommand [value1]",  "", 1},
 	{ "set", cmd_set, "set command","set subcommand [value1]",  "", 1},
 	{ "test", cmd_test, "test command","test subcommand [value1]",  "", 1},
@@ -207,6 +224,7 @@ cmd_tbl_t show_sub_list[] = {
 	{ "maxagg", cmd_show_maxagg, "show max aggregation", "show maxagg",  "", 0},
 	{ "duty", cmd_show_duty, "show duty cycle", "show duty",  SHOW_DUTY_KEY_LIST, 0},
 	{ "autotxgain", cmd_show_autotxgain, "show autotxgain", "show autotxgain",  SHOW_AUTOTXGAIN_KEY_LIST, 0},
+	{ "cal_use", cmd_show_cal_use, "show cal_use", "show cal_use",  SHOW_CAL_USE_KEY_LIST, 0},
 	{ "recovery", cmd_show_recovery, "show recovery", "show recovery stats",  "", 0},
 	{ "detection", cmd_show_detection, "show detection", "show detection stats",  "", 0},
 	{ "temp", cmd_show_temperature, "show temp","show temp",  SHOW_TEMPERATURE_KEY_LIST, 0},
@@ -214,17 +232,23 @@ cmd_tbl_t show_sub_list[] = {
 	{ "wakeup_source", cmd_show_wakeup_source, "show wakeup source configuration","show wakeup_source", SHOW_WAKEUP_SOURCE_KEY_LIST, 0},
 	{ "sta", cmd_show_sta, "show station information", "show sta [vif_id] {all|aid [aid_index]}",  "", 0},
 	{ "ap", cmd_show_ap, "show ap information", "show ap [vif_id]",  "", 0},
-	{ "tx_time", cmd_show_tx_time, "show tx_time about <CS time> <Blank time>", "show tx_time", SHOW_TX_TIME_KEY_LIST, 0},
+	{ "tx_time", cmd_show_tx_time, "show tx_time about {CS time} {Blank time}", "show tx_time", SHOW_TX_TIME_KEY_LIST, 0},
 	{ "cca_thresh", cmd_show_cca_thresh, "show cca_thresh(unit: dBm)", "show cca_thresh", "", 0},
-	{ "cli_app_list_version", cmd_show_cli_app_list_version, "show cli app list version", "show cli_app_list_version",  "", 1},
-	{ "self_config", cmd_self_configuration, "show self_config", "show self_config {Country(KR,US...)}{BW}{dwell time}", "", 0},
-	{ "halow", cmd_show_halow, "show halow certificate", "show halow",  SHOW_HALOW_KEY_LIST, 0},
+
+	{ "self_config", cmd_self_configuration, "show self_config", "show self_config {Country(KR,US...)} {BW} {dwell time}", "", 0},
+	{ "optimal_channel", cmd_optimal_channel, "show optimal_channel", "show optimal_channel {Country(US,NZ...)} {BW} {dwell time}", "", 0},
+	{ "app_version", cmd_show_app_version, "show app version", "show app_version",  "", 0},
+	{ "sysconfig", cmd_show_sysconfig, "show sysconfig", "show sysconfig",  "", 0},
+	{ "rc_pf", cmd_show_rc_pf, "show rate control profile number", "show rc_pf", SHOW_RC_PF_KEY_LIST, 0},
+	{ "rc_param", cmd_show_rc_param, "show configured rate control parameter", "show rc_param", SHOW_RC_PARAM_KEY_LIST, 0},
+	{ "xtal_status", cmd_show_xtal_status, "show xtal_status", "show xtal_status",  SHOW_XTAL_STATUS_LIST, 0},
+	{ "bcn_mcs", cmd_show_bcn_mcs, "show beacon mcs", "show bcn_mcs [vif_id]",  "", 1},
 };
 
 /* sub command list on set */
 cmd_tbl_t set_sub_list[] = {
-	{ "gi", cmd_set_guard_interval, "set guard interval", "set gi {short|long|auto|capa} [0|1]", "", 0},
-	{ "maxagg", cmd_set_max_aggregation, "set aggregation", "set maxagg {AC(0-3)} <Max(0-8(1Mhz),0-16(2,4Mhz),0:off)> {size:default=0}", SET_MAXAGG_KEY_LIST, 0},
+	{ "gi", cmd_set_guard_interval, "set guard interval", "set gi {short|long} {vif_id(0|1)}", "", 0},
+	{ "maxagg", cmd_set_max_aggregation, "set aggregation", "set maxagg {AC(0-3)} {Max(0-8(1Mhz),0-16(2,4Mhz),0:off)} {size:default=0}", SET_MAXAGG_KEY_LIST, 0},
 	{ "ack_mode", cmd_set_ackmode, "set ack mode", "set ack_mode {no|ndp|normal|show}", SET_ACK_MODE_LIST, 0},
 	{ "rc", cmd_set_rate_control, "set rate control", "set rc {on|off} [vif_id] [mode]", SET_RC_KEY_LIST, 0},
 	{ "duty", cmd_set_duty, "set duty cycle", "set duty {on|off} {duty window} {tx duration}", SET_DUTY_KEY_LIST, 0},
@@ -234,20 +258,27 @@ cmd_tbl_t set_sub_list[] = {
 	{ "wakeup_source", cmd_set_wakeup_source, "set wakeup source for deepsleep", "set wakeup_soruce rtc gpio hspi", SET_WAKEUP_SOURCE_KEY_LIST, 0},
 	{ "addba", cmd_set_addba, "set addba tid / send addba with mac address", "set addba [tid] {mac address}", "", 0},
 	{ "delba", cmd_set_delba, "set delba tid / send delba with mac address", "set delba [tid] {mac address}", "", 0},
-	{ "rts", cmd_set_rts, "set rts on/off", "set rts {on|off|default} <threshold> <vif_id>", "", 0},
-	{ "tx_time", cmd_set_tx_time, "set tx_time about <CS time> <Blank time>", "set tx_time <CS time> <Blank time>", SET_TXTIME_KEY_LIST, 0},
+	{ "rts", cmd_set_rts, "set rts on/off", "set rts {on|off|default} <threshold> <vif_id> {ndp:1, legacy:0}", "", 0},
+	{ "tx_time", cmd_set_tx_time, "set tx_time about {CS time} {Blank time}", "set tx_time {CS time} {Blank time}", SET_TXTIME_KEY_LIST, 0},
 	{ "drop", cmd_set_drop_frame, "set drop frames from configured mac address", "set drop [vif id] [mac address] {on|off}", SET_DROP_KEY_LIST, 0},
-	{ "self_config", cmd_self_configuration, "set self_config", "set self_config {Country(KR,US...)}{BW}{dwell time}", "", 0},
+	{ "self_config", cmd_self_configuration, "set self_config", "set self_config {Country(KR,US...)} {BW} {dwell time}", "", 0},
 	{ "tsensor", cmd_set_temp_sensor, "set temperature sensor scl, sda", "set tsensor [GPIO for SCL] [GPIO for SDA]", "", 0},
-	{ "cca_thresh", cmd_set_cca_thresh, "set cca threshold", "set cca_thresh {CCA threshold(unit:dBm, -85~-75)}", "", 0},
-	{ "halow", cmd_set_halow, "set halow certificate", "set halow {on|off}", SET_HALOW_KEY_LIST, 0},
+	{ "cca_thresh", cmd_set_cca_thresh, "set cca threshold", "set cca_thresh {CCA threshold(unit:dBm, -100~-35)}", "", 0},
 	{ "color", cmd_set_color, "set color", "set color {value}", "", 0},
-	{ "probe_resp_vendor_ie", cmd_set_probe_resp_vendor_ie, "set probe_resp_vendor_ie", "set probe_resp_vendor_ie {on|off}", "", 0},
+	{ "deepsleep_gpio", cmd_set_deepsleep_gpio, "set GPIO direction/out data/pull during deepsleep operation", "set deepsleep_gpio {dir} {out} {pullup}", "", 0},
+	{ "report", cmd_set_report, "set lmac periodic report", "set report {on/off}", "", 0},
+	{ "support_ch_width", cmd_set_support_ch_width, "set supported ch width in s1g capa ie (0:1/2M, 1:1/2/4M)", "set support_ch_width [0|1]", "", 0},
+	{ "ampdu_mode", cmd_set_ampdu_mode, "set ampdu_mode ", "set ampdu_mode [disable|manual|auto]", "", 0},
+	{ "bcn_mcs", cmd_set_bcn_mcs, "set bcn_mcs ", "set bcn_mcs [vif_id] [10|0|1|2|3|4|5|6|7]\n", "", 0},
+	{ "rc_pf", cmd_set_rc_pf, "set rate control profile number", "set rc_pf [1|2]", SET_RC_PF_KEY_LIST, 0},
+	{ "rc_param", cmd_set_rc_param, "set rate control parameter", "set rc_param {1|2|3|4|5} {1|2|3|4|5|6|7}", SET_RC_PARAM_KEY_LIST, 0},
 };
 
 /* sub command list on test */
 cmd_tbl_t test_sub_list[] = {
-	{ "mcs", cmd_test_mcs, "set mcs", "test mcs [mcs index]", "", 0},
+	{ "mcs", cmd_test_mcs, "test mcs", "test mcs [mcs index]", "", 0},
+	{ "country", cmd_test_country, "test country", "test country [country code]", "", 0},
+	{ "cont_tx", cmd_test_cont_tx, "test continuous tx", "test cont_tx {stop} | {freq(in MHz)} {bw(1m|2m|4m)} {mcs} {txpwr}", "", 0},
 };
 
 /* sub command list on gpio */
@@ -353,6 +384,133 @@ cmd_tbl_t * get_cmd_list(enum cmd_list_type type, int *list_size, int *list_dept
 	return ret;
 }
 
+int run_shell_cmd(cmd_tbl_t *t, int argc, char *argv[], const char *param_str, char *resp_buf, int resp_buf_len )
+{
+	int ret = CMD_RET_SUCCESS;
+	char param[NRC_MAX_CMDLINE_SIZE];
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	int netlink_ret;
+	int i;
+	int copy_len;
+
+	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
+	memset(param, 0x0, sizeof(param));
+
+	// Construct the parameter string
+	sprintf(param, "%s", param_str);
+	if(argc > 2 ) {
+		for (i = 2; i < argc; i++) {
+			strcat(param, " ");
+			strcat(param, argv[i]);
+		}
+	}
+
+	// Added '-sr' to your request to indicate that you need a response
+	if(resp_buf)
+		strcat(param, " -sr");
+
+	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
+	if(!netlink_ret){
+		if(strcmp(response, response_timeout_str)== 0){
+			ret =  CMD_RET_RESPONSE_TIMEOUT;
+		} else if(strcmp(response, "fail")== 0){
+			ret =  CMD_RET_FAILURE;
+		} else if(strcmp(response, "success")== 0){
+			ret =  CMD_RET_SUCCESS;
+		}else{
+			if(resp_buf && resp_buf_len > 0){
+				memset(resp_buf, 0x0, resp_buf_len);
+				copy_len = (resp_buf_len > NL_MSG_MAX_RESPONSE_SIZE) ? NL_MSG_MAX_RESPONSE_SIZE : resp_buf_len;
+				strncpy(resp_buf, response, copy_len);
+			}
+			ret = CMD_RET_SUCCESS;
+		}
+	}else{
+		ret = CMD_RET_FAILURE;
+	}
+	return ret;
+}
+
+int run_driver_cmd(cmd_tbl_t *t, int argc, char *argv[], const char *param_str, char *resp_buf, int resp_buf_len )
+{
+	int ret = CMD_RET_SUCCESS;
+	char param[NRC_MAX_CMDLINE_SIZE];
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	int netlink_ret;
+	int i;
+	int copy_len;
+
+	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
+	memset(param, 0x0, sizeof(param));
+
+	// Construct the parameter string
+	sprintf(param, "%s", param_str);
+	if(argc > 2 ) {
+		for (i = 2; i < argc; i++) {
+			strcat(param, " ");
+			strcat(param, argv[i]);
+		}
+	}
+
+	// Added '-sr' to your request to indicate that you need a response
+	if(resp_buf)
+		strcat(param, " -sr");
+
+	netlink_ret = netlink_send_data(NL_CLI_APP_DRIVER, param, response);
+	if(!netlink_ret){
+		if(strcmp(response, response_timeout_str)== 0){
+			ret =  CMD_RET_RESPONSE_TIMEOUT;
+		} else if(strcmp(response, "fail")== 0){
+			ret =  CMD_RET_FAILURE;
+		} else if(strcmp(response, "success")== 0){
+			ret =  CMD_RET_SUCCESS;
+		}else{
+			if(resp_buf && resp_buf_len > 0){
+				memset(resp_buf, 0x0, resp_buf_len);
+				copy_len = (resp_buf_len > NL_MSG_MAX_RESPONSE_SIZE) ? NL_MSG_MAX_RESPONSE_SIZE : resp_buf_len;
+				strncpy(resp_buf, response, copy_len);
+			}
+			ret = CMD_RET_SUCCESS;
+		}
+	}else{
+		ret = CMD_RET_FAILURE;
+	}
+	return ret;
+}
+
+int run_shell_direct_cmd(const char *param_str, ...)
+{
+	int ret = CMD_RET_SUCCESS;
+	char param[NRC_MAX_CMDLINE_SIZE];
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	int netlink_ret;
+
+	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
+	memset(param, 0x0, sizeof(param));
+
+	va_list args;
+	va_start(args, param_str);
+	vsnprintf(param, sizeof(param), param_str, args);
+	va_end(args);
+
+
+	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
+	if(!netlink_ret){
+		if(strcmp(response, response_timeout_str)== 0){
+			ret =  CMD_RET_RESPONSE_TIMEOUT;
+		} else if(strcmp(response, "fail")== 0){
+			ret =  CMD_RET_FAILURE;
+		} else if(strcmp(response, "success")== 0){
+			ret =  CMD_RET_SUCCESS;
+		}else{
+			ret = CMD_RET_SUCCESS;
+		}
+	}else{
+		ret = CMD_RET_FAILURE;
+	}
+	return ret;
+}
+
 /*******************************************************************************
 * system command
 *******************************************************************************/
@@ -379,6 +537,8 @@ static int cmd_stop_ap(cmd_tbl_t *t, int argc, char *argv[])
 *******************************************************************************/
 static int cmd_help(cmd_tbl_t *t, int argc, char *argv[])
 {
+
+
 	int print_line_len = 130;
 	print_line('=', print_line_len,"", 0,0);
 	cmd_list_display(MAIN_CMD);
@@ -533,25 +693,12 @@ static int cmd_exit(cmd_tbl_t *t, int argc, char *argv[])
 static int cmd_show_version(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
-	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-	int display_per_line= 1;
+	const int display_per_line= 1;
 
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-	strcpy(param, "show version -sr");
-
-	netlink_ret= netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else{
-			cmd_result_parse((char*)t->key_list, response, display_per_line);
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
+	ret = run_shell_cmd(t, argc, argv, "show version", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		cmd_result_parse((char*)t->key_list, response, display_per_line);
 	}
 	return ret;
 }
@@ -559,38 +706,16 @@ static int cmd_show_version(cmd_tbl_t *t, int argc, char *argv[])
 static int cmd_show_config(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
-	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-	int display_per_line= 1;
+	const int display_per_line= 1;
 	int print_line_len = DEFAULT_PRINT_LINE_LEN;
 
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-
-	if(argv[2] == NULL){
-		sprintf(param, "show config %d -sr", 0);
-	}else if(atoi(argv[2]) == 0 || atoi(argv[2]) == 1){
-		sprintf(param, "show config %s -sr", argv[2]);
-	}else {
-		printf("invalid value %s : (ex) show config [vif_id]\n", argv[2]);
-		return CMD_RET_FAILURE;
+	ret = run_shell_cmd(t, argc, argv, "show config", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		print_line('-', print_line_len,"", 0,0);
+		cmd_result_parse((char*)t->key_list, response, display_per_line);
+		print_line('-', print_line_len,"", 0,0);
 	}
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else{
-			print_line('-', print_line_len,"", 0,0);
-			cmd_result_parse((char*)t->key_list, response, display_per_line);
-			print_line('-', print_line_len,"", 0,0);
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
-	}
-
 	return ret;
 }
 
@@ -612,28 +737,15 @@ static int cmd_show_stats(cmd_tbl_t *t, int argc, char *argv[])
 static int cmd_show_edca(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
-	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-	int display_per_line= 1;
+	const int display_per_line= 1;
 	int print_line_len = DEFAULT_PRINT_LINE_LEN;
 
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-	strcpy(param, "show edca -sr");
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else{
-			print_line('-', print_line_len,"", 0,0);
-			cmd_result_parse((char*)t->key_list, response, display_per_line);
-			print_line('-', print_line_len,"", 0,0);
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
+	ret = run_shell_cmd(t, argc, argv, "show edca", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		print_line('-', print_line_len,"", 0,0);
+		cmd_result_parse((char*)t->key_list, response, display_per_line);
+		print_line('-', print_line_len,"", 0,0);
 	}
 	return ret;
 }
@@ -654,8 +766,8 @@ static int cmd_show_umac_info(cmd_tbl_t *t, int argc, char *argv[])
 		return CMD_RET_FAILURE;
 	}
 
-	if(atoi(argv[2]) != 0 && atoi(argv[2]) != 1){
-		printf("invalid value %s : (ex) show uinfo [vif_id]\n", argv[2]);
+	if(strcmp(argv[2],"0")!=0 && strcmp(argv[2],"1")!=0) {
+		printf("usage : %s\n", (char*)t->usage);
 		return CMD_RET_FAILURE;
 	}
 
@@ -689,39 +801,18 @@ static int cmd_show_umac_info(cmd_tbl_t *t, int argc, char *argv[])
 static int cmd_show_ampdu(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
-	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
 	int print_line_len = 20;
 
-	if( argv[2]!= NULL && strcmp("clear", argv[2]) == 0){
-		strcpy(param, "show ampdu clear -sr");
-	}else{
-		strcpy(param, "show ampdu -sr");
-	}
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if( argv[2]!= NULL && strcmp("clear", argv[2]) == 0){
-			printf("%s\n",response);
-			ret = CMD_RET_SUCCESS;
-		}else{
-			if(strcmp(response, response_timeout_str)== 0){
-				ret =  CMD_RET_RESPONSE_TIMEOUT;
-			}else{
-				print_line('-', print_line_len,"", 0,0);
-				print_line(' ', print_line_len,"AMPDU\t: Value ", 0,0);
-				print_line('-', print_line_len,"", 0,0);
-				printf("%s",response);
-				print_line('-', print_line_len,"", 0,0);
-				ret = CMD_RET_SUCCESS;
-			}
+	ret = run_shell_cmd(t, argc, argv, "show ampdu", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		if (!(argc == 3 &&(strcmp( argv[2], "clear") == 0))){
+			print_line('-', print_line_len,"", 0,0);
+			print_line(' ', print_line_len,"AMPDU\t: Value ", 0,0);
+			print_line('-', print_line_len,"", 0,0);
+			printf("%s",response);
+			print_line('-', print_line_len,"", 0,0);
 		}
-	}else{
-		ret = CMD_RET_FAILURE;
 	}
 	return ret;
 }
@@ -747,7 +838,7 @@ static int cmd_show_signal(cmd_tbl_t *t, int argc, char *argv[])
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
 	int netlink_ret = 0;
 	int ret = CMD_RET_SUCCESS;
-	int display_per_line = 3;
+	const int display_per_line = 3;
 	int threadErr = 0;
 
 	int total_sta_number = 0;
@@ -892,9 +983,11 @@ static int cmd_show_maxagg(cmd_tbl_t *t, int argc, char *argv[])
 	if (argc > 3) {
 		return ret;
 	} else if (argc == 3) {
+		if(strcmp(argv[2],"0")!=0 && strcmp(argv[2],"1")!=0){
+			printf("usage : %s\n", (char*)t->usage);
+			return CMD_RET_FAILURE;
+		}
 		vif_id = atoi(argv[2]);
-		if (vif_id < 0 || vif_id >= 2)
-			return ret;
 	} else {
 		vif_id = 0;
 	}
@@ -914,24 +1007,12 @@ static int cmd_show_maxagg(cmd_tbl_t *t, int argc, char *argv[])
 static int cmd_show_duty(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_SUCCESS;
-	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-	int display_per_line= 1;
+	const int display_per_line= 1;
 
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-	strcpy(param, "show duty -sr");
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else{
-			cmd_result_parse((char*)t->key_list, response, display_per_line);
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
+	ret = run_shell_cmd(t, argc, argv, "show duty", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		cmd_result_parse((char*)t->key_list, response, display_per_line);
 	}
 	return ret;
 }
@@ -939,24 +1020,25 @@ static int cmd_show_duty(cmd_tbl_t *t, int argc, char *argv[])
 static int cmd_show_autotxgain(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_SUCCESS;
-	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-	int display_per_line= 1;
+	const int display_per_line= 1;
 
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-	strcpy(param, "show autotxgain -sr");
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else{
-			cmd_result_parse((char*)t->key_list, response, display_per_line);
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
+	ret = run_shell_cmd(t, argc, argv, "show autotxgain", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		cmd_result_parse((char*)t->key_list, response, display_per_line);
+	}
+	return ret;
+}
+
+static int cmd_show_cal_use(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_SUCCESS;
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	const int display_per_line= 2;
+
+	ret = run_shell_cmd(t, argc, argv, "show cal_use", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		cmd_result_parse((char*)t->key_list, response, display_per_line);
 	}
 	return ret;
 }
@@ -1090,25 +1172,12 @@ static int cmd_show_detection(cmd_tbl_t *t, int argc, char *argv[])
 static int cmd_show_temperature(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
-	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-	int display_per_line= 1;
+	const int display_per_line= 1;
 
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-	strcpy(param, "show temp -sr");
-
-	netlink_ret= netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else{
-			cmd_result_parse((char*)t->key_list, response, display_per_line);
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
+	ret = run_shell_cmd(t, argc, argv, "show temp", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		cmd_result_parse((char*)t->key_list, response, display_per_line);
 	}
 	return ret;
 }
@@ -1116,25 +1185,12 @@ static int cmd_show_temperature(cmd_tbl_t *t, int argc, char *argv[])
 static int cmd_show_wakeup_pin(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
-	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-	int display_per_line= 2;
+	const int display_per_line= 2;
 
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-	strcpy(param, "show wakeup_pin -sr");
-
-	netlink_ret= netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else{
-			cmd_result_parse((char*)t->key_list, response, display_per_line);
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
+	ret = run_shell_cmd(t, argc, argv, "show wakeup_pin", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		cmd_result_parse((char*)t->key_list, response, display_per_line);
 	}
 	return ret;
 }
@@ -1142,25 +1198,12 @@ static int cmd_show_wakeup_pin(cmd_tbl_t *t, int argc, char *argv[])
 static int cmd_show_wakeup_source(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
-	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-	int display_per_line= 1;
+	const int display_per_line= 1;
 
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-	strcpy(param, "show wakeup_source -sr");
-
-	netlink_ret= netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else{
-			cmd_result_parse((char*)t->key_list, response, display_per_line);
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
+	ret = run_shell_cmd(t, argc, argv, "show wakeup_source", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		cmd_result_parse((char*)t->key_list, response, display_per_line);
 	}
 	return ret;
 }
@@ -1187,16 +1230,14 @@ static int cmd_show_sta(cmd_tbl_t *t, int argc, char *argv[])
 	key_list_temp = malloc(DISP_CMD_RESULT_BUF);
 	memset(key_list_temp, 0x0, DISP_CMD_RESULT_BUF);
 
-	if(argc < 3)
-	{
-		printf("There is invalid parameter. Please see the help.\n");
-		cmd_help(NULL, 0, NULL);
+	if(argc < 3) {
+		printf("usage : %s\n", (char*)t->usage);
 		return CMD_RET_FAILURE;
 	}
 
-	if(atoi(argv[2]) != 0 && atoi(argv[2]) != 1)
+	if(strcmp(argv[2],"0")!=0 && strcmp(argv[2],"1")!=0)
 	{
-		printf("invalid value %s : (ex) show uinfo [vif_id]\n", argv[2]);
+		printf("usage : %s\n", (char*)t->usage);
 		return CMD_RET_FAILURE;
 	}
 
@@ -1254,16 +1295,13 @@ static int cmd_show_ap(cmd_tbl_t *t, int argc, char *argv[])
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
 	int ret = CMD_RET_FAILURE;
 
-	if(argc < 3)
-	{
-		printf("There is invalid parameter. Please see the help.\n");
-		cmd_help(NULL, 0, NULL);
+	if(argc < 3) {
+		printf("usage : %s\n", (char*)t->usage);
 		return CMD_RET_FAILURE;
 	}
 
-	if(atoi(argv[2]) != 0 && atoi(argv[2]) != 1)
-	{
-		printf("invalid value %s : (ex) show uinfo [vif_id]\n", argv[2]);
+	if(strcmp(argv[2],"0")!=0 && strcmp(argv[2],"1")!=0) {
+		printf("usage : %s\n", (char*)t->usage);
 		return CMD_RET_FAILURE;
 	}
 
@@ -1313,7 +1351,7 @@ static int cmd_show_tx_time(cmd_tbl_t *t, int argc, char *argv[])
 	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
 	int netlink_ret = 0;
-	int display_per_line= 1;
+	const int display_per_line= 1;
 
 	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
 	memset(param, 0x0, sizeof(param));
@@ -1335,6 +1373,23 @@ static int cmd_show_tx_time(cmd_tbl_t *t, int argc, char *argv[])
 static int cmd_show_cca_thresh(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_SUCCESS;
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	const int display_per_line= 1;
+
+	ret = run_shell_cmd(t, argc, argv, "show cca_thresh", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		if(strcmp(response, "-1")== 0){
+			printf("out-of-range\n");
+		} else {
+			printf("%s\n",response);
+		}
+	}
+	return ret;
+}
+
+static int cmd_show_rc_pf(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_SUCCESS;
 	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
 	int netlink_ret = 0;
@@ -1342,17 +1397,13 @@ static int cmd_show_cca_thresh(cmd_tbl_t *t, int argc, char *argv[])
 
 	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
 	memset(param, 0x0, sizeof(param));
-	sprintf(param, "show cca_thresh -sr");
+	strcpy(param, "show rc_pf -sr");
 	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
 	if(!netlink_ret){
 		if(strcmp(response, response_timeout_str)== 0){
 			ret =  CMD_RET_RESPONSE_TIMEOUT;
 		}else{
-			if(strcmp(response, "-1")== 0){
-				printf("out-of-range\n");
-			} else {
-				printf("%s\n",response);
-			}
+			cmd_result_parse((char*)t->key_list, response, display_per_line);
 			ret = CMD_RET_SUCCESS;
 		}
 	}else{
@@ -1361,34 +1412,24 @@ static int cmd_show_cca_thresh(cmd_tbl_t *t, int argc, char *argv[])
 	return ret;
 }
 
-static int cmd_show_cli_app_list_version(cmd_tbl_t *t, int argc, char *argv[])
+static int cmd_show_rc_param(cmd_tbl_t *t, int argc, char *argv[])
 {
-	int ret = CMD_RET_FAILURE;
+	int ret = CMD_RET_SUCCESS;
 	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
 	int netlink_ret = 0;
-	char snum[10];
+	int display_per_line= 2;
 
 	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
 	memset(param, 0x0, sizeof(param));
-	strcpy(param, "show cli_app_list_version -sr");
-
-	memset(snum, 0x0, sizeof(snum));
-	sprintf(snum, "%d", CLI_APP_LIST_VERSION);
-
-	netlink_ret= netlink_send_data(NL_SHELL_RUN, param, response);
+	strcpy(param, "show rc_param -sr");
+	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
 	if(!netlink_ret){
-
-		if(!strcmp(response,snum)){
-			ret = CMD_RET_SUCCESS;
+		if(strcmp(response, response_timeout_str)== 0){
+			ret =  CMD_RET_RESPONSE_TIMEOUT;
 		}else{
-			if(strcmp(response, response_timeout_str)== 0){
-				ret =  CMD_RET_RESPONSE_TIMEOUT;
-			}else{
-				printf("Cli app list version is different. [App:%s,Target:%s]\n", snum, response);
-				printf("Please match the version!!!\n");
-				ret = CMD_RET_FAILURE;
-			}
+			cmd_result_parse((char*)t->key_list, response, display_per_line);
+			ret = CMD_RET_SUCCESS;
 		}
 	}else{
 		ret = CMD_RET_FAILURE;
@@ -1402,7 +1443,7 @@ static int cmd_show_stats_simple_rx(cmd_tbl_t *t, int argc, char *argv[])
 	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
 	int netlink_ret = 0;
-	int display_per_line= 1;
+	const int display_per_line= 1;
 	int print_line_len = DEFAULT_PRINT_LINE_LEN;
 
 	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
@@ -1461,7 +1502,7 @@ static int cmd_show_mac_clear(cmd_tbl_t *t, int argc, char *argv[])
 	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
 	int netlink_ret = 0;
-	int display_per_line= 1;
+	const int display_per_line= 1;
 	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
 	memset(param, 0x0, sizeof(param));
 
@@ -1549,12 +1590,13 @@ static void cmd_show_mac_result_display(char *response, int dir, int type)
 	char *key_list_temp = NULL;
 	char *next_ptr = NULL;
 	char * t1;
-	int print_line_len =72;
+	int print_line_len =90;
 	int i = 0, j=0;
 
-	char temp[5][16] = {0,};
-	int mac_stats_start_get_element  = 3;
-	int mac_stats_get_element  = 5;
+	char temp[6][16] = {0,};
+	const int mac_stats_start_get_element  = 4;
+	const int mac_stats_get_element  = 5;
+	const int mac_stats_mcs_get_element  = 6;
 
 	key_list_temp = malloc(DISP_CMD_RESULT_BUF);
 	memcpy(key_list_temp, response, DISP_CMD_RESULT_BUF);
@@ -1573,19 +1615,36 @@ static void cmd_show_mac_result_display(char *response, int dir, int type)
 					}
 					memcpy(temp[i], t1, sizeof(temp[i]));
 				}
-				printf("(OK count:%d, %s count:%d, last MCS:%d)\n",\
+				printf("(OK count:%d, %s count:%d, last MCS:%d",\
 					atoi(temp[0]),(dir == DIR_TX)? "RTX":"NOK", atoi(temp[1]), atoi(temp[2]));
+				if(dir == DIR_TX){
+					printf(")\n");
+				} else {
+					printf(", FCS error:%d)\n",  atoi(temp[3]));
+				}
 				print_line('-', print_line_len,"", 0,0);
 
 				/* mac stats ac */
-				for(j=0; j <STATS_MAX_AC;j++){
+				int exit_loop = 0;
+				while(1) {
 					memset(temp, 0x0, sizeof(temp));
-					for(i=0; i<mac_stats_get_element; i++){
-						t1 =  strtok_r(NULL, ",", &next_ptr);
+					for (i = 0; i < mac_stats_get_element; i++) {
+						t1 = strtok_r(NULL, ",", &next_ptr);
+						if (t1 == NULL) {
+							exit_loop = 1;
+							break;
+						}
 						memcpy(temp[i], t1, sizeof(temp[i]));
 					}
-					printf("- AC[%s]\t: OK(%10d/%10d)  %s(%10d/%10d)\n",
-						temp[0],atoi(temp[1]),atoi(temp[2]),(dir == DIR_TX)? "RTX":"NOK",atoi(temp[3]),atoi(temp[4]));
+					if (exit_loop == 1) {
+						break;
+					}
+
+					if (temp[0] != NULL) {
+						printf("- AC[%s]\t: OK(%10d/%10d)  %s(%10d/%10d)\n",
+							temp[0], atoi(temp[1]), atoi(temp[2]),
+							(dir == DIR_TX) ? "RTX" : "NOK", atoi(temp[3]), atoi(temp[4]));
+					}
 				}
 				print_line('-', print_line_len,"", 0,0);
 				break;
@@ -1612,7 +1671,7 @@ static void cmd_show_mac_result_display(char *response, int dir, int type)
 				/* mac stats mcs */
 				for(j=0; j <STATS_MCS_MAX;j++){
 					memset(temp, 0x0, sizeof(temp));
-					for(i=0; i<mac_stats_get_element; i++){
+					for(i=0; i<mac_stats_mcs_get_element; i++){
 						if(i==0 && j ==0){
 							t1 =  strtok_r(key_list_temp, ",", &next_ptr);
 						}else{
@@ -1620,8 +1679,8 @@ static void cmd_show_mac_result_display(char *response, int dir, int type)
 						}
 						memcpy(temp[i], t1, sizeof(temp[i]));
 					}
-					printf("- MCS[%2d]\t: OK(%10d/%10d)  %s(%10d/%10d)\n",
-						atoi(temp[0]),atoi(temp[1]),atoi(temp[2]),(dir == DIR_TX)? "RTX":"NOK",atoi(temp[3]),atoi(temp[4]));
+					printf("- MCS[%2d]\t: OK(%10d/%10d)  %s(%10d/%10d) FM(%10d)\n",
+						atoi(temp[0]),atoi(temp[1]),atoi(temp[2]),(dir == DIR_TX)? "RTX":"NOK",atoi(temp[3]),atoi(temp[4]),atoi(temp[5]));
 				}
 				print_line('-', print_line_len,"", 0,0);
 				break;
@@ -1633,7 +1692,6 @@ static void cmd_show_mac_result_display(char *response, int dir, int type)
 	if(key_list_temp)
 		free(key_list_temp);
 }
-
 
 static int cmd_self_configuration(cmd_tbl_t *t, int argc, char *argv[])
 {
@@ -1721,24 +1779,179 @@ static int cmd_self_configuration(cmd_tbl_t *t, int argc, char *argv[])
 	return ret;
 }
 
-static int cmd_show_halow(cmd_tbl_t *t, int argc, char *argv[])
+static int cmd_optimal_channel(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_SUCCESS;
 	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
 	int netlink_ret = 0;
-	int display_per_line= 1;
+	unsigned short best_freq = 0;
+	unsigned short best_cca = 0;
+	unsigned short best_nons1g_freq_idx = 0;
+	char best_bw=0;
+	int result_idx_ptr =0;
 
 	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
 	memset(param, 0x0, sizeof(param));
-	strcpy(param, "show halow -sr");
+
+	if (argc == 5) {
+		if (!strcmp(argv[2], "K1") ||
+			!strcmp(argv[2], "K2") ||
+			!strcmp(argv[2], "JP") ||
+			!strcmp(argv[2], "EU")) {
+			printf("K1/K2/JP/EU is not supported.\n");
+			return CMD_RET_FAILURE;
+		} else if (atoi(argv[3]) != 1 &&
+			atoi(argv[3]) != 2 &&
+			atoi(argv[3]) != 4) {
+			printf("BW should be one of 1, 2 or 4.\n");
+			return CMD_RET_FAILURE;
+		} else {
+			sprintf(param, "show optimal_channel %s %s %s -sr", argv[2], argv[3], argv[4]);
+		}
+	} else
+		return CMD_RET_FAILURE;
+
+	netlink_ret = netlink_send_data(NL_SHELL_RUN_RAW, param, response);
+
+	if (!netlink_ret) {
+		if (strcmp(response, response_timeout_str) == 0) {
+			ret = CMD_RET_RESPONSE_TIMEOUT;
+		} else if (strcmp(response, no_self_conf_str) == 0) {
+			printf("%s\n", no_self_conf_str);
+			ret = CMD_RET_FAILURE;
+		} else if (strcmp(response, not_matched_cc_str) == 0) {
+			printf("[%s] %s\n", argv[2], not_matched_cc_msg);
+			ret = CMD_RET_FAILURE;
+		} else if (strcmp(response, not_supported_cc_str) == 0) {
+			printf("[%s] %s\n", argv[2], not_supported_cc_msg);
+			ret = CMD_RET_FAILURE;
+		} else {
+			memcpy(&best_freq, &response[result_idx_ptr], sizeof(best_freq));
+			result_idx_ptr+=2;
+			memcpy(&best_cca, &response[result_idx_ptr], sizeof(best_cca));
+			result_idx_ptr+=2;
+			memcpy(&best_bw, &response[result_idx_ptr], sizeof(best_bw));
+			result_idx_ptr+=1;
+			memcpy(&best_nons1g_freq_idx, &response[result_idx_ptr], sizeof(best_nons1g_freq_idx));
+			result_idx_ptr+=2;
+
+			printf("[Optimal freq.]\t%4.1f MHz (CCA:%3.1f%%, BW:%dM, Legacy channel number:%d)\n", \
+				best_freq/10.0, best_cca/10.0, (best_bw == 0)?1:(best_bw == 1)?2:4, best_nons1g_freq_idx);
+
+			ret = CMD_RET_SUCCESS;
+		}
+	} else {
+		ret = CMD_RET_FAILURE;
+	}
+	return ret;
+}
+
+static int cmd_show_app_version(cmd_tbl_t *t, int argc, char *argv[])
+{
+	printf("%s\n", NRC_CLI_APP_VER);
+	return CMD_RET_SUCCESS;
+}
+
+static int cmd_show_xtal_status(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_FAILURE;
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	const int display_per_line= 1;
+
+	ret = run_shell_cmd(t, argc, argv, "show xtal_status", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		cmd_result_parse((char*)t->key_list, response, display_per_line);
+	}
+	return ret;
+}
+
+static int sysconfig_data_store(char* des, int offset, char * src, int* receive_len, int* sysconfig_format)
+{
+	xfer_header_t xfer_header;
+
+	if(des == 0 || src == 0 || receive_len == 0 || sysconfig_format == 0)
+		return 0;
+
+	memcpy(&xfer_header, src, sizeof(xfer_header));
+	//printf("size:%d more:%d sysconfig_format:%d\n", xfer_header.dataSize, xfer_header.more, xfer_header.sysconfig_format);
+	* receive_len = xfer_header.dataSize;
+	* sysconfig_format = xfer_header.sysconfig_format;
+	memcpy(des+offset, src+sizeof(xfer_header), xfer_header.dataSize);
+	return xfer_header.more;
+}
+
+static int cmd_show_sysconfig(cmd_tbl_t *t, int argc, char *argv[])
+{
+	char param[NRC_MAX_CMDLINE_SIZE];
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	char data[XFER_SYSCONFIG_SECTOR_SIZE];
+	int ret = 0;
+	int data_len = 0;
+	int response_len = 0;
+	int sta_remaining = 1;
+	int sysconfig_format = 0;
+	bool  display_mode = false;
+	xfer_sys_config_t *sysconfig = (xfer_sys_config_t *)data;
+
+	while(sta_remaining)
+	{
+		memset(param, 0x0, sizeof(param));
+		memset(response, 0x0, sizeof(response));
+
+		sprintf(param, "sf sysconfig read %d -sr", data_len);
+		ret = netlink_send_data_with_retry(NL_SHELL_RUN_RAW, param, response, 50);
+		if(ret){
+			printf("netlink_send_data_with_retry failed");
+			return CMD_RET_FAILURE;
+		}
+		sta_remaining = sysconfig_data_store(data, data_len, response, &response_len, &sysconfig_format);
+		data_len += response_len;
+	}
+	display_mode = (argc == 3 && strcmp("read", argv[2]) == 0) ? true : false;
+
+	cmd_show_sysconfig_parse(sysconfig, display_mode, sysconfig_format);
+
+	return CMD_RET_SUCCESS;
+}
+
+
+static int cmd_show_bcn_mcs(cmd_tbl_t *t, int argc, char *argv[])
+{
+	char param[NRC_MAX_CMDLINE_SIZE];
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	int ret = CMD_RET_FAILURE;
+	int netlink_ret = 0;
+	int display_per_line = 3;
+	int print_line_len = 72;
+
+	if((argc > 3) || (argc < 3)){
+		printf("Usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	if(strcmp(argv[2],"0")!=0 && strcmp(argv[2],"1")!=0) {
+		printf("Usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
+	memset(param, 0x0, sizeof(param));
+	sprintf(param, "show bcn_mcs %s -sr", argv[2]);
+
 	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
 	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
+		if(strcmp(response, "fail") != 0){
+			if(strcmp(response, response_timeout_str)== 0){
+				ret =  CMD_RET_RESPONSE_TIMEOUT;
+			}else {
+				print_line('-', print_line_len," current beacon rate ", 0,0);
+				cmd_result_parse((char*)t->key_list, response, display_per_line);
+				print_line('-', print_line_len,"", 0,0);
+				ret = CMD_RET_SUCCESS;
+			}
 		}else{
-			cmd_result_parse((char*)t->key_list, response, display_per_line);
-			ret = CMD_RET_SUCCESS;
+			ret = CMD_RET_FAILURE;
 		}
 	}else{
 		ret = CMD_RET_FAILURE;
@@ -1751,36 +1964,13 @@ static int cmd_show_halow(cmd_tbl_t *t, int argc, char *argv[])
 *******************************************************************************/
 static int cmd_set_guard_interval(cmd_tbl_t *t, int argc, char *argv[])
 {
-	int ret = CMD_RET_FAILURE;
-	char param[NRC_MAX_CMDLINE_SIZE];
-	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-
 	if(!argv[2]||((strcmp("short", argv[2]) != 0)&&
-		(strcmp("long", argv[2]) != 0)&&
-		(strcmp("auto", argv[2]) != 0)&&
-		(strcmp("capa", argv[2]) != 0))){
-		printf("There is invalid parameter. Please see the help.\n");
-		cmd_help(NULL, 0, NULL);
-		ret = CMD_RET_FAILURE;
-	}else{
-		sprintf(param, "set gi %s %s", argv[2], argv[3]);
-		netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-		if(!netlink_ret){
-			if(strcmp(response, response_timeout_str)== 0){
-				ret =  CMD_RET_RESPONSE_TIMEOUT;
-			}else if(strcmp(response, "success") == 0){
-				printf("guard interval : %s\n", argv[2]);
-				ret = CMD_RET_SUCCESS;
-			}
-		}else{
-			ret = CMD_RET_FAILURE;
-		}
+		(strcmp("long", argv[2]) != 0))){
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
 	}
-	return ret;
+
+	return run_shell_cmd(t, argc, argv, "set gi", NULL, 0);
 }
 
 static int cmd_set_max_aggregation(cmd_tbl_t *t, int argc, char *argv[])
@@ -1789,7 +1979,7 @@ static int cmd_set_max_aggregation(cmd_tbl_t *t, int argc, char *argv[])
 	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
 	int netlink_ret = 0;
-	int display_per_line= 4;
+	const int display_per_line= 4;
 	int print_line_len = 88;
 	int i = 0;
 
@@ -1797,8 +1987,7 @@ static int cmd_set_max_aggregation(cmd_tbl_t *t, int argc, char *argv[])
 	memset(param, 0x0, sizeof(param));
 
 	if(argc <4 || argc > 7) {
-		printf("There is invalid parameter. Please see the help.\n");
-		cmd_help(NULL, 0, NULL);
+		printf("usage : %s\n", (char*)t->usage);
 		return CMD_RET_FAILURE;
 	}
 
@@ -1818,30 +2007,18 @@ static int cmd_set_max_aggregation(cmd_tbl_t *t, int argc, char *argv[])
 static int cmd_set_ackmode(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
-	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-	int display_per_line = 1;
-
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
+	const int display_per_line = 1;
 
 	if (strcmp(argv[2], "no") != 0 && strcmp(argv[2], "ndp") != 0 &&
 		strcmp(argv[2], "normal") != 0 && strcmp(argv[2], "show") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
 		return CMD_RET_FAILURE;
 	}
 
-	sprintf(param, "set ack_mode %s -sr", argv[2]);
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret) {
-		if(strcmp(response, response_timeout_str)== 0){
-			ret = CMD_RET_RESPONSE_TIMEOUT;
-		} else {
-			cmd_result_parse((char*)t->key_list, response, display_per_line);
-			ret = CMD_RET_SUCCESS;
-		}
-	} else {
-		ret = CMD_RET_FAILURE;
+	ret = run_shell_cmd(t, argc, argv, "set ack_mode", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		cmd_result_parse((char*)t->key_list, response, display_per_line);
 	}
 	return ret;
 }
@@ -1857,29 +2034,25 @@ static int cmd_set_rate_control(cmd_tbl_t *t, int argc, char *argv[])
 	int display_per_line = 3;
 	int print_line_len = 72;
 
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-
-	if (argc < 3) {
-		return CMD_RET_FAILURE;
-	}
-
 	if (strcmp(argv[2], "on") != 0 && strcmp(argv[2], "off") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
 		return CMD_RET_FAILURE;
 	}
 
-	if(argc>3){
-		if(atoi(argv[3]) != 0 && atoi(argv[3]) != 1){
-			printf("invalid value %s : (ex) set rc <on|off> [vif_id] [mode]\n", argv[2]);
+	if(argc > 3){
+		if(strcmp(argv[3],"0")!=0 && strcmp(argv[3],"1")!=0){
+			printf("usage : %s\n", (char*)t->usage);
 			return CMD_RET_FAILURE;
-		}else{
-			vif_id = atoi(argv[3]);	// vif_id
 		}
+		vif_id = atoi(argv[3]);	// vif_id
 	}
 
 	if(argc>4){
 		mode = atoi(argv[4]);	// mode [0:NRF, 1:ARF]
 	}
+
+	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
+	memset(param, 0x0, sizeof(param));
 
 	if(argc>5){
 		sprintf(param, "set rc %s %d %d %s %s %s -sr", argv[2],  vif_id, mode, argv[5],argv[6],argv[7]);
@@ -1907,41 +2080,57 @@ static int cmd_set_rate_control(cmd_tbl_t *t, int argc, char *argv[])
 	return ret;
 }
 
-static int cmd_set_duty(cmd_tbl_t *t, int argc, char *argv[])
+
+static int cmd_set_bcn_mcs(cmd_tbl_t *t, int argc, char *argv[])
 {
-	int ret = CMD_RET_SUCCESS;
+	int ret = CMD_RET_FAILURE;
 	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
 	int netlink_ret = 0;
-	int display_per_line= 1;
+	int vif_id = 0;
+	uint8_t mcs = 0;
+	int mode = 0;
+	int display_per_line = 3;
+	int print_line_len = 72;
 
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-
-	if (argc < 3) {
+	if((argc > 4) || (argc < 4)){
+		printf("Usage : %s\n", (char*)t->usage);
 		return CMD_RET_FAILURE;
 	}
+	
+	vif_id = atoi(argv[2]);
+	if(vif_id != 0 && vif_id != 1) {
+		printf("Usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	mcs = atoi(argv[3]);
+	if( mcs > 10 || mcs == 8 || mcs == 9){
+		printf("Usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	ret = run_shell_cmd(t, argc, argv, "set bcn_mcs", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		printf("set bcn_mcs: %s\n", argv[3]);
+	}
+	return ret;
+}
+
+static int cmd_set_duty(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_SUCCESS;
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	const int display_per_line= 1;
 
 	if (strcmp(argv[2], "on") != 0 && strcmp(argv[2], "off") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
 		return CMD_RET_FAILURE;
 	}
 
-	if(argc>3){
-		sprintf(param, "set duty %s %s %s 0 -sr", argv[2], argv[3], argv[4]);
-	}else{
-		sprintf(param, "set duty %s -sr", argv[2]);
-	}
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else{
-			cmd_result_parse((char*)t->key_list, response, display_per_line);
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
+	ret = run_shell_cmd(t, argc, argv, "set duty", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		cmd_result_parse((char*)t->key_list, response, display_per_line);
 	}
 	return ret;
 }
@@ -1949,129 +2138,65 @@ static int cmd_set_duty(cmd_tbl_t *t, int argc, char *argv[])
 static int cmd_set_duty_debug(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_SUCCESS;
-	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-	int display_per_line= 1;
-
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
+	const int display_per_line= 1;
 
 	if (strcmp(argv[2], "on") != 0 && strcmp(argv[2], "off") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
 		return CMD_RET_FAILURE;
 	}
 
-	sprintf(param, "set duty_debug %s", argv[2]);
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret = CMD_RET_RESPONSE_TIMEOUT;
-		}else if(strcmp(response, "success") == 0){
-			printf("duty debug : %s\n", argv[2]);
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
+	ret = run_shell_cmd(t, argc, argv, "set duty_debug", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		printf("duty debug : %s\n", argv[2]);
 	}
-
 	return ret;
 }
 
 static int cmd_set_txpwr(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
-	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-	int display_per_line= 3;
+	const int display_per_line= 3;
 	int type = 0, txpwr = 0;
 
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-
-	if (argc < 3) {
-		return CMD_RET_FAILURE;
-	}
-
 	if (strcmp(argv[2], "limit") != 0 && strcmp(argv[2], "fixed") != 0 && strcmp(argv[2], "auto") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
 		return CMD_RET_FAILURE;
 	}
 
-	if (!strcmp(argv[2], "auto")) {
-		/* auto */
-		sprintf(param, "nrf txpwr %s -sr", argv[2]);
-	} else {
-		/* limit or fixed */
-		txpwr = atoi(argv[3]);
-		sprintf(param, "nrf txpwr %s %s -sr", argv[2], argv[3]);
-	}
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret = CMD_RET_RESPONSE_TIMEOUT;
-		}else {
-			cmd_result_parse((char*)t->key_list, response, display_per_line);
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
+	ret = run_shell_cmd(t, argc, argv, "nrf txpwr", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		cmd_result_parse((char*)t->key_list, response, display_per_line);
 	}
 	return ret;
 }
 
 static int cmd_set_wakeup_pin(cmd_tbl_t *t, int argc, char *argv[]) {
 	int ret = CMD_RET_FAILURE;
-	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-	int display_per_line = 2;
+	const int display_per_line = 2;
 
-	sprintf(param, "set wakeup_pin %s %s -sr", argv[2], argv[3]);
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else{
-			cmd_result_parse((char*)t->key_list, response, display_per_line);
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
+	if (strcmp(argv[2], "on") != 0 && strcmp(argv[2], "off") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	ret = run_shell_cmd(t, argc, argv, "set wakeup_pin", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		cmd_result_parse((char*)t->key_list, response, display_per_line);
 	}
 	return ret;
 }
 
 static int cmd_set_wakeup_source(cmd_tbl_t *t, int argc, char *argv[]) {
 	int ret = CMD_RET_FAILURE;
-	char param[NRC_MAX_CMDLINE_SIZE];
-	char wakeup_source_str[32];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-	int display_per_line = 1;
-	int i;
+	const int display_per_line = 1;
 
-	if(argc <3)
-		return CMD_RET_FAILURE;
-
-	memset(wakeup_source_str, 0x0, sizeof(wakeup_source_str));
-
-	for(i=2; i<argc; i++) {
-		sprintf(wakeup_source_str+strlen(wakeup_source_str), "%s ",argv[i]);
-	}
-	sprintf(param, "set wakeup_source %s -sr", wakeup_source_str);
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else{
-			cmd_result_parse((char*)t->key_list, response, display_per_line);
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
+	ret = run_shell_cmd(t, argc, argv, "set wakeup_source", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		cmd_result_parse((char*)t->key_list, response, display_per_line);
 	}
 	return ret;
 }
@@ -2082,12 +2207,8 @@ static int cmd_set_addba(cmd_tbl_t *t, int argc, char *argv[]) {
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
 	char mac_addr[18];
 	int netlink_ret = 0;
-	int display_per_line = 1;
+	const int display_per_line = 1;
 	int tid;
-
-	if (argc < 3) {
-		return CMD_RET_FAILURE;
-	}
 
 	if(argc == 3) {
 		tid = atoi( argv[2]);
@@ -2112,12 +2233,8 @@ static int cmd_set_delba(cmd_tbl_t *t, int argc, char *argv[]) {
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
 	char mac_addr[18];
 	int netlink_ret = 0;
-	int display_per_line = 1;
+	const int display_per_line = 1;
 	int tid;
-
-	if (argc < 3) {
-		return CMD_RET_FAILURE;
-	}
 
 	if(argc == 3) {
 		tid = atoi( argv[2]);
@@ -2138,255 +2255,74 @@ static int cmd_set_delba(cmd_tbl_t *t, int argc, char *argv[]) {
 
 static int cmd_set_rts(cmd_tbl_t *t, int argc, char *argv[])
 {
-	int ret = CMD_RET_SUCCESS;
-	char param[NRC_MAX_CMDLINE_SIZE];
-	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-	int i = 0;
-
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-
 	if (strcmp(argv[2], "on") != 0 && strcmp(argv[2], "off") != 0 && strcmp(argv[2], "default") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
 		return CMD_RET_FAILURE;
 	}
 
-	sprintf(param, "set rts %s %s %s", argv[2], argv[3], argv[4] );
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else{
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
-	}
-	return ret;
+	return run_shell_cmd(t, argc, argv, "set rts", NULL, 0);
 }
 
 static int cmd_set_tx_time(cmd_tbl_t *t, int argc, char *argv[])
 {
-	int ret = CMD_RET_FAILURE;
-	char param[NRC_MAX_CMDLINE_SIZE];
-	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-	int display_per_line= 1;
-
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-
-	if(argc == 5){
-		sprintf(param, "test tx_time %s %s %s", argv[2], argv[3],  argv[4]);
-	}else if(argc == 4){
-		sprintf(param, "test tx_time %s %s", argv[2], argv[3]);
-	}else if(argc == 3){
-		sprintf(param, "test tx_time %s", argv[2]);
-	}else {
-		return CMD_RET_FAILURE;
-	}
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else {
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
-	}
-	return ret;
+	return run_shell_cmd(t, argc, argv, "test tx_time", NULL, 0);
 }
 
 static int cmd_set_drop_frame(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
-	char param[NRC_MAX_CMDLINE_SIZE];
-	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-	int display_per_line = 3;
-
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
 
 	if (argc != 5) {
+		printf("usage : %s\n", (char*)t->usage);
 		return CMD_RET_FAILURE;
 	}
-
-	sprintf(param, "set drop %s %s %s", argv[2], argv[3], argv[4]);
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret) {
-		if(strcmp(response, response_timeout_str) == 0) {
-			ret = CMD_RET_RESPONSE_TIMEOUT;
-		} else {
-			cmd_result_parse((char*)t->key_list, response, display_per_line);
-			ret = CMD_RET_SUCCESS;
-		}
-	} else {
-		ret = CMD_RET_FAILURE;
-	}
-	return ret;
+	return run_shell_direct_cmd("set drop %s %s %s", argv[2], argv[3], argv[4]);
 }
 
 static int cmd_set_temp_sensor(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
-	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
 
 	if (argc != 4) {
+		printf("usage : %s\n", (char*)t->usage);
 		return CMD_RET_FAILURE;
 	}
 
-	sprintf(param, "set tsensor %s %s", argv[2], argv[3]);
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else {
-			printf("%s\n", response);
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
+	ret = run_shell_cmd(t, argc, argv, "set tsensor", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		printf("%s\n", response);
 	}
 	return ret;
 }
 
 static int cmd_set_s1g_freq(cmd_tbl_t *t, int argc, char *argv[])
 {
-	int ret = CMD_RET_SUCCESS;
-	char param[NRC_MAX_CMDLINE_SIZE];
-	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-
-	if(argc == 4){
-		sprintf(param, "set s1g_freq %s %s -sr", argv[2], argv[3]);
-	} else {
+	if(argc != 4){
+		printf("usage : %s\n", (char*)t->usage);
 		return CMD_RET_FAILURE;
 	}
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		} else {
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
-	}
-	return ret;
+	return run_shell_cmd(t, argc, argv, "set s1g_freq", NULL, 0);
 }
 
 static int cmd_set_cca_thresh(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
-	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-	int display_per_line = 1;
 
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-
-	if(argc == 3)
-		sprintf(param, "set cca_thresh %s -sr", argv[2]);
-	else if(argc == 4)
-		sprintf(param, "set cca_thresh %s %s -sr", argv[2], argv[3]);
-	else
-		return CMD_RET_FAILURE;
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else {
-			printf("%s\n", response);
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
-	}
-
-	ret = CMD_RET_SUCCESS;
-
-	return ret;
-}
-
-static int cmd_set_halow(cmd_tbl_t *t, int argc, char *argv[])
-{
-	int ret = CMD_RET_SUCCESS;
-	char param[NRC_MAX_CMDLINE_SIZE];
-	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-	int display_per_line= 1;
-
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-
-	if (argc < 3) {
-		return CMD_RET_FAILURE;
-	}
-
-	if (strcmp(argv[2], "on") != 0 && strcmp(argv[2], "off") != 0) {
-		return CMD_RET_FAILURE;
-	}
-
-	sprintf(param, "set halow %s -sr", argv[2]);
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else{
-			cmd_result_parse((char*)t->key_list, response, display_per_line);
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
+	ret = run_shell_cmd(t, argc, argv, "set cca_thresh", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		printf("%s\n", response);
 	}
 	return ret;
 }
 
 static int cmd_set_color(cmd_tbl_t *t, int argc, char *argv[])
 {
-	int ret = CMD_RET_SUCCESS;
-	char param[NRC_MAX_CMDLINE_SIZE];
-	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-
-	sprintf(param, "set color %s", argv[2]);
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else{
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
-	}
-	return ret;
+	return run_shell_cmd(t, argc, argv, "set color", NULL, 0);
 }
 
-static int cmd_set_probe_resp_vendor_ie(cmd_tbl_t *t, int argc, char *argv[])
+static int cmd_set_rc_pf(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_SUCCESS;
 	char param[NRC_MAX_CMDLINE_SIZE];
@@ -2401,18 +2337,13 @@ static int cmd_set_probe_resp_vendor_ie(cmd_tbl_t *t, int argc, char *argv[])
 		return CMD_RET_FAILURE;
 	}
 
-	if (strcmp(argv[2], "on") != 0 && strcmp(argv[2], "off") != 0) {
-		return CMD_RET_FAILURE;
-	}
-
-	sprintf(param, "set probe_resp_vendor_ie %s -sr", argv[2]);
+	sprintf(param, "set rc_pf %s -sr", argv[2]);
 
 	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
 	if(!netlink_ret){
 		if(strcmp(response, response_timeout_str)== 0){
 			ret =  CMD_RET_RESPONSE_TIMEOUT;
 		}else{
-			printf("Vendor IE in probe_response: ");
 			cmd_result_parse((char*)t->key_list, response, display_per_line);
 			ret = CMD_RET_SUCCESS;
 		}
@@ -2422,40 +2353,7 @@ static int cmd_set_probe_resp_vendor_ie(cmd_tbl_t *t, int argc, char *argv[])
 	return ret;
 }
 
-/*******************************************************************************
-* sub commands on test
-*******************************************************************************/
-static int cmd_test_mcs(cmd_tbl_t *t, int argc, char *argv[])
-{
-	int ret = CMD_RET_FAILURE;
-	char param[NRC_MAX_CMDLINE_SIZE];
-	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-
-	if (argc != 3) {
-		return CMD_RET_FAILURE;
-	}
-
-	sprintf(param, "test mcs %s -sr", argv[2]);
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else {
-			printf("%s\n", response);
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
-	}
-	return ret;
-}
-
-static int cmd_test_country(cmd_tbl_t *t, int argc, char *argv[])
+static int cmd_set_rc_param(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
 	char param[NRC_MAX_CMDLINE_SIZE];
@@ -2463,10 +2361,11 @@ static int cmd_test_country(cmd_tbl_t *t, int argc, char *argv[])
 	int netlink_ret = 0;
 	int display_per_line= 1;
 
-	if(argc == 4 && strcmp(argv[3], "show") == 0){
-		sprintf(param, "test country %s show -sr", argv[2]);
-	}else if(argc == 5){
-		sprintf(param, "test country %s %s %s -sr", argv[2], argv[3], argv[4]);
+	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
+	memset(param, 0x0, sizeof(param));
+
+	if(argc == 4){
+		sprintf(param, "set rc_param %s %s -sr", argv[2], argv[3]);
 	}else{
 		return CMD_RET_FAILURE;
 	}
@@ -2476,9 +2375,6 @@ static int cmd_test_country(cmd_tbl_t *t, int argc, char *argv[])
 		if(strcmp(response, response_timeout_str)== 0){
 			ret =  CMD_RET_RESPONSE_TIMEOUT;
 		}else {
-			if(strcmp(argv[3], "show") == 0){
-				cmd_result_parse((char*)t->key_list, response, display_per_line);
-			}
 			ret = CMD_RET_SUCCESS;
 		}
 	}else{
@@ -2487,6 +2383,90 @@ static int cmd_test_country(cmd_tbl_t *t, int argc, char *argv[])
 	return ret;
 }
 
+static int cmd_set_deepsleep_gpio(cmd_tbl_t *t, int argc, char *argv[])
+{
+	if (argc != 5){
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+	return run_shell_cmd(t, argc, argv, "set deepsleep_gpio", NULL, 0);
+}
+
+static int cmd_set_report(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_SUCCESS;
+
+	if (strcmp(argv[2], "on") != 0 && strcmp(argv[2], "off") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	ret = run_shell_cmd(t, argc, argv, "set report", NULL, 0);
+	if(ret == CMD_RET_SUCCESS){
+		printf("set report : %s\n", argv[2]);
+	}
+	return ret;
+}
+
+static int cmd_set_support_ch_width(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_SUCCESS;
+
+	if (strcmp(argv[2], "0") != 0 && strcmp(argv[2], "1") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	ret = run_shell_cmd(t, argc, argv, "set support_ch_width", NULL, 0);
+	if(ret == CMD_RET_SUCCESS){
+		printf("set support_ch_width : %s\n", argv[2]);
+	}
+	return ret;
+}
+
+static int cmd_set_ampdu_mode(cmd_tbl_t *t, int argc, char *argv[])
+{
+	if (strcmp(argv[2], "disable") != 0 && strcmp(argv[2], "manual") != 0 && strcmp(argv[2], "auto") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	return run_driver_cmd(t, argc, argv, "set ampdu_mode", NULL, 0);
+}
+
+
+/*******************************************************************************
+* sub commands on test
+*******************************************************************************/
+static int cmd_test_mcs(cmd_tbl_t *t, int argc, char *argv[])
+{
+	return run_shell_direct_cmd("test mcs %s", argv[2]);
+}
+
+static int cmd_test_country(cmd_tbl_t *t, int argc, char *argv[])
+{
+	return run_shell_direct_cmd("test country %s", argv[2]);
+}
+
+static int cmd_test_cont_tx(cmd_tbl_t *t, int argc, char *argv[])
+{
+	if (strcmp(argv[2], "stop") == 0) {
+		return run_shell_direct_cmd("test cont_tx stop");
+	}
+
+	if(argc != 6) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	if (strcmp(argv[3], "1m") != 0 && strcmp(argv[3], "2m") != 0  && strcmp(argv[3], "4m") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	return run_shell_direct_cmd("test cont_tx %s %s %s %s", argv[2], argv[3], argv[4], argv[5]);
+
+}
 
 /*******************************************************************************
 * sub commands on gpio
@@ -2494,124 +2474,48 @@ static int cmd_test_country(cmd_tbl_t *t, int argc, char *argv[])
 static int cmd_gpio_read(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
-	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
 
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-
-	if (argc != 3) {
-		return CMD_RET_FAILURE;
+	ret = run_shell_cmd(t, argc, argv, "gpio read", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		printf("%s\n", response);
 	}
-
-	sprintf(param, "gpio read %s -sr", argv[2]);
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else {
-			printf("%s\n", response);
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
-	}
+	return ret;
 }
 
 static int cmd_gpio_write(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
-	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
 
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-
-	if (argc != 4) {
-		return CMD_RET_FAILURE;
+	ret = run_shell_cmd(t, argc, argv, "gpio write", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		printf("%s\n", response);
 	}
-
-	sprintf(param, "gpio write %s %s -sr", argv[2], argv[3]);
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else {
-			printf("%s\n", response);
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
-	}
+	return ret;
 }
 
 static int cmd_gpio_direction(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
-	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
 
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-
-	if(argc == 3){
-		sprintf(param, "gpio direction %s -sr", argv[2]);
-	}else if(argc == 4){
-		sprintf(param, "gpio direction %s %s -sr", argv[2], argv[3]);
-	}else{
-		return CMD_RET_FAILURE;
+	ret = run_shell_cmd(t, argc, argv, "gpio direction", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		printf("%s\n", response);
 	}
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else {
-			printf("%s\n", response);
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
-	}
-
 	return ret;
 }
 
 static int cmd_gpio_pullup(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
-	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
 
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-	memset(param, 0x0, sizeof(param));
-
-	if(argc == 3){
-		sprintf(param, "gpio pullup %s -sr", argv[2]);
-	}else if(argc == 4){
-		sprintf(param, "gpio pullup %s %s -sr", argv[2], argv[3]);
-	}else{
-		return CMD_RET_FAILURE;
+	ret = run_shell_cmd(t, argc, argv, "gpio pullup", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		printf("%s\n", response);
 	}
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
-	if(!netlink_ret){
-		if(strcmp(response, response_timeout_str)== 0){
-			ret =  CMD_RET_RESPONSE_TIMEOUT;
-		}else {
-			printf("%s\n", response);
-			ret = CMD_RET_SUCCESS;
-		}
-	}else{
-		ret = CMD_RET_FAILURE;
-	}
-
 	return ret;
 }
 
@@ -2769,6 +2673,12 @@ void *showRxThreadRun(cmd_tbl_t *t)
 
 			for(i=0; i<device_number ; i++){
 				signal_log_display(show_signal_mac_addr[i], snr_sum[i], snr_sum_sqrs[i], rssi_sum[i], rssi_sum_sqrs[i], count[i]);
+				memset(show_signal_mac_addr[i], 0x0, MAX_ADDR_SIZE);
+				snr_sum[i]= 0;
+				snr_sum_sqrs[i]= 0;
+				rssi_sum[i]= 0;
+				rssi_sum_sqrs[i]= 0;
+				count[i] = 0;
 			}
 			signal_log_close();		/* close log file */
 			pthread_cancel(showRxThread);

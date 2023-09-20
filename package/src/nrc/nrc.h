@@ -30,34 +30,36 @@
 #include <net/ieee80211_radiotap.h>
 
 
-#define DEFAULT_INTERFACE_NAME		"nrc"
+#define DEFAULT_INTERFACE_NAME			"nrc"
 struct nrc_hif_device;
-#define WIM_SKB_MAX			(10)
-#define WIM_RESP_TIMEOUT		(msecs_to_jiffies(100))
-#define NR_NRC_VIF			(2)
-#define NR_NRC_VIF_HW_QUEUE		(4)
-#define NR_NRC_MAX_TXQ			(100)
+#define WIM_SKB_MAX						(10)
+#define WIM_RESP_TIMEOUT				(msecs_to_jiffies(100))
+#define NR_NRC_VIF						(2)
+#define NR_NRC_VIF_HW_QUEUE				(4)
+#define NR_NRC_MAX_TXQ					(100)
 /* VIF0 AC0~3,BCN, GP, VIF1 AC0~3,BCN */
-#define NRC_QUEUE_MAX			(NR_NRC_VIF_HW_QUEUE*NR_NRC_VIF + 3)
+#define NRC_QUEUE_MAX					(NR_NRC_VIF_HW_QUEUE*NR_NRC_VIF + 3)
 
 #ifdef CONFIG_SUPPORT_AFTER_KERNEL_3_0_36
 #else
-#define IEEE80211_NUM_ACS		(4)
-#define IEEE80211_P2P_NOA_DESC_MAX	(4)
+#define IEEE80211_NUM_ACS				(4)
+#define IEEE80211_P2P_NOA_DESC_MAX		(4)
 #endif
-#define NRC_MAX_TID			(8)
+#define NRC_MAX_TID						(8)
 
-#define EIRQ_STATUS_DEVICE_ROM		(0x00)
-#define EIRQ_STATUS_TXQUE_EIRQ		(0x01)
-#define EIRQ_STATUS_RXQUE_EIRQ		(0x02)
-#define EIRQ_STATUS_DEVICE_READY	(0x04)
-#define EIRQ_STATUS_DEVICE_SLEEP	(0x08)
+#define EIRQ_STATUS_DEVICE_ROM			(0x00)
+#define EIRQ_STATUS_TXQUE_EIRQ			(0x01)
+#define EIRQ_STATUS_RXQUE_EIRQ			(0x02)
+#define EIRQ_STATUS_DEVICE_READY		(0x04)
+#define EIRQ_STATUS_DEVICE_SLEEP		(0x08)
 
-#define TARGET_NOTI_WDT_EXPIRED		(0x7D)
+/* see system_common.h */
+#define TARGET_NOTI_WDT_EXPIRED			(0x7D)
 #define TARGET_NOTI_FW_READY_FROM_WDT	(0x9D)
 #define TARGET_NOTI_W_DISABLE_ASSERTED	(0xAB)
 #define TARGET_NOTI_REQUEST_FW_DOWNLOAD	(0xDC)
 #define TARGET_NOTI_FW_READY_FROM_PS	(0xEC)
+#define TARGET_NOTI_FAILED_TO_ENTER_PS  (0xED)
 
 enum NRC_SCAN_MODE {
 	NRC_SCAN_MODE_IDLE = 0,
@@ -66,10 +68,10 @@ enum NRC_SCAN_MODE {
 	NRC_SCAN_MODE_ABORTING,
 };
 
-#define NRC_FW_ACTIVE			(0)
-#define NRC_FW_LOADING			(1)
-#define	NRC_FW_PREPARE_SLEEP		(2)
-#define	NRC_FW_SLEEP			(3)
+#define NRC_FW_ACTIVE					(0)
+#define NRC_FW_LOADING					(1)
+#define	NRC_FW_PREPARE_SLEEP			(2)
+#define	NRC_FW_SLEEP					(3)
 
 enum NRC_DRV_STATE {
 	NRC_DRV_REBOOT = -2,
@@ -111,6 +113,12 @@ enum ieee80211_tx_ba_state {
 	IEEE80211_BA_DISABLE,
 };
 
+enum NRC_AMPDU_MODE {
+	NRC_AMPDU_DISABLE, //AMPDU disabled
+	NRC_AMPDU_MANUAL, //AMPDU enabled (manual)
+	NRC_AMPDU_AUTO, //AMPDU enabled (auto)
+};
+
 struct fwinfo_t {
 	uint32_t ready;
 	uint32_t version;
@@ -128,7 +136,7 @@ struct vif_capabilities {
 struct nrc_capabilities {
 	uint64_t cap_mask;
 	uint16_t listen_interval;
-	uint16_t bss_max_idle;
+	uint16_t vif_bss_max_idle[NR_NRC_VIF];
 	uint8_t bss_max_idle_options;
 	uint8_t max_vif;
 	struct vif_capabilities vif_caps[NR_NRC_VIF];
@@ -138,13 +146,11 @@ struct nrc_capabilities {
 struct nrc_max_idle {
 	bool enable;
 	u16 period;
-	u16 scale_factor;
 	u8 options;
 	u16 timeout_cnt;
-	struct timer_list keep_alive_timer;
 
-	unsigned long idle_period; /* jiffies */
-	struct timer_list timer;
+	unsigned long idle_period; /*AP : SEC, STA : jiffies) */
+	unsigned long sta_idle_timer;
 };
 
 /* Private txq driver data structure */
@@ -209,8 +215,11 @@ struct nrc {
 	enum NRC_SCAN_MODE scan_mode;
 	struct workqueue_struct *workqueue;
 	struct delayed_work check_start;
-        struct tasklet_struct tx_tasklet;
+    struct tasklet_struct tx_tasklet;
 
+	/**
+	 * This CC should be followed "ISO 3166-1 alpha-2" code.
+	 */
 	char alpha2[2];
 
 	/* Move to vif or sta driver data */
@@ -278,14 +287,18 @@ struct nrc {
 
 	/* beacon interval (AP) */
 	u16 beacon_int;
-	/* vendor specific element (AP) */
-	struct sk_buff *vendor_skb;
+
+	/* vendor specific element*/
+	struct sk_buff *vendor_skb_beacon;
+	struct sk_buff *vendor_skb_probe_req;
+	struct sk_buff *vendor_skb_probe_rsp;
+	struct sk_buff *vendor_skb_assoc_req;
+
 	/* work for removing vendor specific ie for wowlan pattern (AP) */
 	struct delayed_work rm_vendor_ie_wowlan_pattern;
 	/* this must be assigned via nrc_mac_set_wakeup() */
 	bool wowlan_enabled;
 	int wowlan_pattern_num;
-
 
 	/* CQM offload */
 	struct timer_list bcn_mon_timer;
@@ -297,6 +310,9 @@ struct nrc {
 
 	/* firmware recovery */
 	struct nrc_recovery_wdt *recovery_wdt;
+
+	/* set frag threshold by mac80211 */
+	s32 frag_threshold;
 };
 
 /* vif driver data structure */
@@ -317,6 +333,7 @@ struct nrc_vif {
 
 	/* inactivity */
 	u16 max_idle_period;
+	struct timer_list max_idle_timer;
 
 #ifdef CONFIG_SUPPORT_AFTER_KERNEL_3_0_36
 	/* P2p client NoA */
@@ -353,8 +370,8 @@ struct nrc_sta {
 	struct ieee80211_key_conf *ptk;
 	struct ieee80211_key_conf *gtk;
 
-	/* BSS max idle period */
-	struct nrc_capabilities cap;
+	/* period */
+	uint16_t listen_interval;
 	struct nrc_max_idle max_idle;
 
 	/* Block Ack Session per TID */
@@ -486,7 +503,7 @@ extern int spi_cs_num;
 extern int spi_gpio_irq;
 extern int spi_polling_interval;
 extern int spi_gdma_irq;
-extern bool loopback; 
+extern bool loopback;
 extern int disable_cqm;
 extern int bss_max_idle_offset;
 extern int power_save;
@@ -496,10 +513,10 @@ extern bool ndp_preq;
 extern bool ndp_ack_1m;
 extern bool enable_hspi_init;
 extern bool nullfunc_enable;
-extern bool auto_ba;
+extern int ampdu_mode;
 extern int sw_enc;
 extern bool signal_monitor;
-extern bool enable_usn;
+extern int kr_band;
 extern bool debug_level_all;
 extern bool enable_short_bi;
 extern int credit_ac_be;
@@ -519,7 +536,8 @@ extern bool enable_beacon_bypass;
 #endif /* CONFIG_SUPPORT_BEACON_BYPASS */
 extern int power_save_gpio[];
 extern int beacon_loss_count;
-extern bool halow_cert;
+extern bool ignore_listen_interval;
+extern const char *const eu_countries_cc[];
 
 void nrc_set_bss_max_idle_offset(int value);
 void nrc_set_auto_ba(bool toggle);

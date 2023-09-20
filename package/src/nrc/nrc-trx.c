@@ -51,6 +51,23 @@ static bool is_eapol(struct sk_buff *skb);
 static void setup_ba_session(struct nrc *nw, struct ieee80211_vif *vif, struct sk_buff *skb);
 
 /* TX */
+#define USF2SF(usf)	((usf == 0) ? 1 : (usf == 1) ? 10 : (usf == 2) ? 1000 : 10000)
+static uint32_t restore_usf(uint16_t usf)
+{
+	uint32_t sf = (usf & 0x3fff) * USF2SF(usf >> 14);
+	return sf;
+}
+
+bool nrc_is_valid_vif (struct nrc *nw, struct ieee80211_vif *vif)
+{
+	u8 i;
+	for (i = 0; i < ARRAY_SIZE(nw->vif); i++) {
+		if (vif == nw->vif[i])
+			return true;
+	}
+	nrc_mac_dbg("[%s] Invallid vif", __func__);
+	return false;
+}
 
 /**
  * nrc_mac_tx() - main tx routine
@@ -84,10 +101,15 @@ void nrc_mac_tx(struct ieee80211_hw *hw,
 	};
 
 	struct ieee80211_hdr *mh = (void*)skb->data;
-	s8 vif_id = hw_vifindex(tx.vif);
+	s8 vif_id = 0;
+
+	if (!nrc_is_valid_vif(tx.nw, tx.vif))
+		goto txh_out;
+
+	vif_id = hw_vifindex(tx.vif);
 
 	/* Set BA Session */
-	if (auto_ba) {
+	if (ampdu_mode == NRC_AMPDU_AUTO) {
 		if (ieee80211_is_data_qos(mh->frame_control) &&
 			!is_multicast_ether_addr(mh->addr1) && !is_eapol(tx.skb)) {
 			setup_ba_session(tx.nw, tx.vif, tx.skb);
@@ -96,6 +118,10 @@ void nrc_mac_tx(struct ieee80211_hw *hw,
 
 	/* Only for PS STA */
 	if (tx.nw->vif[vif_id]->type == NL80211_IFTYPE_STATION) {
+#ifndef CONFIG_USE_TXQ
+		if (tx.nw->drv_state == NRC_DRV_PS)
+			nrc_hif_wake_target(tx.nw->hif);
+#endif
 		if (power_save == NRC_PS_MODEMSLEEP) {
 			if (tx.nw->ps_modem_enabled) {
 				struct sk_buff *skb1;
@@ -135,12 +161,13 @@ void nrc_mac_tx(struct ieee80211_hw *hw,
 					atomic_set(&tx.nw->d_deauth.delayed_deauth, 1);
 					tx.nw->d_deauth.vif_index = hw_vifindex(tx.vif);
 					tx.nw->d_deauth.aid = tx.sta->aid;
+					goto txh_out;
 				}
 				if (ieee80211_is_qos_nullfunc(mh->frame_control)) {
 					nrc_ps_dbg("[%s,L%d][qos_null] make target wake for keep-alive\n", __func__, __LINE__);
 					nrc_hif_wake_target(tx.nw->hif);
+					goto txh_out;
 				}
-				goto txh_out;
 			} else if (tx.nw->drv_state != NRC_DRV_RUNNING) {
 				/*
 				 * Sometimes a deauth frame is transferred while nrc_unregister_hw() is 
@@ -172,12 +199,20 @@ void nrc_mac_tx(struct ieee80211_hw *hw,
 			goto txh_out;
 	}
 
-	if (ieee80211_is_assoc_resp(mh->frame_control) ||
-		ieee80211_is_reassoc_resp(mh->frame_control)) {
+	/* (AP) check listen interval is greater than bss max idle.
+		If then, forcefully reject connection by setting status code 51 in assoc resp */
+	if (!ignore_listen_interval && tx.sta && (ieee80211_is_assoc_resp(mh->frame_control) ||
+		ieee80211_is_reassoc_resp(mh->frame_control))) {
 		struct nrc_sta *i_sta = to_i_sta(tx.sta);
-		struct nrc_vif *i_vif = to_i_vif(tx.vif);
-		if (i_vif->max_idle_period > 0 &&
-			(i_sta->cap.listen_interval * tx.nw->beacon_int / 1000) >= i_vif->max_idle_period) {
+		uint32_t max_idle_period;
+		if(!i_sta){
+			nrc_dbg(NRC_DBG_STATE,
+				"Fail to find nrc data during associate response(%pM)", tx.sta->addr);
+			goto txh_out;
+		}
+		max_idle_period = restore_usf(i_sta->max_idle.period);
+		if (max_idle_period > 0 &&
+			((uint32_t)i_sta->listen_interval * (uint32_t)tx.nw->beacon_int / 1000) >= max_idle_period) {
 			struct ieee80211_mgmt *mgmt = (struct ieee80211_mgmt *)tx.skb->data;
 			nrc_dbg(NRC_DBG_STATE,
 				"[AP] Send associate response with DENIED_LISTEN_INTERVAL_TOO_LARGE(51) (%pM)",
@@ -192,7 +227,8 @@ void nrc_mac_tx(struct ieee80211_hw *hw,
 	return;
 
 txh_out:
-	dev_kfree_skb(tx.skb);
+	if (tx.skb)
+		dev_kfree_skb(tx.skb);
 }
 
 static bool is_eapol(struct sk_buff *skb)
@@ -223,41 +259,69 @@ static void setup_ba_session(struct nrc *nw, struct ieee80211_vif *vif, struct s
 	struct nrc_sta *i_sta = NULL;
 	struct ieee80211_hdr *qmh = (struct ieee80211_hdr *) skb->data;
 	int tid = *ieee80211_get_qos_ctl(qmh) & IEEE80211_QOS_CTL_TID_MASK;
+	int ret;
+
+	//nrc_mac_dbg("Start BA session (%pM, %d)\n", qmh->addr1, tid);
+
+	if (nw->frag_threshold != -1) { /* Fragmentation enabled by iwconfig */
+		//nrc_mac_dbg("Since fragmentation enabled by iwconfig, ignore to setup BA session");
+		return;
+	}
+
+	/* tid range : 0 ~ 7 */
+	if (tid < 0 || tid >= NRC_MAX_TID) {
+		nrc_mac_dbg("Invalid TID(%d) with peer %pM", tid, qmh->addr1);
+		return;
+	}
+
+	peer_sta = ieee80211_find_sta(vif, qmh->addr1);
+	if (!peer_sta) {
+		nrc_mac_dbg("Fail to set up BA. Fail to find peer_sta (%pM)", qmh->addr1);
+		return;
+	}
 
 	/* Set up BA session if not created */
-	/* tid range : 0 ~ 7 */
-	 if (tid >= 0 && tid < NRC_MAX_TID) {
-		/* Find Peer STA with ADDR1  to set up BA Session */
-		peer_sta = ieee80211_find_sta(vif, qmh->addr1);
-		if (peer_sta) {
+	/* Find Peer STA with ADDR1  to set up BA Session */
 #ifdef CONFIG_S1G_CHANNEL
-			peer_sta->ht_cap.ht_supported=true;
+	peer_sta->ht_cap.ht_supported=true;
 #endif /* #ifdef CONFIG_S1G_CHANNEL */
-			i_sta = to_i_sta(peer_sta);
-			if (i_sta) {
-				if (i_sta->tx_ba_session[tid] == IEEE80211_BA_NONE ||
-					i_sta->tx_ba_session[tid] == IEEE80211_BA_CLOSE) {
-					nrc_dbg(NRC_DBG_STATE, "%s: Setting up BA session for Tx TID %d with peer (%pM)",
-						__func__, tid, peer_sta->addr);
-					nw->ampdu_supported = true;
-					nw->ampdu_reject = false;
-					if(ieee80211_start_tx_ba_session(peer_sta, tid, 0) == -EBUSY) {
-						nrc_dbg(NRC_DBG_STATE, "%s: receiver does not want A-MPDU so disable BA session (TID:%d)", __func__, tid);
-						i_sta->tx_ba_session[tid] = IEEE80211_BA_DISABLE;
-					}
-				} else if( i_sta->tx_ba_session[tid] == IEEE80211_BA_REJECT ) {
-					if(jiffies_to_msecs(jiffies - i_sta->ba_req_last_jiffies[tid]) > 5000) {
-						i_sta->tx_ba_session[tid] = IEEE80211_BA_NONE;
-						i_sta->ba_req_last_jiffies[tid] = 0;
-						nrc_dbg(NRC_DBG_STATE, "%s: reset ba status(TID:%d)", __func__, tid);
-					} 
+	i_sta = to_i_sta(peer_sta);
+	if (!i_sta) {
+		nrc_mac_dbg("Fail to set up BA. Fail to find nrc_sta (%pM)", qmh->addr1);
+		return;
+	}
+
+
+	switch (i_sta->tx_ba_session[tid]) 
+	{
+		case IEEE80211_BA_NONE:
+		case IEEE80211_BA_CLOSE:
+			nrc_dbg(NRC_DBG_STATE, "%s: Setting up BA session for Tx TID %d with peer (%pM)",
+					__func__, tid, peer_sta->addr);
+			nw->ampdu_supported = true;
+			nw->ampdu_reject = false;
+			if((ret = ieee80211_start_tx_ba_session(peer_sta, tid, 0)) != 0) {
+				if (ret == -EBUSY) {
+					nrc_dbg(NRC_DBG_STATE, "%s: receiver does not want A-MPDU so disable BA session (TID:%d)", __func__, tid);
+					i_sta->tx_ba_session[tid] = IEEE80211_BA_DISABLE;
+				}
+				if (ret == -EAGAIN) {
+					nrc_dbg(NRC_DBG_STATE, "%s: session is not idle (TID:%d)", __func__, tid);
+					ieee80211_stop_tx_ba_session(peer_sta, tid);
+					i_sta->tx_ba_session[tid] = IEEE80211_BA_NONE;
+					i_sta->ba_req_last_jiffies[tid] = 0;
 				}
 			}
-		} else {
-			nrc_mac_dbg("Fail to set up BA. Fail to find nrc_sta (%pM)", qmh->addr1);
-		}
-	} else {
-		nrc_mac_dbg("Invalid TID(%d) with peer %pM", tid, qmh->addr1);
+			break;
+		case IEEE80211_BA_REJECT:
+			if(jiffies_to_msecs(jiffies - i_sta->ba_req_last_jiffies[tid]) > 5000) {
+				i_sta->tx_ba_session[tid] = IEEE80211_BA_NONE;
+				i_sta->ba_req_last_jiffies[tid] = 0;
+				nrc_dbg(NRC_DBG_STATE, "%s: reset ba status(TID:%d)", __func__, tid);
+			} 
+			break;
+		default:
+			break;
 	}
 }
 
@@ -502,6 +566,57 @@ static int tx_h_put_iv(struct nrc_trx_data *tx)
 }
 TXH(tx_h_put_iv, NL80211_IFTYPE_ALL);
 
+#if defined (CONFIG_CONVERT_NON_QOSDATA)
+bool ieee80211_is_data_data(__le16 fc)
+{
+	return (fc & cpu_to_le16(IEEE80211_FCTL_FTYPE | IEEE80211_FCTL_STYPE)) ==
+	        cpu_to_le16(IEEE80211_FTYPE_DATA | IEEE80211_STYPE_DATA);
+}
+
+void insert_qos_ctrl_field_in_skb(struct sk_buff *skb, unsigned int hdr_len) {
+
+	struct ieee80211_hdr *mh = (void *) skb->data;
+	bool is_multi = ((mh->addr1[0] & 0x01) != 0);
+	u16 fc = 0;
+	u16 qos_ctrl = 0;	//Set TID '0' in QoS Field when converting to qos data.
+
+	if (!skb) {
+		nrc_mac_dbg("invalid skb [%s, %d] ## \n", __func__, __LINE__);
+		BUG();
+	}
+
+	memcpy(&fc, &mh->frame_control, sizeof(mh->frame_control));
+	fc |= cpu_to_le16(IEEE80211_STYPE_QOS_DATA);
+	if (is_multi)
+		qos_ctrl |= cpu_to_le16(0x01 << 5);	// no ack
+
+	skb_push(skb, sizeof(qos_ctrl));
+	memmove(skb->data, skb->data + sizeof(qos_ctrl), hdr_len);
+
+	memcpy(skb->data + hdr_len, &qos_ctrl, sizeof(qos_ctrl));
+	memcpy(skb->data, &fc, sizeof(mh->frame_control));
+}
+
+/**
+ * tx_h_put_qos_control() - change non-QoS data frame to QoS data frame.
+ *
+ * @tx: points to the tx context.
+ *
+ */
+static int tx_h_put_qos_control(struct nrc_trx_data *tx)
+{
+	struct sk_buff *skb = tx->skb;
+	struct ieee80211_hdr *mh = (void *) skb->data;
+	u16 fc = mh->frame_control;
+
+	if (ieee80211_is_data_data(fc)) {
+		if (!(ieee80211_has_protected(fc) && sw_enc != WIM_ENCDEC_HW))
+			insert_qos_ctrl_field_in_skb(skb, ieee80211_hdrlen(fc));
+	}
+	return 0;
+}
+TXH(tx_h_put_qos_control, NL80211_IFTYPE_ALL);
+#endif /* if defined (CONFIG_CONVERT_NON_QOSDATA) */
 
 /* RX */
 
@@ -544,8 +659,86 @@ static void nrc_mac_rx_h_status(struct nrc *nw, struct sk_buff *skb)
 		nrc_stats_update(mh->addr2, fh->flags.rx.snr, fh->flags.rx.rssi);
 		//nrc_stats_print();
 	}
+	if(ieee80211_is_probe_resp(mh->frame_control))
+		if(nrc_stats_channel_noise_update(status->freq, fh->flags.rx.rssi - fh->flags.rx.snr) < 0)
+			nrc_mac_dbg("Channel noise update fail : freq(%d)", status->freq);
 
 }
+
+static int nrc_vendor_ann_event(struct nrc *nw,
+			const u8 *data, u16 len, enum nrc_vendor_event eid)
+{
+	struct ieee80211_hw *hw = nw->hw;
+	struct sk_buff *skb;
+
+	print_hex_dump(KERN_DEBUG, "event: ", DUMP_PREFIX_NONE,
+			16, 1, data, len, false);
+
+	skb = cfg80211_vendor_event_alloc(hw->wiphy, NULL, 255, eid, GFP_KERNEL);
+
+	if (!skb)
+		return -ENOMEM;
+
+	if (nla_put(skb, NRC_VENDOR_ATTR_DATA, len, data)) {
+		kfree_skb(skb);
+		return -EMSGSIZE;
+	}
+
+	cfg80211_vendor_event(skb, GFP_KERNEL);
+
+	return 0;
+}
+
+static int rx_h_vendor(struct nrc_trx_data *rx)
+{
+	struct ieee80211_hdr *mh = (void *) rx->skb->data;
+	__le16 fc = mh->frame_control;
+	u16 ies_offset = 0, len = 0;
+	const u8 *pos, *data, ann_subs[] = { NRC_SUBCMD_WOWLAN_PATTERN,
+			NRC_SUBCMD_ANNOUNCE1, NRC_SUBCMD_ANNOUNCE2, NRC_SUBCMD_ANNOUNCE3,
+			NRC_SUBCMD_ANNOUNCE4, NRC_SUBCMD_ANNOUNCE5, NRC_SUBCMD_REMOTECMD,
+			NRC_SUBCMD_ANNOUNCE6, NRC_SUBCMD_ANNOUNCE7, NRC_SUBCMD_ANNOUNCE8,
+			NRC_SUBCMD_ANNOUNCE9, NRC_SUBCMD_ANNOUNCE10, NRC_SUBCMD_ANNOUNCE11,
+			NRC_SUBCMD_ANNOUNCE12, NRC_SUBCMD_ANNOUNCE13, NRC_SUBCMD_ANNOUNCE14,
+			NRC_SUBCMD_ANNOUNCE15, NRC_SUBCMD_ANNOUNCE16, NRC_SUBCMD_ANNOUNCE17,
+			NRC_SUBCMD_ANNOUNCE18, NRC_SUBCMD_ANNOUNCE19, NRC_SUBCMD_ANNOUNCE20
+			};
+	const int OUIT_LEN = 4;
+	u8 i;
+
+	if (ieee80211_is_beacon(fc)) {
+		if (!disable_cqm && rx->nw->associated_vif) {
+			mod_timer(&rx->nw->bcn_mon_timer,
+				jiffies + msecs_to_jiffies(rx->nw->beacon_timeout));
+		}
+
+		ies_offset = offsetof(struct ieee80211_mgmt, u.beacon.variable);
+
+	} else if (ieee80211_is_probe_req(fc)) {
+		ies_offset = offsetof(struct ieee80211_mgmt, u.probe_req.variable);
+	} else if (ieee80211_is_probe_resp(fc)) {
+		ies_offset = offsetof(struct ieee80211_mgmt, u.probe_resp.variable);
+	} else if (ieee80211_is_assoc_req(fc)) {
+		ies_offset = offsetof(struct ieee80211_mgmt, u.assoc_req.variable);
+	}
+
+	for (i = 0; i < ARRAY_SIZE(ann_subs); i++) {
+		pos = cfg80211_find_vendor_ie(
+			VENDOR_OUI, ann_subs[i],
+			rx->skb->data + ies_offset,
+			rx->skb->len - ies_offset);
+
+		if (pos) {
+			len = *(pos + 1);
+			data = pos + 2 /*ID(1)+LEN(1)*/ + OUIT_LEN;
+			len -= OUIT_LEN;
+			nrc_vendor_ann_event(rx->nw, data, len, ann_subs[i]);
+		}
+	}
+	return 0;
+}
+RXH(rx_h_vendor, NL80211_IFTYPE_ALL);
+
 
 static void nrc_rx_handler(void *data, u8 *mac, struct ieee80211_vif *vif)
 {
@@ -556,6 +749,14 @@ static void nrc_rx_handler(void *data, u8 *mac, struct ieee80211_vif *vif)
 	int res = 0;
 
 	rcu_read_lock();
+
+	if (ieee80211_is_probe_req(mh->frame_control) ||
+		ieee80211_is_probe_resp(mh->frame_control) ||
+		ieee80211_is_assoc_req(mh->frame_control)) {
+		res = rx_h_vendor(rx);
+		if (res < 0)
+			goto rxh_out;
+	}
 	sta = ieee80211_find_all_sta(vif, mh->addr2);
 
 #if defined(CONFIG_SUPPORT_BEACON_BYPASS)
@@ -634,10 +835,16 @@ int nrc_mac_rx(struct nrc *nw, struct sk_buff *skb)
 				     nrc_rx_handler, &rx);
 #endif
 
-	if (nw->scan_mode == NRC_SCAN_MODE_ACTIVE_SCANNING &&
-		ieee80211_is_beacon(fc)) {
-		dev_kfree_skb(skb);
-		return 0;
+	/**
+	 * When associated, the scan results only include probe responses.
+	 */
+	if (nw->scan_mode == NRC_SCAN_MODE_ACTIVE_SCANNING) {
+		if (nw->associated_vif != NULL &&
+			nw->associated_vif->type == NL80211_IFTYPE_STATION &&
+			ieee80211_is_beacon(fc)) {
+			dev_kfree_skb(skb);
+			return 0;
+		}
 	}
 
 	diff = ktime_to_us(ktime_get_real()) - now;
@@ -653,11 +860,30 @@ int nrc_mac_rx(struct nrc *nw, struct sk_buff *skb)
 			}
 		}
 
-		if (ieee80211_is_assoc_req(mh->frame_control) ||
-			ieee80211_is_reassoc_req(mh->frame_control)) {
+		if ((ieee80211_is_assoc_req(mh->frame_control) ||
+			ieee80211_is_reassoc_req(mh->frame_control)) &&
+			rx.sta) {
 			struct nrc_sta *i_sta = to_i_sta(rx.sta);
 			struct ieee80211_mgmt *mgmt = (struct ieee80211_mgmt *)skb->data;
-			i_sta->cap.listen_interval = mgmt->u.assoc_req.listen_interval;
+			i_sta->listen_interval = mgmt->u.assoc_req.listen_interval;
+		}
+
+		/* Modified assoc issue after STA OFF/ON (connection without deauth) */
+		if (ieee80211_is_auth(mh->frame_control) && rx.sta && rx.vif && rx.vif->type == NL80211_IFTYPE_AP) {
+			struct nrc_sta *i_sta = to_i_sta(rx.sta);
+			if(i_sta && i_sta->state > IEEE80211_STA_NOTEXIST){
+				struct ieee80211_mgmt *mgmt = (struct ieee80211_mgmt *)skb->data;
+				struct sk_buff *skb_deauth;
+				/* Pretend to receive a deauth from @sta */
+				skb_deauth = ieee80211_deauth_get(nw->hw, mgmt->bssid, mgmt->sa, mgmt->bssid, WLAN_REASON_DEAUTH_LEAVING, NULL, false);
+				if (!skb_deauth) {
+					nrc_dbg(NRC_DBG_STATE, "%s Fail to alloc skb", __func__);
+					return 0;
+				}
+				nrc_mac_dbg("%s: %pM connected, but auth received. send to kernel after convert auth -> deauth.", __func__, mgmt->sa);
+				ieee80211_rx_irqsafe(nw->hw, skb_deauth);
+				return 0;
+			}
 		}
 
 #if NRC_DBG_PRINT_ARP_FRAME
@@ -685,6 +911,7 @@ int nrc_mac_rx(struct nrc *nw, struct sk_buff *skb)
 				mod_timer(&nw->dynamic_ps_timer,
 					jiffies + msecs_to_jiffies(nw->hw->conf.dynamic_ps_timeout));
 			}
+		} else if (ieee80211_hw_check(nw->hw, SUPPORTS_PS)) {
 		} else {
 			if (nw->invoke_beacon_loss) {
 				nw->invoke_beacon_loss = false;
@@ -710,10 +937,19 @@ static int rx_h_decrypt(struct nrc_trx_data *rx)
 	struct nrc *nw = rx->nw;
 	struct ieee80211_rx_status *status;
 	struct ieee80211_key_conf *key;
-	struct nrc_sta *i_sta = to_i_sta(rx->sta);
-	struct nrc_vif *i_vif = to_i_vif(rx->vif);
-	int vif_id = i_vif->index;
-	__le16 fc = mh->frame_control;
+	struct nrc_sta *i_sta;
+	struct nrc_vif *i_vif;
+	int vif_id;
+	__le16 fc;
+
+	if( !rx->sta ){
+		return 0;
+	}
+
+	i_sta = to_i_sta(rx->sta);
+	i_vif = to_i_vif(rx->vif);
+	vif_id = i_vif->index;
+	fc = mh->frame_control;
 
 	/* not proteced frame, just skip */
 	if (!ieee80211_has_protected(fc))
@@ -795,75 +1031,6 @@ static int rx_h_decrypt(struct nrc_trx_data *rx)
 }
 RXH(rx_h_decrypt, NL80211_IFTYPE_ALL);
 
-static int nrc_vendor_ann_event(struct nrc *nw,
-			const u8 *data, u16 len, enum nrc_vendor_event eid)
-{
-	struct ieee80211_hw *hw = nw->hw;
-	struct sk_buff *skb;
-
-	print_hex_dump(KERN_DEBUG, "event: ", DUMP_PREFIX_NONE,
-			16, 1, data, len, false);
-
-	skb = cfg80211_vendor_event_alloc(hw->wiphy,
-			NULL, 255, eid,
-			GFP_KERNEL);
-
-	if (!skb)
-		return -ENOMEM;
-
-	if (nla_put(skb, NRC_VENDOR_ATTR_DATA,
-		len, data)) {
-		kfree_skb(skb);
-		return -EMSGSIZE;
-	}
-
-	cfg80211_vendor_event(skb, GFP_KERNEL);
-
-	return 0;
-}
-
-static int rx_h_vendor(struct nrc_trx_data *rx)
-{
-	struct ieee80211_hdr *mh = (void *) rx->skb->data;
-	__le16 fc = mh->frame_control;
-	u16 ies_offset, len;
-	const u8 *pos, *data, ann_subs[] = { NRC_SUBCMD_WOWLAN_PATTERN,
-			NRC_SUBCMD_ANNOUNCE1, NRC_SUBCMD_ANNOUNCE2,
-			NRC_SUBCMD_ANNOUNCE3, NRC_SUBCMD_ANNOUNCE4,
-			NRC_SUBCMD_ANNOUNCE5, NRC_SUBCMD_REMOTECMD };
-	const int OUIT_LEN = 4;
-	u8 i;
-
-	if (!ieee80211_is_beacon(fc))
-		return 0;
-	else {
-		if (!disable_cqm && rx->nw->associated_vif) {
-			mod_timer(&rx->nw->bcn_mon_timer,
-				jiffies + msecs_to_jiffies(rx->nw->beacon_timeout));
-		}
-	}
-
-	ies_offset = offsetof(struct ieee80211_mgmt,
-			u.beacon.variable);
-
-	for (i = 0; i < ARRAY_SIZE(ann_subs); i++) {
-		pos = cfg80211_find_vendor_ie(
-			OUI_IEEE_REGISTRATION_AUTHORITY, ann_subs[i],
-			rx->skb->data + ies_offset,
-			rx->skb->len - ies_offset);
-
-		if (pos) {
-			len = *(pos + 1);
-			data = pos + 2 /*ID(1)+LEN(1)*/ + OUIT_LEN;
-			len -= OUIT_LEN;
-			nrc_vendor_ann_event(rx->nw, data, len, ann_subs[i]);
-		}
-	}
-	return 0;
-}
-RXH(rx_h_vendor, NL80211_IFTYPE_ALL);
-
-
 #if defined (CONFIG_SUPPORT_IBSS)
 extern u64 current_bssid_beacon_timestamp;
 static int rx_h_ibss_get_bssid_tsf(struct nrc_trx_data *rx)
@@ -903,6 +1070,11 @@ static int rx_h_debug_print(struct nrc_trx_data *rx)
 
 	if (!rx) {
 		nrc_mac_dbg("[%s] rx is NULL", __func__);
+		return 0;
+	}
+
+	if(!rx->sta){
+		nrc_mac_dbg("[%s] rx->sta is NULL", __func__);
 		return 0;
 	}
 

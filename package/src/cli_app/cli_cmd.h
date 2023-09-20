@@ -45,7 +45,7 @@ typedef struct nrc_cmd {
 	const char *desc;
 	const char *usage;
 	const char *key_list;
-	const char subListExist;
+	int flag;
 } cmd_tbl_t;
 
 enum cmd_list_type {
@@ -70,5 +70,7 @@ enum umac_info_type {
 };
 
 cmd_tbl_t * get_cmd_list(enum cmd_list_type type, int *list_size, int *list_depth);
+int run_shell_cmd(cmd_tbl_t *t, int argc, char *argv[], const char *param_str, char *resp_buf, int resp_buf_len );
+int run_driver_cmd(cmd_tbl_t *t, int argc, char *argv[], const char *param_str, char *resp_buf, int resp_buf_len );
 
 #endif /* _CLI_CMD_H_ */

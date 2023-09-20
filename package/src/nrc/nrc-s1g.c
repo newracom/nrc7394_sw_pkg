@@ -5,14 +5,15 @@
 static char s1g_alpha2[3] = "US";			//default country
 
 enum {
-	JP = 0,
+	US = 0,
+	JP,
+	K0,
 	K1,
 	TW,
-	US,
 	EU,
 	CN,
 	NZ,
-	AU,		//7  MAX_BD_COUNTRY_CODE
+	AU,
 	K2,
 	MAX_COUNTRY_CODE
 };

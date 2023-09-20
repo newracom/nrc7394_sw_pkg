@@ -120,6 +120,10 @@ int bss_max_idle;
 module_param(bss_max_idle, int, 0600);
 MODULE_PARM_DESC(bss_max_idle, "BSS Max Idle");
 
+int bss_max_idle_vif1;
+module_param(bss_max_idle_vif1, int, 0600);
+MODULE_PARM_DESC(bss_max_idle_vif1, "BSS Max Idle VIF1");
+
 /**
  * bss_max_idle_usf_format
  */
@@ -218,11 +222,13 @@ module_param(nullfunc_enable, bool, S_IRUSR | S_IWUSR);
 MODULE_PARM_DESC(nullfunc_enable, "Enable null func on mac80211");
 
 /**
- * Set up automatic TX BA session on connection and QoS data Tx
+ * Set up AMPDU mode (0: AMPDU disabled 1: AMPDU enabled (manual) 2: AMPDU enabled (auto))
+  manual: manually enable aggregation via CLI
+  auto : automatically enable aggregation via ba session when first QoS data is transmitted after connection
  */
-bool auto_ba = true;
-module_param(auto_ba, bool, 0600);
-MODULE_PARM_DESC(auto_ba, "Enable auto ba session setup on connection / QoS data Tx");
+int ampdu_mode = NRC_AMPDU_AUTO;
+module_param(ampdu_mode, int, 0600);
+MODULE_PARM_DESC(ampdu_mode, "Set AMPDU mode");
 
 /**
  * Encryption/Decryption type for PTK/GTK (0: HW, 1: SW, 2: HW PTK, SW GTK)
@@ -239,11 +245,11 @@ module_param(signal_monitor, bool, 0600);
 MODULE_PARM_DESC(signal_monitor, "Enable SIGNAL(RSSI/SNR) Monitor");
 
 /**
- * Set configuration of KR USN
+ * Set configuration of KR Band
  */
-bool enable_usn = false;
-module_param(enable_usn, bool, 0600);
-MODULE_PARM_DESC(enable_usn, "Use configuration of KR USN (Same ac between data and beacon)");
+int kr_band = -1;
+module_param(kr_band, int, 0600);
+MODULE_PARM_DESC(kr_band, "Specify KR band (KR USN1(1) or KR USN5(2))");
 
 /**
  * Debug Level All
@@ -306,12 +312,13 @@ MODULE_PARM_DESC(power_save_gpio, "gpio for power save");
 int beacon_loss_count = 7;
 module_param(beacon_loss_count, int, 0600);
 MODULE_PARM_DESC(beacon_loss_count, "Number of beacon intervals before we decide beacon was lost");
+
 /**
- * Set up Halow Certification
+ * Ignore listen interval value while comparing it with bss max idle on AP
  */
-bool halow_cert = false;
-module_param(halow_cert, bool, 0600);
-MODULE_PARM_DESC(halow_cert, "Enable for Halow Certification");
+bool ignore_listen_interval = false;
+module_param(ignore_listen_interval, bool, 0600);
+MODULE_PARM_DESC(ignore_listen_interval, "Ignore listen interval value while comparing it with bss max idle on AP");
 
 static bool has_macaddr_param(uint8_t *dev_mac)
 {
@@ -442,12 +449,11 @@ static void nrc_on_fw_ready(struct sk_buff *skb, struct nrc *nw)
 						ready->v.cap.cap);
 	nrc_dbg(NRC_DBG_HIF, "  -- cap_li: %d, %d",
 						ready->v.cap.listen_interval, listen_interval);
-	nrc_dbg(NRC_DBG_HIF, "  -- cap_idle: %d, %d",
-						ready->v.cap.bss_max_idle, bss_max_idle);
+	nrc_dbg(NRC_DBG_HIF, "  -- cap_idle: %d, %d, %d",
+						ready->v.cap.bss_max_idle, bss_max_idle, bss_max_idle_vif1);
 
 	nw->cap.cap_mask = ready->v.cap.cap;
 	nw->cap.listen_interval = ready->v.cap.listen_interval;
-	nw->cap.bss_max_idle = ready->v.cap.bss_max_idle;
 	nw->cap.max_vif = ready->v.cap.max_vif;
 
 	if (has_macaddr_param(nw->mac_addr[0].addr)) {
@@ -476,6 +482,13 @@ static void nrc_on_fw_ready(struct sk_buff *skb, struct nrc *nw)
 		nrc_dbg(NRC_DBG_HIF, "  -- cap_mask[%d]: 0x%llx", i,
 							nw->cap.vif_caps[i].cap_mask);
 	}
+
+	if (nw->chip_id == 0x7394 && ready->v.xtal_status != 1) {
+		dev_err(nw->dev,
+			"[CAUTION] Need to check the status of external 32KHz XTAL (%d)\n",
+			ready->v.xtal_status);
+	}
+
 	/* Override with insmod parameters */
 	if (listen_interval) {
 		hw->max_listen_interval = listen_interval;
@@ -485,16 +498,28 @@ static void nrc_on_fw_ready(struct sk_buff *skb, struct nrc *nw)
 	if (nrc_mac_is_s1g(hw->priv) && bss_max_idle_usf_format) {
 		/* bss_max_idle: in unit of 1000 TUs (1024ms = 1.024 seconds) */
 		if (bss_max_idle > 16383 * 10000 || bss_max_idle <= 0) {
-			nw->cap.bss_max_idle = 0;
+			nw->cap.vif_bss_max_idle[0] = 0;
 		} else {
 			/* Convert in USF Format (Value (14bit) * USF(2bit)) and save it */
-			nw->cap.bss_max_idle = convert_usf(bss_max_idle);
+			nw->cap.vif_bss_max_idle[0] = convert_usf(bss_max_idle);
+		}
+		/* bss_max_idle_vif1: in unit of 1000 TUs (1024ms = 1.024 seconds) */
+		if (bss_max_idle_vif1 > 16383 * 10000 || bss_max_idle_vif1 <= 0) {
+			nw->cap.vif_bss_max_idle[1] = 0;
+		} else {
+			/* Convert in USF Format (Value (14bit) * USF(2bit)) and save it */
+			nw->cap.vif_bss_max_idle[1] = convert_usf(bss_max_idle_vif1);
 		}
 	} else {
 		if (bss_max_idle > 65535 || bss_max_idle <= 0) {
-			nw->cap.bss_max_idle = 0;
+			nw->cap.vif_bss_max_idle[0] = 0;
 		} else {
-			nw->cap.bss_max_idle = bss_max_idle;
+			nw->cap.vif_bss_max_idle[0] = bss_max_idle;
+		}
+		if (bss_max_idle_vif1 > 65535 || bss_max_idle_vif1 <= 0) {
+			nw->cap.vif_bss_max_idle[1] = 0;
+		} else {
+			nw->cap.vif_bss_max_idle[1] = bss_max_idle_vif1;
 		}
 	}
 
@@ -518,6 +543,13 @@ int nrc_fw_start(struct nrc *nw)
 	p->reverse_scrambler = reverse_scrambler;
 	p->kern_ver = (NRC_TARGET_KERNEL_VERSION>>8)&0x0fff; // 12 bits for kernel version (4 for major, 8 for minor)
 	p->vendor_oui = VENDOR_OUI;
+	if (nw->chip_id == 0x7292) {
+		p->deepsleep_gpio_dir = TARGET_DEEP_SLEEP_GPIO_DIR_7292;
+	} else {
+		p->deepsleep_gpio_dir = TARGET_DEEP_SLEEP_GPIO_DIR_739X;
+	}
+	p->deepsleep_gpio_out = TARGET_DEEP_SLEEP_GPIO_OUT;
+	p->deepsleep_gpio_pullup = TARGET_DEEP_SLEEP_GPIO_PULLUP;
 	/* 0: HW PTK/GTK, 1: SW PTK/GTK, 2: HW PTK, SW GTK */
 	if(sw_enc < 0)
 		sw_enc = 0;
@@ -537,8 +569,13 @@ void nrc_set_bss_max_idle_offset(int value)
 
 void nrc_set_auto_ba(bool toggle)
 {
-	auto_ba = toggle;
-	nrc_dbg(NRC_DBG_MAC, "%s: Auto BA session feature %s", __func__, auto_ba ? "ON" : "OFF");
+	if (toggle)
+		ampdu_mode = NRC_AMPDU_AUTO;
+	else
+		ampdu_mode = NRC_AMPDU_MANUAL;
+
+	nrc_dbg(NRC_DBG_MAC, "%s: Auto BA session feature %s", __func__,
+		(ampdu_mode == NRC_AMPDU_AUTO)? "ON" : "OFF");
 }
 
 int nrc_nw_set_model_conf(struct nrc *nw, u16 chip_id)
@@ -562,12 +599,36 @@ int nrc_nw_set_model_conf(struct nrc *nw, u16 chip_id)
 			nw->wowlan_pattern_num = 2;
 			break;
 		default:
-			pr_err("Unknown Newracom IEEE80211 chipset %04x", nw->chip_id);
+			dev_err(nw->dev, "Unknown Newracom IEEE80211 chipset %04x", nw->chip_id);
 			BUG();
 	}
 
 	dev_info(nw->dev, "- HW_QUEUES: %d\n", nw->hw_queues);
 	dev_info(nw->dev, "- WoWLAN Pattern num: %d\n", nw->wowlan_pattern_num);
+
+	return 0;
+}
+
+/**
+ * The 27 countries in EU are referenced from
+ * https://european-union.europa.eu/principles-countries-history/country-profiles_en
+ */
+const char *const eu_countries_cc[] = {
+	"AT", "BE", "BG", "CY", "CZ", "DE",	"DK", "EE", "ES", "FI",
+	"FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "MT",
+	"NL", "PL", "PT", "RO", "SE", "SI", "SK", NULL
+};
+
+int country_match(const char *const cc[], const char *const country)
+{
+	int i;
+
+	if (country == NULL)
+		return 0;
+	for (i = 0; cc[i]; i++) {
+		if (cc[i][0] == country[0] && cc[i][1] == country[1])
+			return 1;
+	}
 
 	return 0;
 }
@@ -589,7 +650,7 @@ int nrc_nw_start(struct nrc *nw)
 	}
 
 #if defined(CONFIG_SUPPORT_BD)
-	ret = nrc_check_bd();
+	ret = nrc_check_bd(nw);
 	if (ret) {
 		dev_err(nw->dev, "Failed to nrc_check_bd\n");
 		return -EINVAL;
@@ -667,9 +728,9 @@ int nrc_nw_stop(struct nrc *nw)
 	}
 
 	nw->drv_state = NRC_DRV_CLOSING;
-
+#ifdef CONFIG_USE_TXQ
 	nrc_cleanup_txq_all(nw);
-
+#endif
 	nrc_exit_debugfs();
 
 	nrc_hif_stop(nw->hif);
@@ -707,7 +768,10 @@ struct nrc *nrc_nw_alloc(struct device *dev, struct nrc_hif_device *hdev)
 	nw->lb_count = lb_count;
 	nw->drv_state = NRC_DRV_INIT;
 
-	nw->vendor_skb = NULL;
+	nw->vendor_skb_beacon = NULL;
+	nw->vendor_skb_probe_req = NULL;
+	nw->vendor_skb_probe_rsp = NULL;
+	nw->vendor_skb_assoc_req = NULL;
 
 	nrc_stats_init();
 	nw->fw_priv = nrc_fw_init(nw);
@@ -733,10 +797,12 @@ struct nrc *nrc_nw_alloc(struct device *dev, struct nrc_hif_device *hdev)
 	INIT_DELAYED_WORK(&nw->roc_finish, nrc_mac_roc_finish);
 	INIT_DELAYED_WORK(&nw->rm_vendor_ie_wowlan_pattern, nrc_rm_vendor_ie_wowlan_pattern);
 
+#ifdef CONFIG_USE_TXQ
 #ifdef CONFIG_NEW_TASKLET_API
 	tasklet_setup(&nw->tx_tasklet, nrc_tx_tasklet);
 #else
 	tasklet_init(&nw->tx_tasklet, nrc_tx_tasklet, (unsigned long) nw);
+#endif
 #endif
 
 	if (!disable_cqm) {
@@ -780,8 +846,20 @@ void nrc_nw_free(struct nrc *nw)
 		destroy_workqueue(nw->ps_wq);
 	}
 
-	if (nw->vendor_skb) {
-		dev_kfree_skb_any(nw->vendor_skb);
+	if (nw->vendor_skb_beacon) {
+		dev_kfree_skb_any(nw->vendor_skb_beacon);
+	}
+
+	if (nw->vendor_skb_probe_req) {
+		dev_kfree_skb_any(nw->vendor_skb_probe_req);
+	}
+
+	if (nw->vendor_skb_probe_rsp) {
+		dev_kfree_skb_any(nw->vendor_skb_probe_rsp);
+	}
+
+	if (nw->vendor_skb_assoc_req) {
+		dev_kfree_skb_any(nw->vendor_skb_assoc_req);
 	}
 
 	nrc_stats_deinit();

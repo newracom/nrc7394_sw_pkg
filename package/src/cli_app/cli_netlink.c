@@ -63,6 +63,26 @@ int netlink_send_data_with_retry(char cmd_type, char* param, char* response, int
 	return 1;
 }
 
+static char netlink_set_attribute_type(char cmd_type)
+{
+	char ret = 0;
+	switch(cmd_type){
+		case NL_SHELL_RUN:
+		case NL_CLI_APP_GET_INFO:
+			ret = NL_SHELL_RUN_CMD;
+			break;
+		case NL_SHELL_RUN_RAW:
+			ret = NL_SHELL_RUN_CMD_RAW;
+			break;
+		case NL_CLI_APP_DRIVER:
+			ret = NL_CLI_APP_DRIVER_CMD;
+			break;
+		default:
+			ret = 0;
+	}
+	return ret;
+}
+
 int netlink_send_data(char cmd_type, char* param, char* response)
 {
 	char *pos;
@@ -175,8 +195,9 @@ int netlink_send_data(char cmd_type, char* param, char* response)
 
 	nl_na = (struct nlattr *) GENLMSG_DATA(&nl_request_msg);
 
-	if(cmd_type == NL_SHELL_RUN  || cmd_type == NL_CLI_APP_GET_INFO || cmd_type == NL_SHELL_RUN_RAW){
-		nl_na->nla_type = (cmd_type == NL_SHELL_RUN_RAW) ? NL_SHELL_RUN_CMD_RAW : NL_SHELL_RUN_CMD;
+	if(cmd_type == NL_SHELL_RUN  || cmd_type == NL_SHELL_RUN_RAW
+		|| cmd_type == NL_CLI_APP_GET_INFO || cmd_type == NL_CLI_APP_DRIVER){
+		nl_na->nla_type = netlink_set_attribute_type(cmd_type);
 		len = strlen(param)+ 1; // including '\0'
 		nl_na->nla_len =  len + NLA_HDRLEN; //Message length
 		memcpy(NLA_DATA(nl_na), param, len);
@@ -214,7 +235,8 @@ int netlink_send_data(char cmd_type, char* param, char* response)
 		return -1;
 	}
 
-	if(cmd_type == NL_SHELL_RUN  || cmd_type == NL_CLI_APP_GET_INFO || cmd_type == NL_SHELL_RUN_RAW){
+	if(cmd_type == NL_SHELL_RUN  || cmd_type == NL_SHELL_RUN_RAW
+		|| cmd_type == NL_CLI_APP_GET_INFO || cmd_type == NL_CLI_APP_DRIVER){
 		//Receive reply from kernel
 		nl_rxtx_length = recv(nl_fd, &nl_response_msg, sizeof(nl_response_msg), 0);
 

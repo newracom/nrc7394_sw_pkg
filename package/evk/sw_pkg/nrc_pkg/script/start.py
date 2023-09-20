@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import sys, os, time, subprocess, re
+import threading
 from mesh import *
 script_path = "/home/pi/nrc_pkg/script/"
 
@@ -69,16 +70,19 @@ legacy_ack_enable  = 0        # 0 (NDP ack mode) or 1 (legacy ack mode)
 # Beacon Bypass enable (STA only)
 #  If enabled, STA receives beacon frame from other APs even connected
 #  Recommend that STA only receives beacon frame from AP connected while connecting  (Default: disable)
-beacon_bypass_enable  = 0        # 0 (Receive beacon frame from only AP connected while connecting) or 1 (Receive beacon frame from all APs even while connecting)
+beacon_bypass_enable  = 0        # 0 (Receive beacon frame from only AP connected while connecting)
+                                 # 1 (Receive beacon frame from all APs even while connecting)
 #--------------------------------------------------------------------------------#
 # AMPDU (Aggregated MPDU)
-#  Enable AMPDU for full channel utilization and throughput enhancement
-ampdu_enable      = 1        # 0 (disable) or 1 (enable)
+#  Enable AMPDU for full channel utilization and throughput enhancement (Default: auto)
+#  disable(0): AMPDU is deactivated
+#   manual(1): AMPDU is activated and BA(Block ACK) session is made by manual
+#     auto(2): AMPDU is activated and BA(Block ACK) session is made automatically
+ampdu_enable      = 2        # 0 (disable) 1 (manual) 2 (auto)
 #--------------------------------------------------------------------------------#
-# 1M NDP (Block) ACK (AP Only)
-#  Enable 1M NDP ACK on 2/4MHz BW for robustness (default: 2M NDP ACK on 2/4MH BW)
-#  STA should follow, if enabled on AP
-#  Note: if enabled, max # of mpdu in ampdu is restricted to 8 (default: max 16)
+# 1M NDP (Block) ACK
+#  Enable 1M NDP ACK on 2/4MHz BW instead of 2M NDP ACK
+#  Note: if enabled, throughput can be decreased on high MCS
 ndp_ack_1m        = 0        # 0 (disable) or 1 (enable)
 #--------------------------------------------------------------------------------#
 # NDP Probe Request
@@ -95,22 +99,24 @@ relay_type        = 1        # 0 (wlan0: STA, wlan1: AP) 1 (wlan0: AP, wlan1: ST
 relay_nat         = 1        # 0 (not use NAT) 1 (use NAT - no need to add routing table)
 #--------------------------------------------------------------------------------#
 # Power Save (STA Only)
-#  4-types PS: (0)Always on (1)Modem_Sleep (2)Deep_Sleep(TIM) (3)Deep_Sleep(nonTIM
-#  Modem Sleep : turn off only RF while PS (Fast wake-up but less power save)
-#   Deep Sleep : turn off almost all power (Slow wake-up but much more power save)
+#  3-types PS: (0)Always on (2)Deep_Sleep(TIM) (3)Deep_Sleep(nonTIM)
 #     TIM Mode : check beacons during PS to receive BU from AP
 #  nonTIM Mode : Not check beacons during PS (just wake up by TX or EXT INT)
 power_save        = 0        # STA (power save type 0~3)
 ps_timeout        = '3s'     # STA (timeout before going to sleep) (min:1000ms)
 sleep_duration    = '3s'     # STA (sleep duration only for nonTIM deepsleep) (min:1000ms)
 listen_interval   = 1000     # STA (listen interval in BI unit) (max:65535)
+                             # Listen Interval time should be less than bss_max_idle time to avoid association reject
 #--------------------------------------------------------------------------------#
-# BSS MAX IDLE PERIOD (aka. keep alive) (AP Only)
-#  STA should follow (i.e STA should send any frame before period),if enabled on AP
-#  Period is in unit of 1000TU(1024ms, 1TU=1024us)
-#  Note: if disabled, AP removes STAs' info only with explicit disconnection like deauth
+# BSS MAX IDLE PERIOD (aka. keep alive)
+#  STA should follow (i.e STA should send any frame before period),Period is
+#  in unit of 1000TU(1024ms, 1TU=1024us)
+#  The AP selects the value of the STA as its preferred
+#  Can set a period for each STA(setted value from STA)
+#  Note: if disabled AP and STA, AP removes STAs' info only with explicit disconnection like deauth
 bss_max_idle_enable = 1      # 0 (disable) or 1 (enable)
-bss_max_idle        = 1800   # time interval (e.g. 1800: 1843.2 sec) (1 ~ 65535)
+bss_max_idle        = 1800   # vif0 time interval (e.g. 1800: 1843.2 sec) (1 ~ 163,830,000)
+bss_max_idle_vif1   = 1800   # vif1 time interval (e.g. 1800: 1843.2 sec) (1 ~ 163,830,000)
 #--------------------------------------------------------------------------------#
 #  SW encryption/decryption (default HW offload)
 sw_enc              = 0     # 0 (HW), 1 (SW), 2 (HYBRID: SW GTK HW PTK)
@@ -139,14 +145,15 @@ bitmap_encoding   = 1         # 0 (disable) or 1 (enable)
 # User scrambler reversely (NRC7292 only)
 reverse_scrambler = 1         # 0 (disable) or 1 (enable)
 #--------------------------------------------------------------------------------#
-# Use bridge setup with br0, wlan0, eth(n) (AP & STA)
-use_bridge_setup = 0         # 0 (not use bridge setup) or n (use bridge setup with eth(n-1))
-#--------------------------------------------------------------------------------#
-#  Enable for halow certification (default : 0)
-halow_enable      = 0        # 0 (disable) or 1 (enable)
+# Use bridge setup in br0 interface
+use_bridge_setup = 0         # AP & STA : 0 (not use bridge setup) or n (use bridge setup with eth(n-1))
+                             # RELAY : 0 (not use bridge setup) or 1 (use bridge setup with wlan0,wlan1)
 ##################################################################################
 
 def check(interface):
+    if int(use_bridge_setup) > 0:
+        os.system('sudo dhclient ' + interface +' -nw -v')
+
     ifconfig_cmd = "ifconfig " + interface
     ifconfig_process = subprocess.Popen(ifconfig_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     ifconfig_lines = ifconfig_process.communicate()[0]
@@ -212,7 +219,7 @@ def strSTA():
         usage_print()
 
 def checkCountry():
-    country_list = ["US","CN","JP","EU","TW", "AU", "NZ", "K1", "K2"]
+    country_list = ["US", "CN", "JP", "EU", "TW", "AU", "NZ", "K1", "K2"]
     if str(sys.argv[3]) in country_list:
         return
     else:
@@ -256,6 +263,11 @@ def checkIBSSUsage():
         if isIP(sys.argv[5]):
             static_ip = sys.argv[5]
 
+def checkParamValidity():
+    if strSTA() == 'STA' and int(power_save) > 0 and int(listen_interval) > 65535:
+        print("Max listen_interval is 65535!")
+        exit()
+
 def strSecurity():
     if int(sys.argv[2]) == 0:
         return 'OPEN'
@@ -295,6 +307,14 @@ def strOnOff(param):
         return 'ON'
     else:
         return 'OFF'
+
+def strAMPDUMode(param):
+    if int(param) == 0:
+        return 'OFF'
+    elif int(param) == 1:
+        return 'MANUAL'
+    else:
+        return 'AUTO'
 
 def strMeshMode():
     if int(sys.argv[4]) == 0:
@@ -337,15 +357,22 @@ def strBDName():
     if str(bd_name):
         return str(bd_name)
     else:
-        # 7292 naming rule : nrc + model + _bd.dat
-        # 7394 naming rule : nrc + model + [A|N]  + _bd.dat
-        if str(model) == "7393" or str(model) == "7394":
-            if int(epa) == 1:
-                return 'nrc' + str(model) + 'A' + '_bd.dat'
+        return 'nrc' + str(model) + '_bd.dat'
+
+def get_linux_kernel_release_version():
+    try:
+        with open('/proc/version', 'r') as version_file:
+            version_string = version_file.read()
+            match = re.search(r'Linux version (\d+)\.(\d+)\.(\d+)', version_string)
+            if match:
+                major = int(match.group(1))
+                minor = int(match.group(2))
+                patch = int(match.group(3))
+                return major, minor, patch
             else:
-                return 'nrc' + str(model) + 'N' + '_bd.dat'
-        else:
-            return 'nrc' + str(model) + '_bd.dat'
+                return None
+    except FileNotFoundError:
+        return None
 
 def argv_print():
     print("------------------------------")
@@ -354,7 +381,7 @@ def argv_print():
     print("Country          : " + str(sys.argv[3]))
     print("Security Mode    : " + strSecurity())
     print("BD Name          : " + strBDName())
-    print("AMPDU            : " + strOnOff(ampdu_enable))
+    print("AMPDU            : " + strAMPDUMode(ampdu_enable))
     if strSTA() == 'STA':
         print("CQM              : " + strOnOff(cqm_enable))
     if strSTA() == 'SNIFFER':
@@ -363,8 +390,12 @@ def argv_print():
     if int(fw_download) == 1:
         print("Download FW      : " + fw_name)
     print ("MAX TX Power     : " + str(max_txpwr) + " dBm")
-    if int(bss_max_idle_enable) == 1 and strSTA() == 'AP':
-        print("BSS MAX IDLE     : " + str(bss_max_idle))
+    if int(bss_max_idle_enable) == 1 :
+        if strSTA() == 'AP' or strSTA() == 'STA':
+            print("BSS MAX IDLE     : " + str(bss_max_idle))
+        elif strSTA() == 'RELAY':
+            print("VIF0 BSS MAX IDLE     : " + str(bss_max_idle))
+            print("VIF1 BSS MAX IDLE     : " + str(bss_max_idle_vif1))
     if strSTA() == 'STA':
         print("Power Save Type  : " + strPSType())
         if int(power_save) > 0:
@@ -375,8 +406,6 @@ def argv_print():
             print("Listen Interval  : " + str(listen_interval))
     if strSTA() == 'MESH':
         print("Mesh Mode        : " + strMeshMode())
-    print("HALOW            : " + strOnOff(halow_enable))
-
     print("------------------------------")
 
 def copyConf():
@@ -508,8 +537,8 @@ def setRelayParam():
 
 def setSnifferParam():
     # Re-define parameters for Sniffer mode
-    global sw_enc, ampdu_enable, bss_max_idle_enable, power_save, ndp_ack_1m, listen_interval, halow_enable
-    sw_enc=0; ampdu_enable=0; bss_max_idle_enable=0; power_save=0; ndp_ack_1m=0; listen_interval=0;halow_enable=0;
+    global sw_enc, ampdu_enable, bss_max_idle_enable, power_save, ndp_ack_1m, listen_interval
+    sw_enc=0; ampdu_enable=0; bss_max_idle_enable=0; power_save=0; ndp_ack_1m=0; listen_interval=0;
 
 def setModuleParam():
     # Set module parameters based on configuration
@@ -518,8 +547,8 @@ def setModuleParam():
     spi_arg = fw_arg = power_save_arg = sleep_duration_arg = \
     bss_max_idle_arg = ndp_preq_arg = ndp_ack_1m_arg = auto_ba_arg =\
     sw_enc_arg =  cqm_arg = listen_int_arg = drv_dbg_arg = credit_acbe_arg = \
-    sbi_arg = discard_deauth_arg = dbg_fc_arg = usn_arg = legacy_ack_arg = \
-    be_arg = rs_arg = beacon_bypass_arg = ps_gpio_arg = bd_name_arg = halow_arg = ""
+    sbi_arg = discard_deauth_arg = dbg_fc_arg = kr_band_arg = legacy_ack_arg = \
+    be_arg = rs_arg = beacon_bypass_arg = ps_gpio_arg = bd_name_arg = ""
 
     # Check ft232h_usb_spi
     if int(ft232h_usb_spi) > 0:
@@ -569,8 +598,10 @@ def setModuleParam():
     # module param for bss_max_idle (keep alive)
     # default: bss_max_idle(0: disabled)
     if int(bss_max_idle_enable) == 1:
-        if strSTA() == 'AP' or strSTA() == 'RELAY':
+        if strSTA() == 'AP' or strSTA() == 'STA':
             bss_max_idle_arg = " bss_max_idle=" + str(bss_max_idle)
+        elif strSTA() == 'RELAY':
+            bss_max_idle_arg = " bss_max_idle=" + str(bss_max_idle) + " bss_max_idle_vif1=" + str(bss_max_idle_vif1)
 
     # module param for NDP Prboe Request (NDP scan)
     # default: ndp_preq(0: disabled)
@@ -583,9 +614,9 @@ def setModuleParam():
         ndp_ack_1m_arg = " ndp_ack_1m=1"
 
     # module param for AMPDU
-    # default: auto_ba(1: enabled)
-    if int(ampdu_enable) == 0:
-        auto_ba_arg = " auto_ba=0"
+    # default: auto (0: disable 1: manual 2: auto)
+    if int(ampdu_enable) != 2:
+        auto_ba_arg = " ampdu_mode=" + str(ampdu_enable)
 
     # module param for SW-based ENC/DEC
     # default: sw_enc(0: HW-based ENC/DEC)
@@ -617,10 +648,12 @@ def setModuleParam():
     if int(listen_interval) > 0:
         listen_int_arg = " listen_interval=" + str(listen_interval)
 
-    # module param for KR USN (KR USN only)
-    # default: enable_usn(0: disabled)
+    # module param for KR Band (KR only)
+    # default: not defined(-1) (1:K1(KR USN1), 2:K2(KR USN5))
     if str(sys.argv[3]) == 'K1':
-        usn_arg = " enable_usn=1"
+        kr_band_arg = " kr_band=1"
+    elif str(sys.argv[3]) == 'K2':
+        kr_band_arg = " kr_band=2"
 
     # module param for flow control between host and target (test only)
     # default: credit_ac_be(40)
@@ -656,19 +689,22 @@ def setModuleParam():
     # default: bd.dat
     bd_name_arg = " bd_name=" + strBDName()
 
-    # module param for HALOW
-    # default: halow_cert(0: disabled)
-    if int(halow_enable) == 1:
-        halow_arg = " halow_cert=1"
-
     # module parameter setting while loading NRC driver
     # Default value is used if arg is not defined
-    module_param = spi_arg + fw_arg + \
+    module_param = ""
+
+    # From linux kernel version 5.16 or later, spi_arg is not used as a module param.
+    major, minor, patch = get_linux_kernel_release_version()
+
+    if major*1000+minor < 5016:
+        module_param = spi_arg
+
+    module_param += fw_arg + \
                  power_save_arg + sleep_duration_arg + bss_max_idle_arg + \
                  ndp_preq_arg + ndp_ack_1m_arg + auto_ba_arg + sw_enc_arg + \
                  cqm_arg + listen_int_arg + drv_dbg_arg + credit_acbe_arg + \
-                 sbi_arg + discard_deauth_arg + dbg_fc_arg + usn_arg + legacy_ack_arg + \
-                 be_arg + rs_arg + beacon_bypass_arg + ps_gpio_arg + bd_name_arg + halow_arg \
+                 sbi_arg + discard_deauth_arg + dbg_fc_arg + kr_band_arg + legacy_ack_arg + \
+                 be_arg + rs_arg + beacon_bypass_arg + ps_gpio_arg + bd_name_arg \
 
     return module_param
 
@@ -683,10 +719,11 @@ def run_common():
     os.system("sudo wpa_cli disable wlan1 2>/dev/null")
     os.system("sudo killall -9 wpa_supplicant 2>/dev/null")
     os.system("sudo killall -9 hostapd 2>/dev/null")
-    os.system("sudo killall -9 wireshark-gtk 2>/dev/null")
+    os.system("sudo killall -9 wireshark 2>/dev/null")
     os.system("sudo rmmod nrc 2>/dev/null")
     os.system("sudo rm "+script_path+"conf/temp_self_config.conf 2>/dev/null")
     os.system("sudo rm "+script_path+"conf/temp_hostapd_config.conf 2>/dev/null")
+    os.system("sudo sh -c '[ -e /proc/sys/kernel/sysrq ] && echo 0 > /proc/sys/kernel/sysrq'")
     stopNAT()
     stopDHCPCD()
     stopDNSMASQ()
@@ -750,12 +787,15 @@ def run_sta(interface):
     country = str(sys.argv[3])
     os.system("sudo killall -9 wpa_supplicant")
 
-    if strSTA() == 'STA' and int(use_bridge_setup) > 0:
+    if int(use_bridge_setup) > 0:
         bridge = '-b br0 '
-        eth = 'eth' + str(int(use_bridge_setup) - 1)
         print('[*] STA bridge configuration')
-        os.system('sudo brctl addbr br0; sudo ifconfig {e} up; sudo ifconfig wlan0 0.0.0.0; sudo ifconfig {e} 0.0.0.0; sudo iw wlan0 set 4addr on; sudo brctl addif br0 wlan0; sudo brctl addif br0 {e}; sudo ifconfig br0 up'.format(e=eth))
-        os.system('sudo brctl show')
+        if strSTA() == 'RELAY' :
+            os.system('sudo brctl addbr br0; sudo ifconfig wlan1 up; sudo ifconfig wlan1 0.0.0.0; sudo ifconfig wlan0 0.0.0.0; sudo iw {w} set 4addr on; sudo brctl addif br0 {w}; sudo ifconfig br0 up'.format(w=interface))
+        else :
+            eth = 'eth' + str(int(use_bridge_setup) - 1)
+            os.system('sudo brctl addbr br0; sudo ifconfig {e} up; sudo ifconfig {w} 0.0.0.0; sudo ifconfig {e} 0.0.0.0; sudo iw {w} set 4addr on; sudo brctl addif br0 {w}; sudo brctl addif br0 {e}; sudo ifconfig br0 up'.format(e=eth, w=interface))
+            os.system('sudo brctl show')
     else:
         bridge = ''
 
@@ -784,6 +824,8 @@ def run_sta(interface):
     time.sleep(3)
 
     print("[7] Connect and DHCP")
+    if int(use_bridge_setup) > 0:
+        interface = 'br0'
     ret = check(interface)
     while ret == '':
         print("Waiting for IP")
@@ -829,7 +871,7 @@ def run_ap(interface):
     elif strSecurity() == 'WPA-PBC' :
         conf_file+="/ap_halow_pbc.conf"
 
-    if strSTA() == 'AP' and int(use_bridge_setup) > 0:
+    if int(use_bridge_setup) > 0:
         # Remove '#' before wds_sta, bridge in conf file
         os.system("sed -i /wds_sta/,/bridge/s/##*// " + conf_path + conf_file)
     else:
@@ -870,10 +912,13 @@ def run_ap(interface):
             os.system("sudo hostapd_cli wps_pbc")
     time.sleep(3)
 
-    if strSTA() == 'AP' and int(use_bridge_setup) > 0:
+    if int(use_bridge_setup) > 0:
         print('[*] AP bridge configuration')
-        eth = 'eth' + str(int(use_bridge_setup) - 1)
-        os.system('sudo ifconfig {e} up; sudo ifconfig wlan0 0.0.0.0; sudo ifconfig {e} 0.0.0.0; sudo brctl addif br0 {e}; sudo ifconfig br0 up; sudo dhclient br0 -v '.format(e=eth))
+        if strSTA() == 'RELAY' :
+            os.system('sudo brctl addif br0 {w}'.format(w=interface))
+        else :
+            eth = 'eth' + str(int(use_bridge_setup) - 1)
+            os.system('sudo ifconfig {e} up; sudo ifconfig {w} 0.0.0.0; sudo ifconfig {e} 0.0.0.0; sudo brctl addif br0 {e}; sudo ifconfig br0 up; sudo dhclient br0 -v '.format(e=eth, w=interface))
         os.system('sudo brctl show')
         time.sleep(3)
 
@@ -901,9 +946,9 @@ def run_sniffer():
     time.sleep(3)
     print("[9] Start Sniffer")
     if strSnifferMode() == 'LOCAL':
-        os.system('sudo wireshark-gtk -i wlan0 -k -S -l &')
+        os.system('sudo wireshark -i wlan0 -k -S -l &')
     else:
-        os.system('gksudo wireshark-gtk -i wlan0 -k -S -l &')
+        os.system('lxqt-sudo wireshark -i wlan0 -k -S -l &')
     print("HaLow SNIFFER ready")
     print("--------------------------------------------------------------------")
 
@@ -919,6 +964,7 @@ if __name__ == '__main__':
     else:
         argv_print()
 
+    checkParamValidity()
     checkCountry()
 
     print("NRC " + strSTA() + " setting for HaLow...")
@@ -934,11 +980,13 @@ if __name__ == '__main__':
     elif strSTA() == 'RELAY':
         #start STA and then AP for Relay
         if int(relay_type) == 0:
-            run_sta('wlan0')
+            t = threading.Thread(target=run_sta, args=('wlan0',))
+            t.start()
             run_ap('wlan1')
         else:
             addWLANInterface('wlan1')
-            run_sta('wlan1')
+            t = threading.Thread(target=run_sta, args=('wlan1',))
+            t.start()
             run_ap('wlan0')
     elif strSTA() == 'MESH':
         if strMeshMode() == 'Mesh Portal':

@@ -16,6 +16,8 @@
 
 #include <net/mac80211.h>
 #include <linux/gpio.h>
+#include <linux/ip.h>
+#include <linux/tcp.h>
 
 #include "nrc-hif.h"
 #include "nrc-build-config.h"
@@ -110,13 +112,6 @@ void nrc_hif_free_skb(struct nrc *nw, struct sk_buff *skb)
 		/* Peel out our headers */
 		skb_pull(skb, nw->fwinfo.tx_head_size);
 
-		ieee80211_tx_status_irqsafe(nw->hw, skb);
-#ifdef CONFIG_USE_TXQ
-#if 0
-		nrc_kick_txq(nw->hw);
-#endif
-#endif
-
 		mh = (struct ieee80211_hdr *)skb->data;
 		if (ieee80211_is_assoc_resp(mh->frame_control) ||
 			ieee80211_is_reassoc_resp(mh->frame_control)) {
@@ -132,6 +127,14 @@ void nrc_hif_free_skb(struct nrc *nw, struct sk_buff *skb)
 				ieee80211_rx_irqsafe(nw->hw, skb_deauth);
 			}
 		}
+
+		ieee80211_tx_status_irqsafe(nw->hw, skb);
+#ifdef CONFIG_USE_TXQ
+#if 0
+		nrc_kick_txq(nw->hw);
+#endif
+#endif
+
 
 		return;
 	}
@@ -215,8 +218,12 @@ static void nrc_hif_work(struct work_struct *work)
 							skb_frame = NULL;
 						}
 					}
-				}	
+				}
 			} else { // Frame
+#ifndef CONFIG_USE_TXQ
+				if (nw->drv_state == NRC_DRV_PS)
+					break;
+#endif
 				/*
 				 * UDP packets can reach here continuously
 				 * without checking credit and then it makes infinite loop.
@@ -343,9 +350,10 @@ static void nrc_hif_ps_work(struct work_struct *work)
 }
 
 #if defined (CONFIG_TXQ_ORDER_CHANGE_NRC_DRV)
-/**************************************************************************//**
+/*******************************************************************************
 * FunctionName : is_tcp_ack
-* Description : Check if the skb is a tcp ack frame (the relative sequence number of tcp ack is 1 )
+* Description : Check if the skb is a tcp ack frame 
+*               (the relative sequence number of tcp ack is 1 )
 * Parameters : skb(socket buffer)
 * Returns : T/F (bool) T:TCP ACK, F:not TCP ACK
 *******************************************************************************/
@@ -361,20 +369,53 @@ bool is_tcp_ack(struct sk_buff *skb)
 	u8 *p;
 	p = (u8*)skb->data;
 	hif = (void*)p;
-	mhdr = (void*)(p+sizeof(struct hif)+ sizeof(struct frame_hdr));
 
-	if (ieee80211_is_data(mhdr->frame_control)){
-		if ((ip_header->protocol == IPPROTO_TCP) && (tcp_header->syn) && (tcp_header->ack)){
+	if (hif->type != HIF_TYPE_FRAME)
+		return false;
+
+	mhdr = (void*)(p + sizeof(struct hif) + sizeof(struct frame_hdr));
+
+	if (ieee80211_is_data(mhdr->frame_control)) {
+		if ((ip_header->protocol == IPPROTO_TCP) &&
+			(tcp_header->syn) && (tcp_header->ack)) {
 			raw_seq_num = ntohl (tcp_header->seq);
 		}
-		if ((ip_header->protocol == IPPROTO_TCP) && (tcp_header->ack) && ((ntohl(tcp_header->seq) - raw_seq_num) == 1)) {
+		if ((ip_header->protocol == IPPROTO_TCP) && (tcp_header->ack) &&
+			((ntohl(tcp_header->seq) - raw_seq_num) == 1)) {
 			return true;
 		}
 	}
+
 	return false;
 }
 
-/**************************************************************************//**
+/*******************************************************************************
+* FunctionName : is_mgmt
+* Description : Check if the skb is a management frame 
+* Parameters : skb(socket buffer)
+* Returns : T/F (bool) T:management frame, F:not management frame
+*******************************************************************************/
+bool is_mgmt(struct sk_buff *skb)
+{
+	struct hif *hif;
+	struct ieee80211_hdr *mhdr;
+
+	u8 *p;
+	p = (u8*)skb->data;
+	hif = (void*)p;
+
+	if (hif->type != HIF_TYPE_FRAME)
+		return false;
+
+	mhdr = (void*)(p + sizeof(struct hif) + sizeof(struct frame_hdr));
+
+	if (ieee80211_is_mgmt(mhdr->frame_control))
+		return true;
+
+	return false;
+}
+
+/*******************************************************************************
 * FunctionName : is_urgent_frame
 * Description : Check if the frame is urgent
 * Parameters : skb(socket buffer)
@@ -383,13 +424,17 @@ bool is_tcp_ack(struct sk_buff *skb)
 bool is_urgent_frame(struct sk_buff *skb)
 {
 	bool ret = false;
-	if (is_tcp_ack(skb)){
+	if (is_mgmt(skb))
 		ret = true;
-	}
+	/*
+	 * add other conditions for checking urgent frame. 
+	 * else if (is_tcp_ack(skb)) {...}
+	 */
 	return ret;
 }
-
-/**************************************************************************//**
+#if 0
+#error "If you enable this, consider new feature of 7393 that supports vif1"
+/*******************************************************************************
 * FunctionName : skb_change_ac
 * Description : force change the access category of the skb
 * Parameters : nw, skb, ac(aceess category want to change)
@@ -406,6 +451,10 @@ int skb_change_ac(struct nrc *nw, struct sk_buff *skb, uint8_t ac)
 	u8 *p;
 	p = (u8*)skb->data;
 	hif = (void*)p;
+	if (hif->type != HIF_TYPE_FRAME) {
+		return -1;
+	}
+
 	fh = (void*)(p+sizeof(struct hif));
 
 	if (ac>3)
@@ -420,6 +469,7 @@ int skb_change_ac(struct nrc *nw, struct sk_buff *skb, uint8_t ac)
 	return 0;
 }
 #endif
+#endif /* defined(CONFIG_TXQ_ORDER_CHANGE_NRC_DRV) */
 
 static int nrc_hif_enqueue_skb(struct nrc *nw, struct sk_buff *skb)
 {
@@ -441,20 +491,20 @@ static int nrc_hif_enqueue_skb(struct nrc *nw, struct sk_buff *skb)
 	}
 
 #if defined (CONFIG_TXQ_ORDER_CHANGE_NRC_DRV)
-#error "If you enable this, consider new feature of 7393 that supports vif1"
+	if (nw->drv_state == NRC_DRV_RUNNING && is_urgent_frame(skb)) {
+		/*
+		 * Case 1: enqueue to the head
+		 */
+		skb_queue_head(&hdev->queue[hif->type], skb);
 
-	if (is_urgent_frame(skb)) {
-		// Change AC to  -  0: AC_BK, 1: AC_BE, 2: AC_VI, 3: AC_VO
-		// return -1 when AC is not changed (4: Beacon , 5: GP)
-		if (skb_change_ac(nw, skb, 3) < 0) {
-			//Case 1: change nothing.
-			skb_queue_tail(&hdev->queue[hif->type], skb);
-		} else {
-			//Case 2: AC is changed and enqueue to the head
-			skb_queue_head(&hdev->queue[hif->type], skb);
-			//Case 3: AC is changed and enqueue to the tail
-			//skb_queue_tail(&hdev->queue[hif->type], skb);
-		}
+		/*
+		 * Case 2: change AC
+		 */
+		// skb_change_ac(nw, skb, 3);
+
+		/*
+		 * Case 3: change AC and enqueue to the tail
+		 */
 	} else {
 		if (hif->type == HIF_TYPE_LOOPBACK) {
 			skb_queue_tail(&hdev->queue[HIF_TYPE_WIM], skb);
@@ -471,7 +521,7 @@ static int nrc_hif_enqueue_skb(struct nrc *nw, struct sk_buff *skb)
 	} else {
 		skb_queue_tail(&hdev->queue[hif->type], skb);
 	}
-#endif
+#endif /* defined(CONFIG_TXQ_ORDER_CHANGE_NRC_DRV) */
 
 	if (nw->workqueue == NULL) {
 		return -1;
@@ -634,10 +684,7 @@ int nrc_xmit_injected_frame(struct nrc *nw,
 		hif->subtype = HIF_FRAME_SUB_DATA_BE;
 	} else if (ieee80211_is_mgmt(fc)) {
 		hif->subtype = HIF_FRAME_SUB_MGMT;
-		if(enable_usn)
-			fh->flags.tx.ac = (hif->vifindex == 0 ? 1 : (nw->hw_queues < 7 ? 5 : 7));
-		else
-			fh->flags.tx.ac = (hif->vifindex == 0 ? 3 : (nw->hw_queues < 7 ? 5 : 9));
+		fh->flags.tx.ac = (hif->vifindex == 0 ? 3 : (nw->hw_queues < 7 ? 5 : 9));
 	} else if (ieee80211_is_ctl(fc)) {
 		hif->subtype = HIF_FRAME_SUB_CTRL;
 		fh->flags.tx.ac = (hif->vifindex == 0 ? 3 : (nw->hw_queues < 7 ? 5 : 9));
@@ -769,13 +816,9 @@ int nrc_xmit_frame(struct nrc *nw, s8 vif_index, u16 aid,
 		/* temporarily use a BE hw_queue instead of the invalid value. */
 	} else if (ieee80211_is_mgmt(fc)) {
 		hif->subtype = HIF_FRAME_SUB_MGMT;
-		if(enable_usn)
-			fh->flags.tx.ac = (hif->vifindex == 0 ? 1 : (nw->hw_queues < 7 ? 5 : 7));
-		else
-			fh->flags.tx.ac = (hif->vifindex == 0 ? 3 : (nw->hw_queues < 7 ? 5 : 9));
+		fh->flags.tx.ac = (hif->vifindex == 0 ? 3 : (nw->hw_queues < 7 ? 5 : 9));
 	} else if (ieee80211_is_ctl(fc)) {
 		hif->subtype = HIF_FRAME_SUB_CTRL;
-		fh->flags.tx.ac = (hif->vifindex == 0 ? 3 : (nw->hw_queues < 7 ? 5 : 9));
 		fh->flags.tx.ac = (hif->vifindex == 0 ? 3 : (nw->hw_queues < 7 ? 5 : 9));
 	} else {
 		WARN_ON(true);

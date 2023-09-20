@@ -39,14 +39,6 @@
 #include "nrc-stats.h"
 #include "wim.h"
 
-#ifdef CONFIG_SPI_USE_DT
-/* spi->irq is real irq number, disable converting */
-#ifdef gpio_to_irq
-#undef gpio_to_irq
-#define gpio_to_irq
-#endif
-#endif
-
 static bool once;
 static bool cspi_suspend;
 static atomic_t irq_enabled;
@@ -87,7 +79,10 @@ static u16 remain_sta=0; /* number of STA remaining after clearing STA */
 #define SW_MAGIC_FOR_FW		(0x01210630)
 
 #define CSPI_EIRQ_MODE 0x05
-#define CSPI_EIRQ_ENABLE 0x1f /* enable tx/rx que */
+#define CSPI_EIRQ_Q_ENABLE	0x3
+#define CSPI_EIRQ_R_ENABLE	0x4
+#define CSPI_EIRQ_S_ENABLE	0x8
+#define CSPI_EIRQ_A_ENABLE 	(CSPI_EIRQ_Q_ENABLE|CSPI_EIRQ_R_ENABLE|CSPI_EIRQ_S_ENABLE)
 /*#define CSPI_EIRQ_ENABLE 0x16*/ /* disable tx/rx que */
 
 struct spi_sys_reg {
@@ -213,7 +208,7 @@ struct nrc_cspi_ops {
 int spi_test(struct nrc_hif_device *hdev);
 void spi_reset(struct nrc_hif_device *hdev);
 static int spi_update_status(struct spi_device *spi);
-static void c_spi_enable_irq(struct spi_device *spi, bool enable);
+static void c_spi_enable_irq(struct spi_device *spi, bool enable, u8 mask);
 static void c_spi_config(struct nrc_spi_priv *priv);;
 static void spi_config_fw(struct nrc_hif_device *dev);
 static void spi_enable_irq(struct nrc_hif_device *hdev);
@@ -260,6 +255,10 @@ static void get_sta_cnt(void *data,  struct ieee80211_sta *sta)
 		nrc_dbg(NRC_DBG_STATE, "%s Invalid argument", __func__);
 		return;
 	}
+
+	if(!ieee80211_find_sta(vif, sta->addr))
+		return;
+
 	++remain_sta;
 	nrc_dbg(NRC_DBG_STATE, "(AP Recovery) remaining sta_cnt:%d", remain_sta);
 }
@@ -276,14 +275,8 @@ static void prepare_deauth_sta(void *data,  struct ieee80211_sta *sta)
 		return;
 	}
 
-	/* (AP Recovery) Delete BSS Max Idle timer if exist */
-	if (i_sta->max_idle.idle_period > 0 &&
-		timer_pending(&i_sta->max_idle.timer)) {
-		nrc_dbg(NRC_DBG_STATE, "(AP Recovery) Delete STA(%pM)'s bss_max_idle timer(%u)",
-			sta->addr,i_sta->max_idle.idle_period);
-		del_timer_sync(&i_sta->max_idle.timer);
-		i_sta->max_idle.idle_period = 0;
-	}
+	if(!ieee80211_find_sta(vif, sta->addr))
+		return;
 
 	/* (AP Recovry) Pretend to receive a deauth from @sta */
 	skb = ieee80211_deauth_get(hw, vif->addr, sta->addr, vif->addr,
@@ -1100,7 +1093,7 @@ static int spi_update_status(struct spi_device *spi)
 	struct nrc_spi_priv *priv = hdev->priv;
 	struct spi_status_reg *status = &priv->hw.status;
 
-	int ret, ac, retry_cnt=0;
+	int ret, ac, i, is_relay, retry_cnt=0;
 	u32 rear;
 	u16 cleared_sta=0;
 
@@ -1120,7 +1113,7 @@ static int spi_update_status(struct spi_device *spi)
 
 	if ((priv->hw.sys.chip_id == 0x7393) ||
 		(priv->hw.sys.chip_id == 0x7394)) {
-		if (nw->drv_state == NRC_DRV_PS) c_spi_enable_irq(spi, true);
+		if (nw->drv_state == NRC_DRV_PS) c_spi_enable_irq(spi, true, CSPI_EIRQ_A_ENABLE);
 	}
 
 	SYNC_LOCK(hdev);
@@ -1137,9 +1130,29 @@ static int spi_update_status(struct spi_device *spi)
 		status->eirq.enable, status->msg[3]);
 #endif
 
+	/**
+	 * The EIRQ_STATUS_DEVICE_READY interrupt typically occurs when the target is
+	 * in a stopped state and does not overlap with EIRQ_STATUS_DEVICE_SLEEP.
+	 * On the other hand, the TARGET_NOTI_FAILED_TO_ENTER_PS interrupt occurs
+	 * when the target is functioning normally and can occur simultaneously
+	 * with credit/slot update interrupts.
+	 */
+	if ((status->eirq.status & EIRQ_STATUS_DEVICE_READY) &&
+		((status->msg[3] & 0xffff) == TARGET_NOTI_FAILED_TO_ENTER_PS)) {
+		nrc_ps_dbg("TARGET_NOTI_FAILED_TO_ENTER_PS");
+		atomic_set(&nw->fw_state, NRC_FW_ACTIVE);
+		nrc_hif_resume(hdev);
+		goto done;
+	}
+
 	/* update */
 	if (status->eirq.status & EIRQ_STATUS_DEVICE_SLEEP) {
-		goto update;
+		if ((status->msg[3] & 0xffff) == TARGET_NOTI_REQUEST_FW_DOWNLOAD) {
+			// for debugging - will be removed
+			nrc_dbg(NRC_DBG_COMMON, "!!!!!!-----drv_state:%d status:0x%02x mode:0x%02x enable:0x%02x 0x%08X",
+				nw->drv_state, status->eirq.status, status->eirq.mode,
+				status->eirq.enable, status->msg[3]);
+		}
 	}
 
 	/* 7292 : update, 7393/7394 : check WDT/FWDW and update */
@@ -1148,7 +1161,7 @@ static int spi_update_status(struct spi_device *spi)
 			if (status->msg[3] == TARGET_NOTI_WDT_EXPIRED) {
 				nrc_dbg(NRC_DBG_HIF, "WDT EXPIRE msg[3]=0x%X, eirq.status:0x%X",
 					status->msg[3], status->eirq.status);
-				c_spi_enable_irq(spi, true);
+				c_spi_enable_irq(spi, true, CSPI_EIRQ_A_ENABLE);
 				goto done;
 			}
 		}
@@ -1178,7 +1191,6 @@ static int spi_update_status(struct spi_device *spi)
 				/* Do NOT send other frames to target
 					while downloading FW to target_rom(7292/7394) or rom_cspi(7393)*/
 				atomic_set(&nw->fw_state, NRC_FW_LOADING);
-				nrc_hif_cleanup(hdev);
 				if (nrc_check_fw_file(nw)) {
 					nrc_download_fw(nw);
 					spi_enable_irq(hdev);
@@ -1205,58 +1217,69 @@ static int spi_update_status(struct spi_device *spi)
 
 			case TARGET_NOTI_FW_READY_FROM_WDT:
 				nrc_dbg(NRC_DBG_STATE, "TARGET_NOTI_FW_READY_FROM_WDT");
+				is_relay = (nw->vif[0] && nw->vif[1]);
 				spi_config_fw(hdev);
-				if (nw->vif[0]) {
-					if (nw->vif[0]->type == NL80211_IFTYPE_STATION) {
-						/*
-						* The target was rebooted due to watchdog.
-						* Then, driver always requests deauth for trying to reconnect.
-						*/
-						nrc_dbg(NRC_DBG_STATE, "Target (STA) is reset by WDT. Reconnect to AP");
-						mdelay(300);
-						nrc_mac_cancel_hw_scan(nw->hw, nw->vif[0]);
-						nw->drv_state = NRC_DRV_RUNNING;
-						ieee80211_connection_loss(nw->vif[0]);
-					} else if (nw->vif[0]->type == NL80211_IFTYPE_AP) {
-						ieee80211_iterate_stations_atomic(nw->hw, prepare_deauth_sta, (void *)nw->vif[0]);
-						nrc_dbg(NRC_DBG_STATE, "Target (AP) is reset by WDT. Now try to clear all STAs(total cnt:%d)", total_sta);
-						while (1) {
-							//wait for all the sta are locally deauthenticated by mac80211
-							if (!total_sta) break;
-							msleep(2000);
-							remain_sta = 0;
-							ieee80211_iterate_stations_atomic(nw->hw, get_sta_cnt, (void *)nw->vif[0]);
-							cleared_sta = total_sta -remain_sta;
-							if (!remain_sta) {
-								nrc_dbg(NRC_DBG_STATE, "Completed! (Remaining STA cnt:%d)", remain_sta);
+				for (i = 0; i < ARRAY_SIZE(nw->vif); i++) {
+					if (nw->vif[i]) {
+						if (nw->vif[i]->type == NL80211_IFTYPE_STATION) {
+							/*
+							* The target was rebooted due to watchdog.
+							* Then, driver always requests deauth for trying to reconnect.
+							*/
+							nrc_dbg(NRC_DBG_STATE, "STA(%d) : Reconnect to AP", i);
+							mdelay(300);
+							nrc_mac_cancel_hw_scan(nw->hw, nw->vif[i]);
+							ieee80211_connection_loss(nw->vif[i]);
+							if(!is_relay)
+								goto no_restart;
+						} else if (nw->vif[i]->type == NL80211_IFTYPE_AP) {
+							ieee80211_iterate_stations_atomic(nw->hw, prepare_deauth_sta, (void *)nw->vif[i]);
+							nrc_dbg(NRC_DBG_STATE, "AP(%d) : Now try to clear all STAs(total cnt:%d)", i, total_sta);
+							while (1) {
+								//wait for all the sta are locally deauthenticated by mac80211
+								if (!total_sta) break;
+								msleep(2000);
 								remain_sta = 0;
-								break;
+								ieee80211_iterate_stations_atomic(nw->hw, get_sta_cnt, (void *)nw->vif[i]);
+								cleared_sta = total_sta - remain_sta;
+								if (!remain_sta) {
+									nrc_dbg(NRC_DBG_STATE, "Completed! (Remaining STA cnt:%d)", remain_sta);
+									remain_sta = 0;
+									break;
+								}
+								retry_cnt++;
+								if (retry_cnt > 10) {
+									nrc_dbg(NRC_DBG_STATE, "10 Trials but fail to clear STAs on mac80211. Reset by Force (Remaining STA cnt:%d)",
+										remain_sta);
+									break;
+								}
+								nrc_dbg(NRC_DBG_STATE, "NOT completed yet. Try again. (cleared STA:%d vs remained STA:%d, retry_cnt:%d)",
+									cleared_sta, remain_sta, retry_cnt);
+								total_sta = 0;
+								ieee80211_iterate_stations_atomic(nw->hw, prepare_deauth_sta, (void *)nw->vif[i]);
 							}
-							retry_cnt++;
-							if (retry_cnt > 10) {
-								nrc_dbg(NRC_DBG_STATE, "10 Trials but fail to clear STAs on mac80211. Reset by Force (Remaining STA cnt:%d)",
-									remain_sta);
-								break;
-							}
-							nrc_dbg(NRC_DBG_STATE, "NOT completed yet. Try again. (cleared STA:%d vs remained STA:%d, retry_cnt:%d)",
-								cleared_sta, remain_sta, retry_cnt);
+							nrc_dbg(NRC_DBG_STATE, "All STAs are cleared.(retry_cnt:%d remaining sta cnt:%d)",
+								retry_cnt, nrc_stats_report_count());
 							total_sta = 0;
-							ieee80211_iterate_stations_atomic(nw->hw, prepare_deauth_sta, (void *)nw->vif[0]);
+							mdelay(5000); //it's for STA's reconnect by CQM
+							nrc_hif_cleanup(nw->hif);
+							nrc_mac_clean_txq(nw);
 						}
-						nrc_dbg(NRC_DBG_STATE, "All STAs are cleared. After 5 seconds, AP will be restarted (retry_cnt:%d remaining sta cnt:%d)",
-							 retry_cnt, nrc_stats_report_count());
-						total_sta = 0;
-						mdelay(5000); //it's for STA's reconnect by CQM
-						nrc_free_vif_index(nw, nw->vif[0]);
-						nrc_hif_cleanup(nw->hif);
-						nrc_mac_clean_txq(nw);
-						ieee80211_restart_hw(nw->hw);
-						nw->drv_state = NRC_DRV_RUNNING;
-					}
+						else if (nw->vif[i]->type == NL80211_IFTYPE_MESH_POINT) {
+							nrc_dbg(NRC_DBG_STATE, "mesh(%d) : Restart and do not repeering", i);
+						}
+						nrc_free_vif_index(nw, nw->vif[i]);
 #ifdef CONFIG_S1G_CHANNEL
-					init_s1g_channels(nw);
+						init_s1g_channels(nw);
 #endif /* #ifdef CONFIG_S1G_CHANNEL */
+					}
 				}
+
+				nrc_dbg(NRC_DBG_STATE, "Restart hw because target reset by WDT");
+				ieee80211_restart_hw(nw->hw);
+no_restart:
+				nw->drv_state = NRC_DRV_RUNNING;
+
 #if defined(CONFIG_SUPPORT_BD)
 				nrc_ps_dbg("[%s,L%d] load board data\n", __func__, __LINE__);
 				nrc_reg_notifier(nw->hw->wiphy, &request);
@@ -1268,6 +1291,10 @@ static int spi_update_status(struct spi_device *spi)
 				 * FW notified the target reboot is done.
 				 */
 				nrc_ps_dbg("TARGET_NOTI_FW_READY_FROM_PS\n");
+				if (fw_name == NULL) {
+					/* It's for CSPI RAM Mode (no FW download) */
+					spi_config_fw(hdev);
+				}
 				atomic_set(&nw->fw_state, NRC_FW_ACTIVE);
 				nrc_hif_resume(hdev);
 #if defined(CONFIG_SUPPORT_BD)
@@ -1277,19 +1304,20 @@ static int spi_update_status(struct spi_device *spi)
 #ifdef CONFIG_S1G_CHANNEL
 				init_s1g_channels(nw);
 #endif /* #ifdef CONFIG_S1G_CHANNEL */
-				if (!ieee80211_hw_check(nw->hw, SUPPORTS_DYNAMIC_PS)) {
+				if (ieee80211_hw_check(nw->hw, SUPPORTS_DYNAMIC_PS)) {
+					if (nw->drv_state >= NRC_DRV_RUNNING &&
+						nw->hw->conf.dynamic_ps_timeout > 0) {
+						mod_timer(&nw->dynamic_ps_timer,
+							jiffies + msecs_to_jiffies(nw->hw->conf.dynamic_ps_timeout));
+					}
+				} else if (ieee80211_hw_check(nw->hw, SUPPORTS_PS)) {
+				} else {
 					if (power_save >= NRC_PS_DEEPSLEEP_NONTIM) {
 						if (!atomic_read(&nw->d_deauth.delayed_deauth))
 							nrc_send_beacon_loss(nw);
 					}
 					else
 						nw->invoke_beacon_loss = true;
-				} else {
-					if (nw->drv_state >= NRC_DRV_RUNNING &&
-						nw->hw->conf.dynamic_ps_timeout > 0) {
-						mod_timer(&nw->dynamic_ps_timer,
-							jiffies + msecs_to_jiffies(nw->hw->conf.dynamic_ps_timeout));
-					}
 				}
 				if (!disable_cqm) {
 					mod_timer(&nw->bcn_mon_timer,
@@ -1316,7 +1344,14 @@ static int spi_update_status(struct spi_device *spi)
 					nrc_mac_bss_info_changed(nw->hw, &nw->d_deauth.v, &nw->d_deauth.b, 0x80309f);
 					for (i=0; i < IEEE80211_NUM_ACS; i++) {
 #ifdef CONFIG_SUPPORT_CHANNEL_INFO
-						nrc_mac_conf_tx(nw->hw, &nw->d_deauth.v, i, &nw->d_deauth.tqp[i]);
+#ifdef CONFIG_USE_LINK_ID
+						nrc_mac_conf_tx(nw->hw, &nw->d_deauth.v,
+						    nw->vif[nw->d_deauth.vif_index]->bss_conf.link_id,
+						    i, &nw->d_deauth.tqp[i]);
+#else
+						nrc_mac_conf_tx(nw->hw, &nw->d_deauth.v, i,
+						    &nw->d_deauth.tqp[i]);
+#endif /* ifdef CONFIG_USE_LINK_ID */
 #else
 						nrc_mac_conf_tx(nw->hw, i, &nw->d_deauth.tqp[i]);
 #endif
@@ -1364,7 +1399,7 @@ update:
 		priv->slot[TX_SLOT].tail = priv->slot[TX_SLOT].head = 0;
 	}
 
-	if (c_spi_num_slots(priv, RX_SLOT) > 32) {
+	if (c_spi_num_slots(priv, RX_SLOT) > 33) {
 		nrc_dbg(NRC_DBG_COMMON,"[%s,L%d]* RX_gap:%u head:%u vs tail:%u",
 			__func__, __LINE__, c_spi_num_slots(priv, RX_SLOT),
 			priv->slot[RX_SLOT].head, priv->slot[RX_SLOT].tail);
@@ -1539,9 +1574,13 @@ static int spi_wait_for_xmit(struct nrc_hif_device *hdev, struct sk_buff *skb)
 
 //	schedule_delayed_work(&priv->work, msecs_to_jiffies(5));
 
-	ret = wait_event_interruptible(priv->wait,
+	ret = wait_event_interruptible_timeout(priv->wait,
 			(c_spi_num_slots(priv, TX_SLOT) >= nr_slot) ||
-				kthread_should_stop());
+				kthread_should_stop(), 5*HZ);
+	if (ret == 0) { /* Timeout */
+		nrc_mac_dbg("spi xmit timeout\n");
+		return -1;
+	}
 	if (ret < 0)
 		return ret;
 
@@ -1629,7 +1668,7 @@ static int spi_poll_thread (void *data)
 {
 	struct nrc_hif_device *hdev = (struct nrc_hif_device *)data;
 	struct nrc_spi_priv *priv = (struct nrc_spi_priv *)hdev->priv;
-	int gpio = priv->spi->irq; /* CKLEE_TODO */
+	int gpio = spi_gpio_irq;
 	int interval = priv->polling_interval;
 	int ret;
 
@@ -1733,11 +1772,11 @@ static int spi_start(struct nrc_hif_device *dev)
 		}
 	} else if (spi->irq >= 0) {
 #ifdef CONFIG_SUPPORT_THREADED_IRQ
-		ret = request_threaded_irq(gpio_to_irq(spi->irq), NULL, spi_irq,
+		ret = request_threaded_irq(spi->irq, NULL, spi_irq,
 				IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
 				"nrc-spi-irq", dev);
 #else
-		ret = request_irq(gpio_to_irq(spi->irq), spi_irq,
+		ret = request_irq(spi->irq, spi_irq,
 				IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
 				"nrc-spi-irq", dev);
 #endif
@@ -1798,7 +1837,7 @@ static int spi_suspend(struct nrc_hif_device *dev)
 
 		if (spi->irq >= 0 && priv->polling_interval <= 0) {
 			/* Waits for any pending IRQ handlers for this interrupt to complete */
-			synchronize_irq(gpio_to_irq(spi->irq));
+			synchronize_irq(spi->irq);
 
 			/**
 			 * The SPI IRQ will be never disabled because it needs to be asserted
@@ -1810,7 +1849,9 @@ static int spi_suspend(struct nrc_hif_device *dev)
 		}
 
 		nrc_hif_flush_wq(dev);
+#if 0 /* It is called as needed in the interrupt handler. */
 		spi_config_fw(dev);
+#endif
 	} else {
 		cspi_suspend = true;
 	}
@@ -1868,7 +1909,7 @@ static int spi_resume(struct nrc_hif_device *dev)
 		if (dev->nw->wowlan_enabled && dev->nw->drv_state == NRC_DRV_PS) {
 			if (spi->irq >= 0 && priv->polling_interval <= 0) {
 				if (atomic_read(&irq_enabled) == 0) {
-					enable_irq(gpio_to_irq(spi->irq));
+					enable_irq(spi->irq);
 					atomic_set(&irq_enabled, 1);
 				}
 			}
@@ -1888,6 +1929,8 @@ static int spi_resume(struct nrc_hif_device *dev)
 	if (priv->kthread) {
 		kthread_unpark(priv->kthread); /* resume  kthread(spi_rx_skb) */
 	}
+
+	c_spi_enable_irq(spi, true, CSPI_EIRQ_S_ENABLE);
 
 	return 0;
 }
@@ -1925,8 +1968,8 @@ static int spi_stop(struct nrc_hif_device *hdev)
 
 	if (spi->irq >= 0) {
 		if (priv->polling_interval <= 0) {
-			synchronize_irq(gpio_to_irq(spi->irq));
-			free_irq(gpio_to_irq(spi->irq), hdev);
+			synchronize_irq(spi->irq);
+			free_irq(spi->irq, hdev);
 		}
 	}
 
@@ -2020,8 +2063,8 @@ static void spi_disable_irq(struct nrc_hif_device *hdev)
 
 	if (spi->irq >= 0) {
 		if (priv->polling_interval <= 0) {
-			//disable_irq(gpio_to_irq(spi->irq));
-			disable_irq_nosync(gpio_to_irq(spi->irq));
+			//disable_irq(spi->irq);
+			disable_irq_nosync(spi->irq);
 		}
 	}
 }
@@ -2033,14 +2076,14 @@ static void spi_enable_irq(struct nrc_hif_device *hdev)
 
 	if (spi->irq >= 0)
 		if (priv->polling_interval <= 0)
-			enable_irq(gpio_to_irq(spi->irq));
+			enable_irq(spi->irq);
 }
 
 static int spi_status_irq(struct nrc_hif_device *hdev)
 {
-	struct nrc_spi_priv *priv = hdev->priv;
-	struct spi_device *spi = priv->spi;
-	int irq = gpio_get_value(spi->irq); /* CKLEE_TODO */
+	//struct nrc_spi_priv *priv = hdev->priv;
+	//struct spi_device *spi = priv->spi;
+	int irq = gpio_get_value(spi_gpio_irq);
 
 	return irq;
 }
@@ -2095,9 +2138,11 @@ static int spi_suspend_rx_thread(struct nrc_hif_device *hdev)
 	struct nrc_spi_priv *priv = hdev->priv;
 	struct spi_device *spi = priv->spi;
 
+	c_spi_enable_irq(spi, false, CSPI_EIRQ_S_ENABLE); /* before issuing wim cmd */
+
 	if (spi->irq >= 0 && priv->polling_interval <= 0) {
 		if (atomic_read(&irq_enabled) == 1) {
-			disable_irq_nosync(gpio_to_irq(spi->irq));
+			disable_irq_nosync(spi->irq);
 			atomic_set(&irq_enabled, 0);
 		}
 	}
@@ -2113,7 +2158,7 @@ static int spi_resume_rx_thread(struct nrc_hif_device *hdev)
 
 	if (spi->irq >= 0 && priv->polling_interval <= 0) {
 		if (atomic_read(&irq_enabled) == 0) {
-			enable_irq(gpio_to_irq(spi->irq));
+			enable_irq(spi->irq);
 			atomic_set(&irq_enabled, 1);
 		}
 	}
@@ -2200,15 +2245,26 @@ static struct nrc_hif_ops spi_ops = {
 
 #define MAX_ENABLE_IRQ_RETRY	3
 #define MAX_ENABLE_IRQ_DELAY	5
-static void c_spi_enable_irq(struct spi_device *spi, bool enable)
+
+static void c_spi_enable_irq(struct spi_device *spi, bool enable, u8 mask)
 {
 	int ret = 0, retry = 0;
 	u8 m, e = 0x00;
 
 	if (enable) {
 		m = CSPI_EIRQ_MODE;
-		e = CSPI_EIRQ_ENABLE;
 	}
+
+	for (retry = 0; retry < MAX_ENABLE_IRQ_RETRY; retry ++) {
+		ret = c_spi_read_regs(spi, C_SPI_EIRQ_ENABLE, &e, sizeof(u8));
+		if (ret) {
+			nrc_dbg(NRC_DBG_HIF, "%s:retry0(%d)", __func__, retry + 1);
+			mdelay(MAX_ENABLE_IRQ_DELAY);
+			continue;
+		}
+	}
+
+	e = enable?(e | mask):(e & ~mask);
 
 	/* uCode Wake-up --> uCode Interrupt --> Host IRQ Handler --> HIF Enabled case */
 
@@ -2262,7 +2318,7 @@ static void c_spi_config(struct nrc_spi_priv *priv)
 	else if (sys->sw_id == SW_MAGIC_FOR_FW)
 		nrc_dbg(NRC_DBG_HIF, "Firmware");
 
-	c_spi_enable_irq(priv->spi, priv->spi->irq >= 0 ? true : false);
+	c_spi_enable_irq(priv->spi, priv->spi->irq >= 0 ? true : false, CSPI_EIRQ_A_ENABLE);
 }
 
 int nrc_cspi_gpio_alloc(struct spi_device *spi)
@@ -2295,8 +2351,8 @@ int nrc_cspi_gpio_alloc(struct spi_device *spi)
 #ifndef CONFIG_SPI_USE_DT /* spi->irq is real irq number, not gpio number by setting in dts */
 	if (spi->irq >= 0) {
 		/* Claim gpio used for irq */
-		if (gpio_request(spi->irq, "nrc-spi-irq") < 0) {
-			dev_err(&spi->dev, "[Error] gpio_reqeust() is failed");
+		if (gpio_request(spi_gpio_irq, "nrc-spi-irq") < 0) {
+			dev_err(&spi->dev, "[Error] gpio_reqeust() is failed (%d)", spi->irq);
 			goto err_free_all;
 		}
 		gpio_direction_input(spi->irq);
@@ -2344,7 +2400,7 @@ void nrc_cspi_gpio_free(struct spi_device *spi)
 
 #ifndef CONFIG_SPI_USE_DT /* spi->irq is real irq number, not gpio number by setting in dts */
 	if (spi->irq >= 0) {
-		gpio_free(spi->irq);
+		gpio_free(spi_gpio_irq);
 	}
 #endif
 }
@@ -2465,8 +2521,16 @@ err_cspi_free:
 	spi_set_drvdata(spi, NULL);
 	return ret;
 }
-
+/*
+ * The value returned by an spi driver's remove function is mostly ignored.
+ * So change the prototype of the remove function to return no value.
+ * (https://patchwork.kernel.org/project/spi-devel-general/patch/20220123175201.34839-6-u.kleine-koenig@pengutronix.de/)
+ */
+#if NRC_TARGET_KERNEL_VERSION < KERNEL_VERSION(5,18,0)
 static int nrc_cspi_remove(struct spi_device *spi)
+#else
+static void nrc_cspi_remove(struct spi_device *spi)
+#endif
 {
 	struct nrc *nw;
 	struct nrc_hif_device *hdev;
@@ -2487,8 +2551,9 @@ static int nrc_cspi_remove(struct spi_device *spi)
 	nrc_cspi_gpio_free(spi);
 
 	nrc_cspi_free(priv);
-
+#if NRC_TARGET_KERNEL_VERSION < KERNEL_VERSION(5,18,0)
 	return 0;
+#endif
 }
 
 static const struct spi_device_id nrc_spi_id[] = {
@@ -2524,7 +2589,7 @@ static struct spi_device *nrc_create_spi_device (void)
 	/* Apply module parameters */
 	bi.bus_num = spi_bus_num;
 	bi.chip_select = spi_cs_num;
-	bi.irq = spi_gpio_irq;
+	bi.irq = gpio_to_irq(spi_gpio_irq);
 	bi.max_speed_hz = hifspeed;
 
 	/* Find the spi master that our device is attached to */

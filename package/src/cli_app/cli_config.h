@@ -24,13 +24,17 @@
  */
 
 #ifndef _CLI_CONFIG_H_
+#define _CLI_CONFIG_H_
 
-const char* nrc_cli_app_ver=  "2.16.0";
-const char* app_name = "Newracom Command Line Application";
-const char* exit_msg = "Exit Newracom Command Line Application";
-const char* prompt_name = "NRC";
+#define NRC_CLI_APP_VER "2.21.4"
+#define NRC_CLI_APP_NAME "Newracom Command Line Application"
+#define NRC_CLI_APP_EXIT_MSG "Exit Newracom Command Line Application"
+#define NRC_CLI_APP_PROMPT "NRC"
 
 #define TRUE	1
 #define FALSE	0
+
+#define ENABLE_CLI_HISTORY 1
+#define CLI_BUFFER_CMD_NUM 50
 
 #endif /* _CLI_CONFIG_H_ */

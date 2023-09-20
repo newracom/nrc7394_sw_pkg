@@ -42,6 +42,8 @@
  * DOC: STA powersaving
  */
 
+#define BSS_MAX_IDLE_TIMER_PERIOD_MS	1000
+
 static int tx_h_sta_pm(struct nrc_trx_data *tx)
 {
 #ifdef CONFIG_SUPPORT_AFTER_KERNEL_3_0_36
@@ -92,7 +94,11 @@ static void nrc_mac_rx_fictitious_ps_poll_response(struct ieee80211_vif *vif)
 	struct ieee80211_rx_status *status;
 
 #if KERNEL_VERSION(4, 14, 17) <= NRC_TARGET_KERNEL_VERSION
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+	skb= ieee80211_nullfunc_get(nw->hw, vif, vif->bss_conf.link_id, false);
+#else
 	skb = ieee80211_nullfunc_get(nw->hw, vif, false);
+#endif
 #else
 	skb = ieee80211_nullfunc_get(nw->hw, vif);
 #endif
@@ -242,47 +248,45 @@ static int ieee80211_disconnect_sta(struct ieee80211_vif *vif,
 #if KERNEL_VERSION(4, 15, 0) > LINUX_VERSION_CODE
 static void ap_max_idle_period_expire(unsigned long data)
 {
-	struct nrc_sta *i_sta = (struct nrc_sta *) data;
+	struct nrc_vif *i_vif = (struct nrc_vif *) data;
 #else
 static void ap_max_idle_period_expire(struct timer_list *t)
 {
-	struct nrc_max_idle *idle = from_timer(idle,
-			t, timer);
-	struct nrc_sta *i_sta = container_of(idle,
-			struct nrc_sta, max_idle);
+	struct nrc_vif *i_vif = from_timer(i_vif, t, max_idle_timer);
 #endif
-	struct ieee80211_sta *sta = to_ieee80211_sta(i_sta);
-	struct ieee80211_vif *vif = i_sta->vif;
-	u16 max_limit_cnt = BSS_MAX_ILDE_DEAUTH_LIMIT_COUNT;
-	unsigned long period_jiffies = 0;
+	struct nrc_sta *i_sta = NULL, *tmp = NULL;
+	unsigned long flags;
+	u_int16_t sta_num = 0;
 
-#if 0
-	/* bss_max_idle period is below 10 (10240ms),triple limit count */
-	if (jiffies_to_msecs(i_sta->max_idle.idle_period) <= 10240) {
-		max_limit_cnt *= 3;
-	}
-#endif
-
-	++i_sta->max_idle.timeout_cnt;
-
-	if (i_sta->max_idle.timeout_cnt >= max_limit_cnt) {
-		/* Inactivity (BSS MAX IDLE) timeout =>  disconnect the station */
-		i_sta->max_idle.timeout_cnt = 0;
-		nrc_mac_dbg("[AP] keep-alive fail! Disconnecting inactive sta:%pM",sta->addr);
-		ieee80211_disconnect_sta(vif, sta);
-	} else {
-		/* Re-arm the timer
-			: apply backoff for avoiding frequent deauth */
-		period_jiffies = i_sta->max_idle.idle_period;
-#if 0
-		if (i_sta->max_idle.timeout_cnt) {
-			period_jiffies *= i_sta->max_idle.timeout_cnt ;
+	spin_lock_irqsave(&i_vif->preassoc_sta_lock, flags);
+	list_for_each_entry_safe(i_sta, tmp, &i_vif->preassoc_sta_list, list) {
+		sta_num++;
+		if(i_sta->max_idle.sta_idle_timer){
+			if(--i_sta->max_idle.sta_idle_timer == 0){
+				struct ieee80211_sta *sta = to_ieee80211_sta(i_sta);
+				struct ieee80211_vif *vif = i_sta->vif;
+				/* TO DO - BSS_MAX_ILDE_DEAUTH_LIMIT_COUNT -> 0 */
+				if (++i_sta->max_idle.timeout_cnt >= BSS_MAX_ILDE_DEAUTH_LIMIT_COUNT) {
+					/* Inactivity (BSS MAX IDLE) timeout =>  disconnect the station */
+					i_sta->max_idle.timeout_cnt = 0;
+					nrc_mac_dbg("[AP] keep-alive fail! Disconnecting inactive sta:%pM",sta->addr);
+					ieee80211_disconnect_sta(vif, sta);
+				} else {
+					/* Re-arm the timer
+						: apply backoff for avoiding frequent deauth */
+					i_sta->max_idle.sta_idle_timer = i_sta->max_idle.idle_period;
+					nrc_mac_dbg("[AP] keep-alive timeout!(cnt:%d vs limit:%d) Rearm timer(%u) STA(%pM)",
+						i_sta->max_idle.timeout_cnt , BSS_MAX_ILDE_DEAUTH_LIMIT_COUNT, i_sta->max_idle.sta_idle_timer, sta->addr);
+				}
+			}
 		}
-#endif
-		mod_timer(&i_sta->max_idle.timer, jiffies + period_jiffies);
-		nrc_mac_dbg("[AP] keep-alive timeout!(cnt:%d vs limit:%d) Rearm timer(%u) STA(%pM)",
-			i_sta->max_idle.timeout_cnt , max_limit_cnt, period_jiffies, sta->addr);
 	}
+	spin_unlock_irqrestore(&i_vif->preassoc_sta_lock, flags);
+
+	if(sta_num)
+		mod_timer(&i_vif->max_idle_timer, jiffies + msecs_to_jiffies(BSS_MAX_IDLE_TIMER_PERIOD_MS));
+	else
+		nrc_mac_dbg("%s: vif(%d) Stop AP bss_max_idle timer", __func__, i_vif->index);
 }
 
 
@@ -300,19 +304,17 @@ struct ieee80211_hdr_3addr_qos {
 #if KERNEL_VERSION(4, 15, 0) > NRC_TARGET_KERNEL_VERSION
 static void sta_max_idle_period_expire(unsigned long data)
 {
-	struct nrc_sta *i_sta = (struct nrc_sta *) data;
+	struct nrc_vif *i_vif = (struct nrc_vif *) data;
 #else
 static void sta_max_idle_period_expire(struct timer_list *t)
 {
-	struct nrc_max_idle *idle = from_timer(idle, t, timer);
-	struct nrc_sta *i_sta = container_of(idle,
-			struct nrc_sta, max_idle);
+	struct nrc_vif *i_vif = from_timer(i_vif, t, max_idle_timer);
 #endif
-	struct ieee80211_hw *hw = i_sta->nw->hw;
+	struct ieee80211_hw *hw = i_vif->nw->hw;
+	struct nrc_sta *i_sta = NULL, *tmp = NULL;
+	unsigned long flags;
 #ifdef CONFIG_SUPPORT_TX_CONTROL
-	struct ieee80211_tx_control control = {
-		.sta = to_ieee80211_sta(i_sta),
-	};
+	struct ieee80211_tx_control control;
 #endif
 #ifdef CONFIG_SUPPORT_CHANNEL_INFO
 	struct ieee80211_chanctx_conf *chanctx_conf;
@@ -323,10 +325,24 @@ static void sta_max_idle_period_expire(struct timer_list *t)
 	int band;
 	struct ieee80211_hdr_3addr_qos *qosnullfunc;
 
+	spin_lock_irqsave(&i_vif->preassoc_sta_lock, flags);
+	list_for_each_entry_safe(i_sta, tmp, &i_vif->preassoc_sta_list, list) break;
+	spin_unlock_irqrestore(&i_vif->preassoc_sta_lock, flags);
+
+	if(!i_sta){
+		nrc_mac_dbg("Fail to sending a keep-alive. Fail to find nrc_sta");
+		return;
+	}
+	control.sta = to_ieee80211_sta(i_sta);
+
 	nrc_mac_dbg("%s: sending a keep-alive (QoS Null Frame)", __func__);
 	/* Send a Null frame as a keep alive frame */
 #if KERNEL_VERSION(4, 14, 17) <= NRC_TARGET_KERNEL_VERSION
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+	skb= ieee80211_nullfunc_get(hw, i_sta->vif, i_sta->vif->bss_conf.link_id, false);
+#else
 	skb = ieee80211_nullfunc_get(hw, i_sta->vif, false);
+#endif
 #else
 	skb = ieee80211_nullfunc_get(hw, i_sta->vif);
 #endif
@@ -337,13 +353,17 @@ static void sta_max_idle_period_expire(struct timer_list *t)
 	skb_set_queue_mapping(skb, IEEE80211_AC_VO);
 
 #ifdef CONFIG_SUPPORT_CHANNEL_INFO
+#ifdef CONFIG_USE_BSS_CHAN_CONF
+	chanctx_conf = rcu_dereference(i_sta->vif->bss_conf.chanctx_conf);
+#else
 	chanctx_conf = rcu_dereference(i_sta->vif->chanctx_conf);
+#endif /* ifdef CONFIG_USE_BSS_CHAN_CONF */
 	if (!chanctx_conf)
 		goto drop;
 
 	band = chanctx_conf->def.chan->band;
 	if (!ieee80211_tx_prepare_skb(hw, i_sta->vif, skb, band, NULL))
-		goto drop;
+		goto done;
 #else
 	chanctx_conf = &hw->conf;
 	if (!chanctx_conf)
@@ -358,8 +378,9 @@ static void sta_max_idle_period_expire(struct timer_list *t)
 	nrc_mac_tx(hw, skb);
 #endif
 
+done:
 	/* Re-arm the timer */
-	mod_timer(&i_sta->max_idle.timer, jiffies + i_sta->max_idle.idle_period);
+	mod_timer(&i_vif->max_idle_timer, jiffies + i_sta->max_idle.idle_period);
 
 	return;
  drop:
@@ -382,13 +403,9 @@ static int sta_h_bss_max_idle_period(struct ieee80211_hw *hw,
 {
 	struct nrc_vif *i_vif = NULL;
 	struct nrc_sta *i_sta = NULL;
-	u32 timeout_ms, max_idle_period = 0;
+	u64 timeout_ms = 0; 
+	u32 max_idle_period = 0;
 	int idle_offset = 0;
-#if KERNEL_VERSION(4, 15, 0) > LINUX_VERSION_CODE
-	void (*bss_max_idle_period_expire)(unsigned long);
-#else
-	void (*bss_max_idle_period_expire)(struct timer_list *t);
-#endif
 
 	if (sta == NULL) {
 #if defined(CONFIG_SUPPORT_BEACON_BYPASS)
@@ -420,11 +437,11 @@ static int sta_h_bss_max_idle_period(struct ieee80211_hw *hw,
 (old_state == IEEE80211_STA_##old && new_state == IEEE80211_STA_##new)
 
 	if (state_changed(AUTHORIZED, ASSOC)) {
-		if (i_sta->max_idle.idle_period > 0 &&
-			timer_pending(&i_sta->max_idle.timer)) {
+		if(vif->type == NL80211_IFTYPE_STATION &&
+		  i_sta->max_idle.period > 0) {
 			nrc_mac_dbg("STA(%pM) deauth. Delete bss_max_idle timer(%u)",
 				sta->addr,i_sta->max_idle.idle_period);
-			del_timer_sync(&i_sta->max_idle.timer);
+			del_timer_sync(&i_vif->max_idle_timer);
 			i_sta->max_idle.idle_period = 0;
 		}
 		return 0;
@@ -434,23 +451,7 @@ static int sta_h_bss_max_idle_period(struct ieee80211_hw *hw,
 
 	/* old_state == ASSOC && new_state == ATHORIZED */
 
-	if (vif->type == NL80211_IFTYPE_STATION)
-		bss_max_idle_period_expire = sta_max_idle_period_expire;
-	else
-		bss_max_idle_period_expire = ap_max_idle_period_expire;
-#if KERNEL_VERSION(4, 15, 0) > LINUX_VERSION_CODE
-	setup_timer(&i_sta->max_idle.timer, bss_max_idle_period_expire,
-		    (unsigned long) i_sta);
-#else
-	timer_setup(&i_sta->max_idle.timer, bss_max_idle_period_expire,
-			0);
-#endif
-
-	if (vif->type == NL80211_IFTYPE_AP) {
-		max_idle_period = i_vif->max_idle_period;
-	} else {
-		max_idle_period = i_sta->max_idle.period;
-	}
+	max_idle_period = i_sta->max_idle.period;
 
 	if (max_idle_period == 0) {
 		nrc_mac_dbg("[%s] max_idle_period is 0",__func__);
@@ -493,7 +494,7 @@ static int sta_h_bss_max_idle_period(struct ieee80211_hw *hw,
 			idle_offset = bss_max_idle_offset;
 	}
 
-	timeout_ms = max_idle_period * 1024 + idle_offset;
+	timeout_ms = (u64)max_idle_period * 1024 + (u64)idle_offset;
 	if (timeout_ms < 924) {
 		/* min = bss_max_idle - margin (100ms) = 924ms for safty
 		(BSS_MAX_IDLE MIN = 1 * 1000TU =1024ms) */
@@ -501,12 +502,41 @@ static int sta_h_bss_max_idle_period(struct ieee80211_hw *hw,
 		timeout_ms = 924;
 	}
 
-	/* Save jiffies (msecs_to_jiffies(max_idle_period * 1024ms(1000TU) + idle_offset) */
-	i_sta->max_idle.idle_period = msecs_to_jiffies(timeout_ms);
-	nrc_mac_dbg("%s: associated[%pM] . Start bss_max_idle timer (%lu jiffies)",
-		__func__, sta->addr, i_sta->max_idle.idle_period);
+	if (vif->type == NL80211_IFTYPE_STATION) {
+		nrc_mac_dbg("%s: vif(%d) Start STA bss_max_idle timer", __func__, i_vif->index);
+#if KERNEL_VERSION(4, 15, 0) > LINUX_VERSION_CODE
+		setup_timer(&i_vif->max_idle_timer, sta_max_idle_period_expire,
+			    (unsigned long) i_vif);
+#else
+		timer_setup(&i_vif->max_idle_timer, sta_max_idle_period_expire,
+				0);
+#endif
 
-	mod_timer(&i_sta->max_idle.timer, jiffies + i_sta->max_idle.idle_period);
+		/* Save jiffies (msecs_to_jiffies(max_idle_period * 1024ms(1000TU) + idle_offset) */
+		if(timeout_ms > __UINT32_MAX__)
+			/* msecs_to_jiffies param max value is uint32 -> max send keep alive period is 124 days(max jiffies).*/
+			timeout_ms = __UINT32_MAX__;
+		
+		i_sta->max_idle.idle_period = msecs_to_jiffies(timeout_ms);
+		mod_timer(&i_vif->max_idle_timer, jiffies + i_sta->max_idle.idle_period);
+	} else {
+		if(!timer_pending(&i_vif->max_idle_timer)){
+			nrc_mac_dbg("%s: vif(%d) Start AP bss_max_idle timer", __func__, i_vif->index);
+#if KERNEL_VERSION(4, 15, 0) > LINUX_VERSION_CODE
+			setup_timer(&i_vif->max_idle_timer, ap_max_idle_period_expire,
+					(unsigned long) i_vif);
+#else
+			timer_setup(&i_vif->max_idle_timer, ap_max_idle_period_expire,
+					0);
+#endif
+			mod_timer(&i_vif->max_idle_timer, jiffies + msecs_to_jiffies(BSS_MAX_IDLE_TIMER_PERIOD_MS));
+		}
+		i_sta->max_idle.idle_period = i_sta->max_idle.sta_idle_timer = timeout_ms >> 10; // msec to sec(/1024)
+	}
+
+	nrc_mac_dbg("%s: associated[%pM], timer (%lu %s)",
+		__func__, sta->addr, i_sta->max_idle.idle_period,
+		vif->type == NL80211_IFTYPE_STATION ? "jiffies" : "sec");
 
 	return 0;
 }
@@ -527,9 +557,6 @@ static int tx_h_bss_max_idle_period(struct nrc_trx_data *tx)
 	} else {
 		i_vif = to_i_vif(tx->vif);
 	}
-
-	if (i_vif->max_idle_period == 0)
-		return 0;
 
 	if (tx->sta) {
 		i_sta = to_i_sta(tx->sta);
@@ -585,6 +612,10 @@ static int tx_h_bss_max_idle_period(struct nrc_trx_data *tx)
 		goto out;
 	}
 
+	if((tx->vif->type == NL80211_IFTYPE_STATION && i_vif->max_idle_period == 0) ||
+	   (tx->vif->type == NL80211_IFTYPE_AP && (i_vif->max_idle_period == 0 && i_sta->max_idle.period == 0)))
+		return 0;
+
 	/* Add Extended BSS Max Idle Period IE */
 	ie = (void *) ieee80211_append_ie(tx->skb,
 					  WLAN_EID_BSS_MAX_IDLE_PERIOD,
@@ -593,20 +624,15 @@ static int tx_h_bss_max_idle_period(struct nrc_trx_data *tx)
 		nrc_mac_dbg("%s: failed to add BSS_MAX_IDLE_PERIOD IE",
 			    __func__);
 		if (i_sta) i_sta->max_idle.period = 0;
-		i_vif->max_idle_period = 0;
 		goto out;
 	}
 
-	ie->max_idle_period = i_vif->max_idle_period;
-	ie->idle_option = 0;
-
-	if (tx->vif->type == NL80211_IFTYPE_AP) {
-		if (i_sta) {
-			if (i_sta->max_idle.period == 0 ||
-				i_sta->max_idle.period > i_vif->max_idle_period)
-				/* If STA asks for too long idle period, truncate it */
-				i_sta->max_idle.period = i_vif->max_idle_period;
-		}
+	if(tx->vif->type == NL80211_IFTYPE_STATION){
+		ie->max_idle_period = i_vif->max_idle_period;
+		ie->idle_option = 0;
+	}else{
+		ie->max_idle_period = i_sta->max_idle.period;
+		ie->idle_option = i_sta->max_idle.options;
 	}
 
  out:
@@ -614,7 +640,7 @@ static int tx_h_bss_max_idle_period(struct nrc_trx_data *tx)
 		    ieee80211_is_assoc_req(fc) ? "AssocReq" :
 		    ieee80211_is_reassoc_req(fc) ? "ReAssocReq" :
 		    ieee80211_is_assoc_resp(fc) ? "AssocResp" : "ReAssocResp",
-		    i_vif->max_idle_period);
+		    ie->max_idle_period);
 
 	return 0;
 }
@@ -646,25 +672,18 @@ static int rx_h_bss_max_idle_period(struct nrc_trx_data *rx)
 	}
 
 	if (rx->vif == NULL) {
-		nrc_mac_dbg("%s tx->vif is NULL",__func__);
+		nrc_mac_dbg("%s rx->vif is NULL",__func__);
 		return 0;
 	} else {
 		i_vif = to_i_vif(rx->vif);
 	}
 
-	/* AP updates bss_max_idle timer whenever receiving qos null data from STA
-		Note: Update only by qos null data ? is it safe ?*/
+	/* AP updates bss_max_idle timer whenever receiving qos null data from STA*/
 	if (rx->vif->type == NL80211_IFTYPE_AP &&
-		i_sta->max_idle.period > 0 && ieee80211_is_qos_nullfunc(fc)) {
-		//i_sta->max_idle.period > 0 && (ieee80211_is_qos_nullfunc(fc)||ieee80211_is_data_qos(fc))){
-		unsigned long timeout;
-		timeout = jiffies + i_sta->max_idle.idle_period;
-		if (timer_pending(&i_sta->max_idle.timer) &&
-			time_after(timeout, i_sta->max_idle.timer.expires)) {
-			// nrc_mac_dbg("%s (AP) Update keep-alive timer for [%pM]",  __func__, rx->sta->addr);
-			/* reset timeout count */
+		i_sta->max_idle.period > 0 && ieee80211_is_data(fc)) {
+		if(i_sta->max_idle.sta_idle_timer > 0){
 			i_sta->max_idle.timeout_cnt = 0;
-			mod_timer(&i_sta->max_idle.timer, timeout);
+			i_sta->max_idle.sta_idle_timer = i_sta->max_idle.idle_period;
 		}
 		return 0;
 	}

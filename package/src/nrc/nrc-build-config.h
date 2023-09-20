@@ -41,10 +41,14 @@
 /* #define CONFIG_TRX_BACKOFF */
 
 /*
- * README This is a temporary feature.
  * To change the transmission order of txq in the nrc driver.
  */
-/* #define CONFIG_TXQ_ORDER_CHANGE_NRC_DRV */
+#define CONFIG_TXQ_ORDER_CHANGE_NRC_DRV
+
+/*
+ * To change the non-QoS data frame to QoS data frame on the nrc driver.
+ */
+#define CONFIG_CONVERT_NON_QOSDATA
 
 /*
  * README This is a temporary feature.
@@ -60,6 +64,23 @@
  */
 #define NRC_TARGET_KERNEL_VERSION LINUX_VERSION_CODE
 
+/*
+ * On kernel version 6.0 or higher, the dynamic ps became impossible.
+ * refer https://lore.kernel.org/all/20220713114425.fa593e78de9a.I67a99fcbfcac0cefb4dcbb85e8b7d719b16d8a7c@changeid/
+ */
+#if KERNEL_VERSION(6, 0, 0) <= NRC_TARGET_KERNEL_VERSION
+#define CONFIG_USE_VIF_CFG
+#define CONFIG_USE_LINK_ID
+#undef ENABLE_DYNAMIC_PS
+#endif
+
+#if KERNEL_VERSION(5, 19, 2) <= NRC_TARGET_KERNEL_VERSION
+#define CONFIG_USE_BSS_CHAN_CONF
+#endif
+
+#if KERNEL_VERSION(5, 19, 0) <= NRC_TARGET_KERNEL_VERSION
+#define CONFIG_SUPPORT_LINK_STA
+#endif
 
 #if KERNEL_VERSION(5, 10, 0) <= NRC_TARGET_KERNEL_VERSION
 #else
@@ -173,8 +194,8 @@
  * #endif
  */
 
-/* uncomment define below to set tx power via iw */
-/* #define CONFIG_SUPPORT_IW_TXPWR */
+/* uncomment define below to set tx power via iw or iwconfig */
+/* #define CONFIG_SUPPORT_IW_IWCONFIG_TXPWR */
 
 /* Use DT for spi device,
    spi_busnum_to_master fuction which is used to call spi_new_device

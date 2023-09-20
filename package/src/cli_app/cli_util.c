@@ -29,12 +29,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <time.h>
 #include <ctype.h>
 #include <sys/time.h>
 #include <unistd.h>
 #include <math.h>
+#include <termios.h>
 
 #include "cli_cmd.h"
 #include "cli_util.h"
@@ -49,6 +51,8 @@
 static char log_file_prefix[64] = "nrc_signal";
 static FILE *fp_log_file = NULL;
 
+
+static struct termios old, new;
 /*******************************************************************************
 * util functions
 *******************************************************************************/
@@ -107,6 +111,12 @@ int run_sub_cmd(cmd_tbl_t *t, int argc, char *argv[], cmd_tbl_t *list, int list_
 		return CMD_RET_FAILURE;
 	}
 	else {
+		if(argc < 3){
+			if((strcmp("set", argv[0]) == 0)||(strcmp("test",  argv[0]) == 0)){
+				printf("usage : %s\n", (char*)sub_t->usage);
+				return CMD_RET_FAILURE;
+			}
+		}
 		return sub_t->handler(sub_t, argc, argv);
 	}
 }
@@ -180,10 +190,10 @@ int cli_app_run_onetime(int argc, char* argv[]){
 	*(buffer + strlen(buffer)-1) = '\0';
 
 	ret = cli_app_run_command(buffer);
-	if (ret == CMD_RET_FAILURE) {
-		printf("FAIL\n");
-	}else {
+	if (ret == CMD_RET_SUCCESS) {
 		printf("OK\n");
+	}else {
+		printf("FAIL\n");
 	}
 	return 0;
 }
@@ -231,7 +241,7 @@ cmd_tbl_t *cmd_list_display(enum cmd_list_type type)
 
 	for (i = 0; i < list_size; i++) {
 		t = (cmd_tbl_t *)(list + i);
-		if(!t->subListExist){
+		if(t->flag == 0){
 			tab_len = get_tab_number(max_tab_number, strlen(t->usage)+1);
 			printf(" %s",t->usage);
 			for(j=0; j<tab_len; j++)
@@ -289,7 +299,7 @@ static int print_merged_result(char* t1, char *t2, int displayPerLine)
 	return (get_space_number_including_tab(t1_length, tab_number)+ t2_length + 3);
 }
 
-void cmd_result_parse(char* key, char *value, int displayPerLine)
+void cmd_result_parse(char* key, char *value, const int displayPerLine)
 {
 	char *key_list_temp = NULL;
 	char *next_ptr1 = NULL, *next_ptr2 = NULL;
@@ -383,8 +393,9 @@ int cmd_umac_info_result_parse(char *value, int mode, int *display_start_index)
 		printf("support: s1g_long(%d)\tpv1(%d)\t\tnontim(%d)\t\ttwt(%d)\t\tampdu(%d)\n",
 			apinfo->s1g_long_support, apinfo->pv1_frame_support, apinfo->nontim_support, apinfo->twtoption_activated,
 			apinfo->ampdu_support);
-		printf("\t ndp_pspoll(%d)\t\t\ttraveling pilot(%u)\tshortgi(1mhz:%d, 2mhz:%d, 4mhz:%d) \n",
-			apinfo->ndp_pspoll_support, apinfo->traveling_pilot_support, apinfo->shortgi_1mhz_support, apinfo->shortgi_2mhz_support, apinfo->shortgi_4mhz_support);
+		printf("\t ndp_pspoll(%d)\t\t\ttraveling pilot(%u)\tshortgi(1mhz:%d, 2mhz:%d, 4mhz:%d)\t1m_ctrl_resp_preamble(%d) \n",
+			apinfo->ndp_pspoll_support, apinfo->traveling_pilot_support, apinfo->shortgi_1mhz_support, apinfo->shortgi_2mhz_support,
+			apinfo->shortgi_4mhz_support, apinfo->s1g_1mctrlresppreamble_support);
 		printf("\t maximum mpdu_len(%u)\t\tampdu_len_exp(%u)\tminimum mpdu_start_spacing(%u)\trx_s1gmcs_map(0x%x)\tcolor(%u)\n",
 			apinfo->maximum_mpdu_length, apinfo->maximum_ampdu_length_exp, apinfo->minimum_mpdu_start_spacing,
 			apinfo->rx_s1gmcs_map, apinfo->color);
@@ -400,8 +411,9 @@ int cmd_umac_info_result_parse(char *value, int mode, int *display_start_index)
 			printf("support: s1g_long(%d)\tpv1(%d)\t\tnontim(%d)\t\ttwt(%d)\t\t\t\tampdu(%d)\n",
 				stainfo->s1g_long_support, stainfo->pv1_frame_support, stainfo->nontim_support,
 				stainfo->twtoption_activated, stainfo->ampdu_support);
-			printf("\t ndp_pspoll(%d)\t\t\ttraveling_pilot(%u)\tshortgi(1mhz:%d, 2mhz:%d, 4mhz:%d)\n",
-				stainfo->ndp_pspoll_support, stainfo->traveling_pilot_support, stainfo->shortgi_1mhz_support, stainfo->shortgi_2mhz_support, stainfo->shortgi_4mhz_support);
+			printf("\t ndp_pspoll(%d)\t\t\ttraveling_pilot(%u)\tshortgi(1mhz:%d, 2mhz:%d, 4mhz:%d)\t1m_ctrl_resp_preamble(%d)\n",
+				stainfo->ndp_pspoll_support, stainfo->traveling_pilot_support, stainfo->shortgi_1mhz_support, stainfo->shortgi_2mhz_support,
+				stainfo->shortgi_4mhz_support, stainfo->s1g_1mctrlresppreamble_support);
 			printf("\t maximum mpdu_len(%u)\t\tampdu_len_exp(%u)\tminimum mpdu_start_spacing(%u)\trx_s1gmcs_map(0x%x)\n",
 				stainfo->maximum_mpdu_length, stainfo->maximum_ampdu_length_exp, stainfo->minimum_mpdu_start_spacing, stainfo->rx_s1gmcs_map);
 			printf("\n");
@@ -787,4 +799,161 @@ void macaddr_to_ascii(char* input, char* output)
 	}
 	*dst = '\0';
 }
+
+void print_hex(void *address, int count)
+{
+	int data_size = count;
+	uint8_t *p = (uint8_t*) address;
+	int i;
+
+	printf("\n-- %p data_size=%d\n", address, data_size);
+	for (i = 0; i < data_size; i++) {
+		if (0 == (i & 7))
+			printf("\n%03d :", i);
+
+		printf("%02X ", *p);
+		p++;
+	}
+	printf("\n");
+}
+
+void print_mac_address(char mac_addr[6])
+{
+	for(uint8_t i=0;i<6;i++)
+		printf("%02x%s", mac_addr[i], i == 5 ? "" : ":");
+	printf("\n");
+}
+
+
+// Initialize new terminal i/o settings
+static void initTermios(int echo)
+{
+	tcgetattr(0, &old); // grab old terminal i/o settings
+	new = old; // make new settings same as old settings
+	new.c_lflag &= ~ICANON; // disable buffered i/o
+	new.c_lflag &= echo ? ECHO : ~ECHO; // set echo mode
+	tcsetattr(0, TCSANOW, &new); // use these new terminal i/o settings now
+}
+
+// Restore old terminal i/o settings
+static void resetTermios(void)
+{
+	tcsetattr(0, TCSANOW, &old);
+}
+
+// Read 1 character - echo defines echo mode
+static char getch_(int echo)
+{
+	char ch;
+	initTermios(echo);
+	ch = getchar();
+	resetTermios();
+	return ch;
+}
+
+// Read 1 character without echo
+char cli_getch(void)
+{
+	return getch_(0);
+}
+
+// Read 1 character with echo
+char cli_getche(void)
+{
+	return getch_(1);
+}
+
+void cli_input_prompt(const char* prompt_name, char* input)
+{
+	printf("\r");
+	printf("%*s\r", NRC_MAX_CMDLINE_SIZE, " ");
+	printf("\r%s> %s",prompt_name, input);
+}
+
+void cli_sysconfig_print(xfer_sys_config_t *sysconfig, bool hex, int sysconfig_format)
+{
+	if (hex) {
+		print_hex(sysconfig, sizeof(xfer_sys_config_t) - sizeof(sysconfig->user_factory));
+	} else {
+		printf(" version\t: %d\n", sysconfig->version);
+		printf(" mac_addr0\t: "); print_mac_address(sysconfig->mac_addr0);
+		printf(" mac_addr1\t: "); print_mac_address(sysconfig->mac_addr1);
+		printf(" cal_use\t: %d\n", sysconfig->cal_use);
+		printf(" hw_version\t: %d\n", sysconfig->hw_version);
+		if(sysconfig_format == SYSCONFIG_FORMAT_1){
+			xfer_sys_config_pllldo_t* rf_pllldo12_tr = (xfer_sys_config_pllldo_t*)sysconfig->reserved1;
+			printf(" rf_pllldo12_tr\t: 0x%08X (%s)\n", rf_pllldo12_tr->value,
+						(rf_pllldo12_tr->control==1)?"Use":"Disabled");
+		} else {
+			printf(" trx_pass_fail\t:\n");
+			printf("   cfo_cal\t: %d\n",	sysconfig->trx_pass_fail.cfo_cal);
+			printf("   da_cal\t: %d\n",   sysconfig->trx_pass_fail.da_cal);
+			printf("   txpwr_cal\t: %d\n", sysconfig->trx_pass_fail.txpwr_cal);
+			printf("   rssi_cal\t: %d\n",	 sysconfig->trx_pass_fail.rssi_cal);
+			printf("   tx_test\t: %d\n",	  sysconfig->trx_pass_fail.tx_test);
+			printf("   rx_test\t: %d\n",	 sysconfig->trx_pass_fail.rx_test);
+			printf(" chip_type\t: %d\n", sysconfig->chip_type.type);
+			printf(" module_type\t: %d\n", sysconfig->module_type.type);
+			printf(" module_feature\t:\n");
+			printf("   txpwr_boosting_valid\t: %d\n", sysconfig->module_feature.txpwr_boosting_valid);
+			printf("   fem_polarity_valid\t	: %d\n", sysconfig->module_feature.fem_polarity_valid);
+			printf("   external_pa_valid\t: %d\n", sysconfig->module_feature.external_pa_exists);
+			printf("   max_txgain_valid\t: %d\n", sysconfig->module_feature.max_txgain_valid);
+			printf("   max_txpwr_valid\t   : %d\n", sysconfig->module_feature.max_txpwr_valid);
+			printf(" txpwr_boosting\t: %d\n", sysconfig->txpwr_boosting.tmx_gmrc);
+			printf(" max_txgain\t: %d\n", sysconfig->max_txgain);
+			printf(" max_txpwr\t: %d\n", sysconfig->max_txpwr);
+			printf(" fem_polarity\t: \"0x%02x\"\n", sysconfig->fem_polarity);
+			printf(" gpio_index_map\t:\n");
+			printf("   pa_en_valid\t  : %d\n", sysconfig->gpio_index_map.pa_en_valid);
+			printf("   pa_en_pin\t  : %d\n", sysconfig->gpio_index_map.pa_en_pin);
+			printf("   ant_sel_valid\t: %d\n", sysconfig->gpio_index_map.ant_sel_valid);
+			printf("   ant_sel_pin\t  : %d\n", sysconfig->gpio_index_map.ant_sel_pin);
+			printf("   power_down_valid\t: %d\n", sysconfig->gpio_index_map.power_down_valid);
+			printf("   power_down_data\t: %d\n", sysconfig->gpio_index_map.power_down_data);
+			printf("   power_down_pin\t: %d\n\n",  sysconfig->gpio_index_map.power_down_pin);
+			printf(" serial_number\t: ");
+			for(int i=0;i<sizeof(sysconfig->serial_number);i++) {
+				char c = sysconfig->serial_number[i];
+				if (!c)
+					break;
+				printf("%c", c);
+			}
+			printf("\n");
+			printf(" user_factory\t: ");
+			for(int i=0;i<sizeof(sysconfig->user_factory);i++) {
+				char c = sysconfig->user_factory[i];
+				if (!c)
+					break;
+				printf("%c", c);
+			}
+		}
+	}
+}
+
+void cli_user_factory_print(xfer_sys_config_t *sysconfig, bool hex, int sysconfig_format)
+{
+	if (hex) {
+		print_hex(sysconfig->user_factory,  sizeof(sysconfig->user_factory));
+	} else {
+		for(int i = 0; i < sizeof(sysconfig->user_factory); i++) {
+			char c = sysconfig->user_factory[i];
+			if(IS_WHITESPACE(c) || IS_PRINTABLE_ASCII(c))
+				printf("%c", c);
+		}
+		printf("\n");
+	}
+}
+
+void cmd_show_sysconfig_parse(xfer_sys_config_t *sysconfig, int display_mode, int sysconfig_format)
+{
+	printf("[sysconfig]\n");
+	cli_sysconfig_print(sysconfig, display_mode, sysconfig_format);
+	printf("\n\n");
+	printf("[user_factory]\n");
+	cli_user_factory_print(sysconfig, display_mode, sysconfig_format);
+	printf("\n");
+}
+
+
 #endif /* _CLI_UTIL_ */

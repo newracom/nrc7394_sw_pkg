@@ -26,6 +26,7 @@
 #include "nrc.h"
 #include "nrc-bd.h"
 #include "nrc-debug.h"
+#include "nrc-init.h"
 #include "nrc-wim-types.h"
 
 #if defined(CONFIG_SUPPORT_BD)
@@ -39,15 +40,15 @@ int g_bd_size=0;
 enum {
 	CC_US=1,
 	CC_JP,
-	CC_K1,	//KR_USN
+	CC_K1,	//KR USN1(non-standard) (LBT is necessary)
 	CC_TW,
 	CC_EU,
 	CC_CN,
 	CC_NZ,
 	CC_AU,
-	CC_K2,	//KR_MIC
+	CC_K2,	//KR USN5 (MIC detection is necessary)
 	CC_MAX,
-}CC_TYPE;
+} CC_TYPE;
 
 const struct bd_ch_table *g_bd_ch_table_base;
 struct bd_supp_param g_supp_ch_list;
@@ -118,9 +119,9 @@ static const struct bd_ch_table g_bd_ch_table[CC_MAX][NRC_BD_MAX_CH_LIST] = {
 		{9255,  5240,   38,  48}
 	},
 	{
-		// Korea (K1) USN band (921MH~923MH)
-		{9215,  5220,   1,      44},
-		{9225,  5225,   3,      45}
+		// Korea (K1) USN1(non-standard) band (921MH~923MH)
+		{9215,  5180,   1,	36},
+		{9225,  5185,   3,	37}
 	},
 	{
 		/*  Taiwan */
@@ -153,40 +154,24 @@ static const struct bd_ch_table g_bd_ch_table[CC_MAX][NRC_BD_MAX_CH_LIST] = {
 		{8645,  5185,   3, 37},
 		{8655,  5190,   5, 38},
 		{8665,  5195,   7, 39},
-		{8675,  5200,   9, 40},
+		{8675,  5200,   9, 40}
 	},
 	{
 		/* CN */
-		{7555,	5180,	1,	36},
-		{7565,	5185,	3,	37},
-		{7575,	5190,	5,	38},
-		{7585,	5195,	7,	39},
-		{7595,	5200,	9,	40},
-		{7605,	5205,	11,	41},
-		{7615,	5210,	13,	42},
-		{7625,	5215,	15,	43},
-		{7635,	5220,	17,	44},
-		{7645,	5225,	19,	45},
-		{7655,	5230,	21,	46},
-		{7665,	5235,	23,	47},
-		{7675,	5240,	25,	48},
-		{7685,	5745,	27,	149},
-		{7695,	5750,	29,	150},
-		{7705,	5755,	31,	151},
-		{7795,	5760,	16,	152},
-		{7805,	5765,	18,	153},
-		{7815,	5770,	20,	154},
-		{7825,	5775,	22,	155},
-		{7835,	5780,	24,	156},
-		{7845,	5785,	26,	157},
-		{7855,	5790,	28,	158},
-		{7865,	5795,	30,	159},
-		{7800,	5800,	2,	160},
-		{7820,	5805,	6,	161},
-		{7840,	5810,	10,	162},
-		{7860,	5815,	14,	163},
-		{7810,	5820,	4,	164},
-		{7850,	5825,	12,	165}
+		{7495,	5180,	1,	36},
+		{7505,	5185,	3,	37},
+		{7515,	5190,	5,	38},
+		{7525,	5195,	7,	39},
+		{7535,	5200,	9,	40},
+		{7545,	5205,	11,	41},
+		{7555,	5210,	13,	42},
+		{7565,	5215,	15,	43},
+		{7500,	5745,	2,	149},
+		{7520,	5755,	6,	151},
+		{7540,	5765,	10,	153},
+		{7560,	5775,	14,	155},
+		{7510,	5750,	4,	150},
+		{7550,	5770,	12,	154}
 	},
 	{
 		/* NZ */
@@ -239,15 +224,15 @@ static const struct bd_ch_table g_bd_ch_table[CC_MAX][NRC_BD_MAX_CH_LIST] = {
 		{9260,	5820,	48, 164}
 	},
 	{
-		// Korea (K2) MIC Band (925MH~931MHz)
-		{9255,	5180,	1,		36},
-		{9265,	5185,	3,		37},
-		{9275,	5190,	5,		38},
-		{9285,	5195,	7,		39},
-		{9295,	5200,	9,		40},
-		{9305,	5205,	11, 	41},
-		{9280,	5210,	4,		42},
-		{9300,	5215,	8,		43}
+		// Korea (K2) USN5 Band (925MH~931MHz)
+		{9255,	5180,	1,	36},
+		{9265,	5185,	3,	37},
+		{9275,	5190,	5,	38},
+		{9285,	5195,	7,	39},
+		{9295,	5200,	9,	40},
+		{9305,	5205,	11,	41},
+		{9280,	5210,	4,	42},
+		{9300,	5215,	8,	43}
 	},
 };
 
@@ -276,18 +261,24 @@ static uint16_t nrc_checksum_16(uint16_t len, uint8_t* buf)
 	return checksum;
 }
 
-static void * nrc_dump_load(int len)
+static void * nrc_dump_load(struct nrc *nw, int len)
 {
 	struct file *filp;
 	loff_t pos=0;
-	mm_segment_t old_fs;
+	/*
+	 * function force_uaccess_begin(), force_uaccess_end() and type mm_segment_t
+	 * are removed in 5.18
+	 * (https://patchwork.ozlabs.org/project/linux-arc/patch/20220216131332.1489939-19-arnd@kernel.org/#2847918)
+	 * function get_fs(), and set_fs() are removed in 5.18
+	 * (https://patchwork.kernel.org/project/linux-arm-kernel/patch/20201001141233.119343-11-arnd@arndb.de/)
+	 */
 	char filepath[64];
 	char *buf = NULL;
 #if BD_DEBUG
 	int i;
 #endif
-
-	sprintf(filepath, "/lib/firmware/%s", bd_name);
+#if KERNEL_VERSION(5,18,0) > NRC_TARGET_KERNEL_VERSION
+	mm_segment_t old_fs;
 #if KERNEL_VERSION(5,0,0) > NRC_TARGET_KERNEL_VERSION
 	old_fs = get_fs();
 	set_fs( get_ds() );
@@ -297,21 +288,24 @@ static void * nrc_dump_load(int len)
 #else
 	old_fs = force_uaccess_begin();
 #endif
-
+#endif /* if KERNEL_VERSION(5,18,0) < NRC_TARGET_KERNEL_VERSION */
+	sprintf(filepath, "/lib/firmware/%s", bd_name);
 	filp = filp_open(filepath, O_RDONLY, 0);
 	if (IS_ERR(filp)) {
-		pr_err("Failed to load board data, error:%d",IS_ERR(filp));
+		dev_err(nw->dev, "Failed to load board data, error:%d",IS_ERR(filp));
+#if KERNEL_VERSION(5,18,0) > NRC_TARGET_KERNEL_VERSION
 #if KERNEL_VERSION(5,10,0) > NRC_TARGET_KERNEL_VERSION
 	set_fs(old_fs);
 #else
 	force_uaccess_end(old_fs);
 #endif
+#endif /* if KERNEL_VERSION(5,18,0) < NRC_TARGET_KERNEL_VERSION */
 		return NULL;
 	}
 
 	buf = (char *) kmalloc(len, GFP_KERNEL);
 	if (!buf) {
-		pr_err("malloc input buf error!\n");
+		dev_err(nw->dev, "malloc input buf error!\n");
 		return NULL;
 	}
 
@@ -322,12 +316,13 @@ static void * nrc_dump_load(int len)
 #endif
 
 	filp_close(filp, NULL);
+#if KERNEL_VERSION(5,18,0) > NRC_TARGET_KERNEL_VERSION
 #if KERNEL_VERSION(5,10,0) > NRC_TARGET_KERNEL_VERSION
 	set_fs(old_fs);
 #else
 	force_uaccess_end(old_fs);
 #endif
-
+#endif /* if KERNEL_VERSION(5,18,0) < NRC_TARGET_KERNEL_VERSION */
 #if BD_DEBUG
 	for(i=0; i < len;) {
 		nrc_dbg(NRC_DBG_STATE,"%02X %02X %02X %02X %02X %02X %02X %02X",
@@ -417,45 +412,47 @@ struct wim_bd_param * nrc_read_bd_tx_pwr(struct nrc *nw, uint8_t *country_code)
 	uint8_t type = 0;
 	int i, j;
 	struct BDF *bd;
-	uint8_t cc[2] = {0,0};
 	struct wim_bd_param *bd_sel;
 	bool check_bd_flag=false;
 	uint16_t target_version;
 
-	if(!g_bd_size)
+	if (!g_bd_size)
 		return NULL;
 	else
 		nrc_dbg(NRC_DBG_STATE,"size of bd file is %d",g_bd_size);
 
-	cc[0] = *country_code;
-	cc[1] = *(country_code + 1);
-
-	if(cc[0] == 'U' && cc[1] == 'S')
+	if (country_code[0] == 'U' && country_code[1] == 'S')
 		cc_index = CC_US;
-	else if(cc[0] == 'J' && cc[1] == 'P')
+	else if (country_code[0] == 'J' && country_code[1] == 'P')
 		cc_index = CC_JP;
-	else if(cc[0] == 'K' && cc[1] == '1')
-		cc_index = CC_K1;
-	else if(cc[0] == 'T' && cc[1] == 'W')
+	else if (country_code[0] == 'K' && country_code[1] == 'R') {
+		if (kr_band == 1) {
+			cc_index = CC_K1;
+			country_code[1] = '1';
+		} else {
+			cc_index = CC_K2;
+			country_code[1] = '2';
+		}
+	} else if (country_code[0] == 'T' && country_code[1] == 'W')
 		cc_index = CC_TW;
-	else if(cc[0] == 'D' && cc[1] == 'E')
-		cc_index = CC_EU;
-	else if(cc[0] == 'C' && cc[1] == 'N')
+	else if (country_code[0] == 'C' && country_code[1] == 'N')
 		cc_index = CC_CN;
-	else if(cc[0] == 'N' && cc[1] == 'Z')
+	else if (country_code[0] == 'N' && country_code[1] == 'Z')
 		cc_index = CC_NZ;
-	else if(cc[0] == 'A' && cc[1] == 'U')
+	else if (country_code[0] == 'A' && country_code[1] == 'U')
 		cc_index = CC_AU;
-	else if(cc[0] == 'K' && cc[1] == '2')
-		cc_index = CC_K2;
-	else {
+	else if (country_match(eu_countries_cc, country_code)) {
+		cc_index = CC_EU;
+		country_code[0] = 'E';
+		country_code[1] = 'U';
+	} else {
 		nrc_dbg(NRC_DBG_STATE,
 				"[ERR] Invalid country code(%c%c). Set default value(%d)",
-				cc[0], cc[1], cc_index);
+				country_code[0], country_code[1], cc_index);
 		return NULL;
 	}
 
-	bd = (struct BDF *)nrc_dump_load(g_bd_size);
+	bd = (struct BDF *)nrc_dump_load(nw, g_bd_size);
 	if(!bd) {
 		nrc_dbg(NRC_DBG_STATE,"bd is NULL");
 		return NULL;
@@ -465,7 +462,7 @@ struct wim_bd_param * nrc_read_bd_tx_pwr(struct nrc *nw, uint8_t *country_code)
 			bd->ver_major, bd->ver_minor, bd->total_len, bd->num_data_groups, bd->checksum_data);
 
 #if BD_DEBUG
-	for(i=0; i < bd->total_len;) {
+	for (i=0; i < bd->total_len;) {
 		nrc_dbg(NRC_DBG_STATE,"%02d %02d %02d %02d %02d %02d %02d %02d %02d %02d %02d %02d",
 				bd->data[i + 0], bd->data[i + 1], bd->data[i + 2],
 				bd->data[i + 3], bd->data[i + 4], bd->data[i + 5],
@@ -487,14 +484,14 @@ struct wim_bd_param * nrc_read_bd_tx_pwr(struct nrc *nw, uint8_t *country_code)
 	target_version = nw->fwinfo.hw_version;
 
 	// if a value of h/w version is invalid, then set it to 0
-	if(target_version > 0x7FF)
+	if (target_version > 0x7FF)
 		target_version = 0;
 
-	for(i = 0; i < bd->num_data_groups; i++)
+	for (i = 0; i < bd->num_data_groups; i++)
 	{
 		type = bd->data[len + 4*i];
 		//nrc_dbg(NRC_DBG_STATE, "type : %u, cc_index: %u",type, cc_index);
-		if(type == cc_index) {
+		if (type == cc_index) {
 			// copy data for specific country code
 			//nrc_dbg(NRC_DBG_STATE, "cc_index is matched(%u : %u)",type, cc_index);
 			bd_sel->type = (uint16_t)type;
@@ -503,7 +500,7 @@ struct wim_bd_param * nrc_read_bd_tx_pwr(struct nrc *nw, uint8_t *country_code)
 					(bd->data[7 + len + 4*i]<<8));
 
 			// Add a condition if target version is initial value(65535)
-			if(target_version == bd_sel->hw_version) {
+			if (target_version == bd_sel->hw_version) {
 				nrc_dbg(NRC_DBG_STATE, "target version is matched(%u : %u)",
 						target_version, bd_sel->hw_version);
 
@@ -512,7 +509,7 @@ struct wim_bd_param * nrc_read_bd_tx_pwr(struct nrc *nw, uint8_t *country_code)
 				bd_sel->checksum = (uint16_t)(bd->data[4 + len + 4*i] +
 						(bd->data[5 + len + 4*i]<<8));
 
-				for(j=0; j < bd_sel->length -2; j++) {
+				for (j=0; j < bd_sel->length -2; j++) {
 					bd_sel->value[j] = bd->data[8 + len + 4*i + j];
 				}
 				check_bd_flag = true;
@@ -529,7 +526,7 @@ struct wim_bd_param * nrc_read_bd_tx_pwr(struct nrc *nw, uint8_t *country_code)
 	}
 	kfree(bd);
 
-	if(check_bd_flag && nrc_set_supp_ch_list(bd_sel)) {
+	if (check_bd_flag && nrc_set_supp_ch_list(bd_sel)) {
 		return bd_sel;
 	} else {
 		kfree(bd_sel);
@@ -537,7 +534,7 @@ struct wim_bd_param * nrc_read_bd_tx_pwr(struct nrc *nw, uint8_t *country_code)
 	}
 }
 
-int nrc_check_bd(void)
+int nrc_check_bd(struct nrc *nw)
 {
 	struct BDF *bd;
 	struct file *filp;
@@ -550,10 +547,16 @@ int nrc_check_bd(void)
 #endif
 
 	int ret;
-	mm_segment_t old_fs;
 	char filepath[64];
-
-	sprintf(filepath, "/lib/firmware/%s", bd_name);
+	/*
+	 * function force_uaccess_begin(), force_uaccess_end() and type mm_segment_t
+	 * are removed in 5.18
+	 * (https://patchwork.ozlabs.org/project/linux-arc/patch/20220216131332.1489939-19-arnd@kernel.org/#2847918)
+	 * function get_fs(), and set_fs() are removed in 5.18
+	 * (https://patchwork.kernel.org/project/linux-arm-kernel/patch/20201001141233.119343-11-arnd@arndb.de/)
+	 */
+#if KERNEL_VERSION(5,18,0) > NRC_TARGET_KERNEL_VERSION
+	mm_segment_t old_fs;
 #if KERNEL_VERSION(5,0,0) > NRC_TARGET_KERNEL_VERSION
 	old_fs = get_fs();
 	set_fs(get_ds());
@@ -563,15 +566,18 @@ int nrc_check_bd(void)
 #else
 	old_fs = force_uaccess_begin();
 #endif
-
+#endif /* if KERNEL_VERSION(5,18,0) < NRC_TARGET_KERNEL_VERSION */
+	sprintf(filepath, "/lib/firmware/%s", bd_name);
 	filp = filp_open(filepath, O_RDONLY, 0);
 	if (IS_ERR(filp)) {
-		pr_err("Failed to load board data :error: %d",IS_ERR(filp));
+		dev_err(nw->dev, "Failed to load board data (%s) :error: %d", filepath, IS_ERR(filp));
+#if KERNEL_VERSION(5,18,0) > NRC_TARGET_KERNEL_VERSION
 #if KERNEL_VERSION(5,10,0) > NRC_TARGET_KERNEL_VERSION
 		set_fs(old_fs);
 #else
 		force_uaccess_end(old_fs);
 #endif
+#endif /* if KERNEL_VERSION(5,18,0) < NRC_TARGET_KERNEL_VERSION */
 		return -EIO;
 	}
 
@@ -593,7 +599,7 @@ int nrc_check_bd(void)
 	buf = (char *) kmalloc((int)length, GFP_KERNEL);
 	if(!buf) {
 		kfree(stat);
-		pr_err("buf is NULL");
+		dev_err(nw->dev, "buf is NULL");
 		return -ENOMEM;
 	}
 
@@ -604,31 +610,31 @@ int nrc_check_bd(void)
 #endif
 
 	filp_close(filp, NULL);
-
+#if KERNEL_VERSION(5,18,0) > NRC_TARGET_KERNEL_VERSION
 #if KERNEL_VERSION(5,10,0) > NRC_TARGET_KERNEL_VERSION
 	set_fs(old_fs);
 #else
 	force_uaccess_end(old_fs);
 #endif
-
+#endif /* if KERNEL_VERSION(5,18,0) < NRC_TARGET_KERNEL_VERSION */
 	kfree(stat);
 
 	if(g_bd_size < NRC_BD_HEADER_LENGTH) {
-		pr_err("Invalid data size(%d)", g_bd_size);
+		dev_err(nw->dev, "Invalid data size(%d)", g_bd_size);
 		kfree(buf);
 		return -EINVAL;
 	}
 
 	bd = (struct BDF *)buf;
 	if((bd->total_len > g_bd_size-NRC_BD_HEADER_LENGTH) || (bd->total_len < NRC_BD_HEADER_LENGTH)) {
-		pr_err("Invalid total length(%d)", bd->total_len);
+		dev_err(nw->dev, "Invalid total length(%d)", bd->total_len);
 		kfree(buf);
 		return -EINVAL;
 	}
 
 	ret = nrc_checksum_16(bd->total_len, (uint8_t *)&bd->data[0]);
 	if(bd->checksum_data != ret) {
-		pr_err("Invalid checksum(%u : %u)", bd->checksum_data, ret);
+		dev_err(nw->dev, "Invalid checksum(%u : %u)", bd->checksum_data, ret);
 		kfree(buf);
 		return -EINVAL;
 	}

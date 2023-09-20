@@ -20,7 +20,7 @@ if __name__ == "__main__":
         usage()
 
     oui_str = ' 0xfcffaa'
-    subcmd_str = ' 0xf5'
+    subcmd_str = ' 0x5'
 
     # PARAM_1: countdown number (limit to 20 to reduce FW overhead)
     cntdwn = int(sys.argv[1])

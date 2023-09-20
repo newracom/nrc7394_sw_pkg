@@ -19,17 +19,17 @@
 
 #define NRC_BD_MAX_CH_LIST		45
 
-#define BD_DEBUG	0
+#define BD_DEBUG				0
 
 struct BDF {
 	uint8_t	ver_major;
 	uint8_t	ver_minor;
 	uint16_t total_len;
-	
+
 	uint16_t num_data_groups;
 	uint16_t reserved[4];
 	uint16_t checksum_data;
-	
+
 	uint8_t data[0];
 };
 
@@ -51,7 +51,7 @@ extern struct bd_supp_param g_supp_ch_list;
 extern bool g_bd_valid;
 
 struct wim_bd_param * nrc_read_bd_tx_pwr(struct nrc *nw, uint8_t *cc);
-int nrc_check_bd(void);
+int nrc_check_bd(struct nrc *nw);
 #endif /* defined(CONFIG_SUPPORT_BD) */
 
 #endif //_NRC_BD_H_

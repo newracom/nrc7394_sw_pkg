@@ -28,6 +28,10 @@
 
 struct nrc;
 
+/**
+ * README: match the numeric definition with nrcnetlink.py
+ * Must match nl cmd, attr as defined by the driver.
+ */
 enum nrc_nl_op_cmds {
 	NL_WFA_CAPI_STA_GET_INFO			= 0,
 	NL_WFA_CAPI_STA_SET_11N				= 1,
@@ -49,6 +53,8 @@ enum nrc_nl_op_cmds {
 	NL_SET_IE							= 17,
 	NL_SET_SAE							= 18,
 	NL_SHELL_RUN_RAW                    = 19,
+	NL_AUTO_BA_TOGGLE                   = 20,
+	NL_CLI_APP_DRIVER               = 21,
 };
 
 enum nrc_nl_op_attrs {
@@ -89,6 +95,9 @@ enum nrc_nl_op_attrs {
 	NL_SET_SAE_DATA						= 34,
 	NL_SHELL_RUN_CMD_RAW				= 35,
 	NL_SHELL_RUN_CMD_RESP_RAW			= 36,
+	NL_AUTO_BA_ON						= 37,
+	NL_CLI_APP_DRIVER_CMD				= 38,
+	NL_CLI_APP_DRIVER_CMD_RESP			= 39,
 	NL_WFA_CAPI_ATTR_LAST,
 	MAX_NL_WFA_CAPI_ATTR = NL_WFA_CAPI_ATTR_LAST-1,
 };

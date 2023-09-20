@@ -105,6 +105,7 @@ static const struct nla_policy nl_umac_policy[NL_WFA_CAPI_ATTR_LAST] = {
 	[NL_SET_SAE_DATA] = {.type = NLA_NUL_STRING},
 	[NL_SHELL_RUN_CMD_RAW]		= {.type = NLA_NUL_STRING},
 	[NL_AUTO_BA_ON]		= {.type = NLA_U8},
+	[NL_CLI_APP_DRIVER_CMD]		= {.type = NLA_NUL_STRING},
 };
 
 static const struct genl_multicast_group nl_umac_mcast_grps[] = {
@@ -130,6 +131,9 @@ static struct genl_family nrc_nl_fam = {
 #ifdef CONFIG_SUPPORT_AFTER_KERNEL_3_0_36
 	.mcgrps = nl_umac_mcast_grps,
 	.n_mcgrps = ARRAY_SIZE(nl_umac_mcast_grps),
+#endif
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+	.resv_start_op	= NL_CLI_APP_DRIVER + 1,
 #endif
 };
 
@@ -449,13 +453,21 @@ static int halow_set_dut(struct sk_buff *skb, struct genl_info *info)
 						vif->bss_conf.bssid)
 			};
 #if KERNEL_VERSION(4, 14, 17) <= NRC_TARGET_KERNEL_VERSION
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+			b = ieee80211_nullfunc_get(nrc_nw->hw, vif, vif->bss_conf.link_id, false);
+#else
 			b = ieee80211_nullfunc_get(nrc_nw->hw, vif, false);
+#endif
 #else
 			b = ieee80211_nullfunc_get(nrc_nw->hw, vif);
 #endif
 			skb_set_queue_mapping(b, IEEE80211_AC_VO);
 #ifdef CONFIG_SUPPORT_CHANNEL_INFO
+#ifdef CONFIG_USE_BSS_CHAN_CONF
+			chanctx_conf = rcu_dereference(vif->bss_conf.chanctx_conf);
+#else
 			chanctx_conf = rcu_dereference(vif->chanctx_conf);
+#endif /* ifdef CONFIG_USE_BSS_CHAN_CONF */
 			band = chanctx_conf->def.chan->band;
 
 			if (!ieee80211_tx_prepare_skb(nrc_nw->hw,
@@ -749,7 +761,11 @@ static void capi_send_addba(void *data, u8 *mac, struct ieee80211_vif *vif)
 
 	rcu_read_lock();
 	if (vif->type == NL80211_IFTYPE_STATION) {
+#ifdef CONFIG_USE_VIF_CFG
+		if (!vif->cfg.assoc)
+#else
 		if (!vif->bss_conf.assoc)
+#endif
 			goto out;
 
 		if (c->addr && !ether_addr_equal(c->addr, vif->bss_conf.bssid))
@@ -786,6 +802,11 @@ static void capi_send_addba(void *data, u8 *mac, struct ieee80211_vif *vif)
 static int capi_sta_send_addba(struct sk_buff *skb, struct genl_info *info)
 {
 	struct capi_data param = { 0 };
+
+	if (nrc_nw->drv_state != NRC_DRV_RUNNING) {
+		pr_err("[Error] the target device cannot respond while deep sleep.");
+		return -EIO;
+	}
 
 	nrc_nw->ampdu_supported = true;
 
@@ -824,7 +845,11 @@ static void capi_send_delba(void *data, u8 *mac, struct ieee80211_vif *vif)
 
 	rcu_read_lock();
 	if (vif->type == NL80211_IFTYPE_STATION) {
+#ifdef CONFIG_USE_VIF_CFG
+		if (!vif->cfg.assoc)
+#else
 		if (!vif->bss_conf.assoc)
+#endif
 			goto out;
 
 		if (c->addr && !ether_addr_equal(c->addr, vif->bss_conf.bssid))
@@ -855,6 +880,11 @@ static void capi_send_delba(void *data, u8 *mac, struct ieee80211_vif *vif)
 static int capi_sta_send_delba(struct sk_buff *skb, struct genl_info *info)
 {
 	struct capi_data param = { 0 };
+
+	if (nrc_nw->drv_state != NRC_DRV_RUNNING) {
+		pr_err("[Error] the target device cannot respond while deep sleep.");
+		return -EIO;
+	}
 
 	nrc_nw->ampdu_supported = true;
 
@@ -895,6 +925,11 @@ static int capi_sta_send_delba(struct sk_buff *skb, struct genl_info *info)
 static int capi_bss_max_idle_offset(struct sk_buff *skb, struct genl_info *info)
 {
 	int32_t bss_max_idle_offset;
+
+	if (nrc_nw->drv_state != NRC_DRV_RUNNING) {
+		pr_err("[Error] the target device cannot respond while deep sleep.");
+		return -EIO;
+	}
 
 	if (!info->attrs[NL_WFA_CAPI_PARAM_BSS_MAX_IDLE_OFFSET])
 		return capi_sta_reply(NL_WFA_CAPI_BSS_MAX_IDLE_OFFSET, info,
@@ -952,6 +987,11 @@ static int capi_bss_max_idle(struct sk_buff *skb, struct genl_info *info)
 {
 	int32_t max_idle, vif_id, no_usf_auto_convert;
 	struct ieee80211_vif *vif;
+
+	if (nrc_nw->drv_state != NRC_DRV_RUNNING) {
+		pr_err("[Error] the target device cannot respond while deep sleep.");
+		return -EIO;
+	}
 
 	if ((!info->attrs[NL_WFA_CAPI_PARAM_BSS_MAX_IDLE]) ||
 		(!info->attrs[NL_WFA_CAPI_PARAM_VIF_ID])) {
@@ -1012,7 +1052,11 @@ static void generate_mmic_error(void *data, u8 *mac, struct ieee80211_vif *vif)
 #endif
 	u64 now = 0, diff = 0;
 
+#ifdef CONFIG_USE_VIF_CFG
+	if (vif->type != NL80211_IFTYPE_STATION || !vif->cfg.assoc)
+#else
 	if (vif->type != NL80211_IFTYPE_STATION || !vif->bss_conf.assoc)
+#endif
 		return;
 
 	if (c->addr && !ether_addr_equal(c->addr, vif->bss_conf.bssid))
@@ -1041,7 +1085,11 @@ static void generate_mmic_error(void *data, u8 *mac, struct ieee80211_vif *vif)
 	rx_status = IEEE80211_SKB_RXCB(skb);
 
 #ifdef CONFIG_SUPPORT_CHANNEL_INFO
+#ifdef CONFIG_USE_BSS_CHAN_CONF
+	chan = rcu_dereference(vif->bss_conf.chanctx_conf);
+#else
 	chan = rcu_dereference(vif->chanctx_conf);
+#endif /* ifdef CONFIG_USE_BSS_CHAN_CONF */
 	if (!chan)
 		goto out;
 
@@ -1162,6 +1210,10 @@ static int nrc_shell_run_simple(struct sk_buff *skb, struct genl_info *info)
 	char *cmd = NULL;
 	struct sk_buff *wim_skb;
 
+	if (nrc_nw->drv_state != NRC_DRV_RUNNING) {
+		pr_err("[Error] the target device cannot respond while deep sleep.");
+		return -EIO;
+	}
 	if (!nrc_access_vif(nrc_nw)) {
 		nrc_dbg(NRC_DBG_CAPI, "%s Can't send command", __func__);
 		return -EIO;
@@ -1208,6 +1260,10 @@ static int nrc_shell_run(struct sk_buff *skb, struct genl_info *info)
 	struct sk_buff *msg, *wim_skb, *wim_resp;
 	void *hdr;
 
+	if (nrc_nw->drv_state != NRC_DRV_RUNNING) {
+		pr_err("[Error] the target device cannot respond while deep sleep.");
+		return -EIO;
+	}
 	if (!nrc_access_vif(nrc_nw)) {
 		nrc_dbg(NRC_DBG_CAPI, "%s Can't send command", __func__);
 		return -EIO;
@@ -1278,6 +1334,10 @@ static int nrc_shell_run_raw(struct sk_buff *skb, struct genl_info *info)
 	struct sk_buff *msg, *wim_skb, *wim_resp;
 	void *hdr;
 
+	if (nrc_nw->drv_state != NRC_DRV_RUNNING) {
+		pr_err("[Error] the target device cannot respond while deep sleep.");
+		return -EIO;
+	}
 	if (!nrc_access_vif(nrc_nw)) {
 		nrc_dbg(NRC_DBG_CAPI, "%s Can't send command", __func__);
 		return -EIO;
@@ -1354,6 +1414,10 @@ static int cli_app_get_info(struct sk_buff *skb, struct genl_info *info)
 
 	memset(cmd_resp, 0x0, sizeof(cmd_resp));
 
+	if (nrc_nw->drv_state != NRC_DRV_RUNNING) {
+		pr_err("[Error] the target device cannot respond while deep sleep.");
+		return -EIO;
+	}
 	if (!nrc_access_vif(nrc_nw)) {
 		nrc_dbg(NRC_DBG_CAPI, "%s Can't send command", __func__);
 		return -EIO;
@@ -1395,6 +1459,128 @@ static int cli_app_get_info(struct sk_buff *skb, struct genl_info *info)
 		nrc_stats_report(nrc_nw, cmd_resp, start_point, max_number_per_response);
 	}
 	nla_put_string(msg, NL_SHELL_RUN_CMD_RESP, cmd_resp);
+	genlmsg_end(msg, hdr);
+
+	return genlmsg_reply(msg, info);
+}
+
+
+static int cmd_to_argc_argv(const char* str, int* argc, char*** argv) {
+	int i, j, len, n;
+	char** res, * p;
+
+	/* count the number of arguments */
+	len = strlen(str);
+	for (i = n = 0; i < len; ) {
+		while (i < len && str[i] == ' ')
+			i++;
+		if (i == len)
+			break;
+		n++;
+		while (i < len && str[i] != ' ')
+			i++;
+	}
+
+	/* allocate space for argv */
+	res = (char**)kmalloc((n + 1) * sizeof(char*), GFP_KERNEL);
+	if (!res)
+		return -1;
+
+	/* fill argv with pointers to arguments */
+	p = (char*)kmalloc(len + 1, GFP_KERNEL);
+	if (!p) {
+		kfree(res);
+		return -1;
+	}
+	strcpy(p, str);
+	for (i = j = 0; i < len; ) {
+		while (i < len && p[i] == ' ')
+			p[i++] = '\0';
+		if (i == len)
+			break;
+		res[j++] = p + i;
+		while (i < len && p[i] != ' ')
+			i++;
+	}
+	res[j] = NULL;
+
+	/* set argc and argv */
+	*argc = n;
+	*argv = res;
+
+	return 0;
+}
+
+static int cli_app_driver_cmd(struct sk_buff *skb, struct genl_info *info)
+{
+	char *cmd = NULL;
+	char cmd_resp[512];
+	struct sk_buff *msg;
+	void *hdr;
+	int argc;
+	char** argv;
+
+	memset(cmd_resp, 0x0, sizeof(cmd_resp));
+
+	if (nrc_nw->drv_state != NRC_DRV_RUNNING) {
+		pr_err("[Error] the target device cannot respond while deep sleep.");
+		return -EIO;
+	}
+	if (!nrc_access_vif(nrc_nw)) {
+		nrc_dbg(NRC_DBG_CAPI, "%s Can't send command", __func__);
+		return -EIO;
+	}
+
+#ifdef CONFIG_SUPPORT_GENLMSG_DEFAULT
+	msg = genlmsg_new(GENLMSG_DEFAULT_SIZE, GFP_KERNEL);
+	hdr = genlmsg_put(msg, info->snd_portid, info->snd_seq, &nrc_nl_fam,
+			0 /*no flags*/, NL_CLI_APP_DRIVER_CMD);
+#else
+	msg = genlmsg_new(NLMSG_DEFAULT_SIZE - GENL_HDRLEN, GFP_KERNEL);
+	hdr = genlmsg_put(msg, info->snd_pid, info->snd_seq, &nrc_nl_fam,
+			0 /*no flags*/, NL_CLI_APP_DRIVER_CMD);
+#endif
+
+	if (info->attrs[NL_CLI_APP_DRIVER_CMD])
+		cmd = nla_data(info->attrs[NL_CLI_APP_DRIVER_CMD]);
+
+	if (!cmd)
+		return -EINVAL;
+
+	nrc_dbg(NRC_DBG_CAPI, "%s %s", __func__, cmd);
+
+	if (cmd_to_argc_argv(cmd, &argc, &argv) == -1) {
+		nrc_dbg(NRC_DBG_CAPI, "Failed to convert string to argc and argv");
+		return -EBUSY;
+	}
+
+	if(strcmp(argv[0], "set") == 0){
+		if(argc == 3 && strcmp(argv[1], "ignore_listen_interval") == 0){
+			if (strcmp(argv[2], "on") == 0) {
+				ignore_listen_interval = true;
+			} else if (strcmp(argv[2], "off") == 0) {
+				ignore_listen_interval = false;
+			}
+			sprintf(cmd_resp, "success");
+		} else if(argc == 3 && strcmp(argv[1], "ampdu_mode") == 0){
+			if (strcmp(argv[2], "disable") == 0) {
+				ampdu_mode = NRC_AMPDU_DISABLE;
+			} else if (strcmp(argv[2], "manual") == 0) {
+				ampdu_mode = NRC_AMPDU_MANUAL;
+			} else if (strcmp(argv[2], "auto") == 0) {
+				ampdu_mode = NRC_AMPDU_AUTO;
+			}
+			sprintf(cmd_resp, "success");
+		} else {
+			sprintf(cmd_resp, "fail");
+		}
+	} else {
+		sprintf(cmd_resp, "fail");
+	}
+	kfree(argv[0]);
+	kfree(argv);
+
+	nla_put_string(msg, NL_CLI_APP_DRIVER_CMD_RESP, cmd_resp);
 	genlmsg_end(msg, hdr);
 
 	return genlmsg_reply(msg, info);
@@ -1551,6 +1737,7 @@ static int nrc_auto_ba_toggle(struct sk_buff *skb, struct genl_info *info)
 	return 0;
 }
 
+
 #ifdef CONFIG_SUPPORT_GENLMSG_DEFAULT
 static const struct genl_ops nl_umac_nl_ops[] = {
 #else
@@ -1559,126 +1746,211 @@ static struct genl_ops nl_umac_nl_ops[] = {
 	{
 		.cmd	= NL_WFA_CAPI_STA_GET_INFO,
 		.doit	= capi_sta_get_info,
-#if KERNEL_VERSION(5, 2, 0) > NRC_TARGET_KERNEL_VERSION
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+		.policy = nl_umac_policy,
+#elif KERNEL_VERSION(5, 2, 0) <= NRC_TARGET_KERNEL_VERSION && NRC_TARGET_KERNEL_VERSION < KERNEL_VERSION(6, 1, 0)
+		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
+#else
 		.policy = nl_umac_policy,
 #endif
 	},
 	{
 		.cmd	= NL_WFA_CAPI_STA_SET_11N,
 		.doit	= capi_sta_set_11n,
-#if KERNEL_VERSION(5, 2, 0) > NRC_TARGET_KERNEL_VERSION
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+		.policy = nl_umac_policy,
+#elif KERNEL_VERSION(5, 2, 0) <= NRC_TARGET_KERNEL_VERSION && NRC_TARGET_KERNEL_VERSION < KERNEL_VERSION(6, 1, 0)
+		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
+#else
 		.policy = nl_umac_policy,
 #endif
 	},
 	{
 		.cmd	= NL_WFA_CAPI_SEND_ADDBA,
 		.doit	= capi_sta_send_addba,
-#if KERNEL_VERSION(5, 2, 0) > NRC_TARGET_KERNEL_VERSION
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+		.policy = nl_umac_policy,
+		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
+#elif KERNEL_VERSION(5, 2, 0) <= NRC_TARGET_KERNEL_VERSION && NRC_TARGET_KERNEL_VERSION < KERNEL_VERSION(6, 1, 0)
+		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
+#else
 		.policy = nl_umac_policy,
 #endif
 	},
 	{
 		.cmd	= NL_WFA_CAPI_SEND_DELBA,
 		.doit	= capi_sta_send_delba,
-#if KERNEL_VERSION(5, 2, 0) > NRC_TARGET_KERNEL_VERSION
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+		.policy = nl_umac_policy,
+		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
+#elif KERNEL_VERSION(5, 2, 0) <= NRC_TARGET_KERNEL_VERSION && NRC_TARGET_KERNEL_VERSION < KERNEL_VERSION(6, 1, 0)
+		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
+#else
 		.policy = nl_umac_policy,
 #endif
 	},
 	{
 		.cmd	= NL_WFA_CAPI_BSS_MAX_IDLE,
 		.doit	= capi_bss_max_idle,
-#if KERNEL_VERSION(5, 2, 0) > NRC_TARGET_KERNEL_VERSION
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+		.policy = nl_umac_policy,
+#elif KERNEL_VERSION(5, 2, 0) <= NRC_TARGET_KERNEL_VERSION && NRC_TARGET_KERNEL_VERSION < KERNEL_VERSION(6, 1, 0)
+		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
+#else
 		.policy = nl_umac_policy,
 #endif
 	},
 	{
 		.cmd	= NL_WFA_CAPI_BSS_MAX_IDLE_OFFSET,
 		.doit	= capi_bss_max_idle_offset,
-#if KERNEL_VERSION(5, 2, 0) > NRC_TARGET_KERNEL_VERSION
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+		.policy = nl_umac_policy,
+#elif KERNEL_VERSION(5, 2, 0) <= NRC_TARGET_KERNEL_VERSION && NRC_TARGET_KERNEL_VERSION < KERNEL_VERSION(6, 1, 0)
+		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
+#else
 		.policy = nl_umac_policy,
 #endif
 	},
 	{
 		.cmd	= NL_TEST_MMIC_FAILURE,
 		.doit	= test_mmic_failure,
-#if KERNEL_VERSION(5, 2, 0) > NRC_TARGET_KERNEL_VERSION
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+		.policy = nl_umac_policy,
+#elif KERNEL_VERSION(5, 2, 0) <= NRC_TARGET_KERNEL_VERSION && NRC_TARGET_KERNEL_VERSION < KERNEL_VERSION(6, 1, 0)
+		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
+#else
 		.policy = nl_umac_policy,
 #endif
 	},
 	{
 		.cmd	= NL_SHELL_RUN,
 		.doit	= nrc_shell_run,
-#if KERNEL_VERSION(5, 2, 0) > NRC_TARGET_KERNEL_VERSION
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+		.policy = nl_umac_policy,
+#elif KERNEL_VERSION(5, 2, 0) <= NRC_TARGET_KERNEL_VERSION && NRC_TARGET_KERNEL_VERSION < KERNEL_VERSION(6, 1, 0)
+		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
+#else
 		.policy = nl_umac_policy,
 #endif
 	},
 	{
 		.cmd	= NL_SHELL_RUN_SIMPLE,
 		.doit	= nrc_shell_run_simple,
-#if KERNEL_VERSION(5, 2, 0) > NRC_TARGET_KERNEL_VERSION
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+		.policy = nl_umac_policy,
+#elif KERNEL_VERSION(5, 2, 0) <= NRC_TARGET_KERNEL_VERSION && NRC_TARGET_KERNEL_VERSION < KERNEL_VERSION(6, 1, 0)
+		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
+#else
 		.policy = nl_umac_policy,
 #endif
 	},
 	{
 		.cmd	= NL_MGMT_FRAME_INJECTION,
 		.doit	= nrc_inject_mgmt_frame,
-#if KERNEL_VERSION(5, 2, 0) > NRC_TARGET_KERNEL_VERSION
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+		.policy = nl_umac_policy,
+#elif KERNEL_VERSION(5, 2, 0) <= NRC_TARGET_KERNEL_VERSION && NRC_TARGET_KERNEL_VERSION < KERNEL_VERSION(6, 1, 0)
+		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
+#else
 		.policy = nl_umac_policy,
 #endif
 	},
 	{
 		.cmd	= NL_HALOW_SET_DUT,
 		.doit	= halow_set_dut,
-#if KERNEL_VERSION(5, 2, 0) > NRC_TARGET_KERNEL_VERSION
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+		.policy = nl_umac_policy,
+#elif KERNEL_VERSION(5, 2, 0) <= NRC_TARGET_KERNEL_VERSION && NRC_TARGET_KERNEL_VERSION < KERNEL_VERSION(6, 1, 0)
+		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
+#else
 		.policy = nl_umac_policy,
 #endif
 	},
 	{
 		.cmd	= NL_CLI_APP_GET_INFO,
 		.doit	= cli_app_get_info,
-#if KERNEL_VERSION(5, 2, 0) > NRC_TARGET_KERNEL_VERSION
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+		.policy = nl_umac_policy,
+#elif KERNEL_VERSION(5, 2, 0) <= NRC_TARGET_KERNEL_VERSION && NRC_TARGET_KERNEL_VERSION < KERNEL_VERSION(6, 1, 0)
+		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
+#else
+		.policy = nl_umac_policy,
+#endif
+	},
+	{
+		.cmd	= NL_CLI_APP_DRIVER,
+		.doit	= cli_app_driver_cmd,
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+		.policy = nl_umac_policy,
+#elif KERNEL_VERSION(5, 2, 0) <= NRC_TARGET_KERNEL_VERSION && NRC_TARGET_KERNEL_VERSION < KERNEL_VERSION(6, 1, 0)
+		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
+#else
 		.policy = nl_umac_policy,
 #endif
 	},
 	{
 		.cmd	= NL_MIC_SCAN,
 		.doit	= nrc_mic_scan,
-#if KERNEL_VERSION(5, 2, 0) > NRC_TARGET_KERNEL_VERSION
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+		.policy = nl_umac_policy,
+#elif KERNEL_VERSION(5, 2, 0) <= NRC_TARGET_KERNEL_VERSION && NRC_TARGET_KERNEL_VERSION < KERNEL_VERSION(6, 1, 0)
+		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
+#else
 		.policy = nl_umac_policy,
 #endif
 	},
 	{
 		.cmd	= NL_FRAME_INJECTION,
 		.doit	= nrc_inject_frame,
-#if KERNEL_VERSION(5, 2, 0) > NRC_TARGET_KERNEL_VERSION
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+		.policy = nl_umac_policy,
+#elif KERNEL_VERSION(5, 2, 0) <= NRC_TARGET_KERNEL_VERSION && NRC_TARGET_KERNEL_VERSION < KERNEL_VERSION(6, 1, 0)
+		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
+#else
 		.policy = nl_umac_policy,
 #endif
 	},
 	{
 		.cmd	= NL_SET_IE,
 		.doit	= nrc_set_ie,
-#if KERNEL_VERSION(5, 2, 0) > NRC_TARGET_KERNEL_VERSION
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+		.policy = nl_umac_policy,
+#elif KERNEL_VERSION(5, 2, 0) <= NRC_TARGET_KERNEL_VERSION && NRC_TARGET_KERNEL_VERSION < KERNEL_VERSION(6, 1, 0)
+		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
+#else
 		.policy = nl_umac_policy,
 #endif
 	},
 	{
 		.cmd	= NL_SET_SAE_DATA,
 		.doit	= nrc_set_sae,
-#if KERNEL_VERSION(5, 2, 0) > NRC_TARGET_KERNEL_VERSION
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+		.policy = nl_umac_policy,
+#elif KERNEL_VERSION(5, 2, 0) <= NRC_TARGET_KERNEL_VERSION && NRC_TARGET_KERNEL_VERSION < KERNEL_VERSION(6, 1, 0)
+		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
+#else
 		.policy = nl_umac_policy,
 #endif
 	},
 	{
 		.cmd	= NL_SHELL_RUN_RAW,
 		.doit	= nrc_shell_run_raw,
-#if KERNEL_VERSION(5, 2, 0) > NRC_TARGET_KERNEL_VERSION
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+		.policy = nl_umac_policy,
+#elif KERNEL_VERSION(5, 2, 0) <= NRC_TARGET_KERNEL_VERSION && NRC_TARGET_KERNEL_VERSION < KERNEL_VERSION(6, 1, 0)
+		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
+#else
 		.policy = nl_umac_policy,
 #endif
 	},
 	{
 		.cmd	= NL_AUTO_BA_TOGGLE,
 		.doit	= nrc_auto_ba_toggle,
-#if KERNEL_VERSION(5, 2, 0) > NRC_TARGET_KERNEL_VERSION
+#if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
+		.policy = nl_umac_policy,
+#elif KERNEL_VERSION(5, 2, 0) <= NRC_TARGET_KERNEL_VERSION && NRC_TARGET_KERNEL_VERSION < KERNEL_VERSION(6, 1, 0)
+		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
+#else
 		.policy = nl_umac_policy,
 #endif
 	},

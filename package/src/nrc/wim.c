@@ -401,7 +401,11 @@ int nrc_wim_install_key(struct nrc *nw, enum set_key_cmd cmd,
 				|| (vif->type == NL80211_IFTYPE_ADHOC)
 #endif
 				|| (vif->type == NL80211_IFTYPE_P2P_GO)))
+#ifdef CONFIG_USE_VIF_CFG
+			aid = vif->cfg.aid;
+#else
 			aid = vif->bss_conf.aid;
+#endif
 		else if (sta)
 			aid = sta->aid;
 	} else {
@@ -409,7 +413,11 @@ int nrc_wim_install_key(struct nrc *nw, enum set_key_cmd cmd,
 			if (sta) {
 				aid = sta->aid;
 			} else {
+#ifdef CONFIG_USE_VIF_CFG
+				aid = vif->cfg.aid;
+#else
 				aid = vif->bss_conf.aid;
+#endif
 			}
 		} else {
 			aid = 0;
@@ -492,16 +500,21 @@ int nrc_wim_set_sta_type(struct nrc *nw, struct ieee80211_vif *vif)
 		return -ENOTSUPP;
 
 	skb_len = tlv_len(sizeof(u32));
-	if (nrc_mac_is_s1g(nw) && sta_type == WIM_STA_TYPE_AP) {
-		skb_len += tlv_len(sizeof(u8));
+	if (nrc_mac_is_s1g(nw)) {
+		skb_len += tlv_len(sizeof(u8)); //1M CTRL RESP SUPPORT
+		if (sta_type == WIM_STA_TYPE_AP) {
+			skb_len += tlv_len(sizeof(u8)); //NDP PREQ SUPPORT (default support)
+		}
 	}
 
 	skb = nrc_wim_alloc_skb_vif(nw, vif, WIM_CMD_SET, skb_len);
 
 	nrc_wim_skb_add_tlv(skb, WIM_TLV_STA_TYPE, sizeof(u32), &sta_type);
-	if (nrc_mac_is_s1g(nw) && sta_type == WIM_STA_TYPE_AP) {
+	if (nrc_mac_is_s1g(nw)) {
 		nrc_wim_skb_add_tlv(skb, WIM_TLV_NDP_ACK_1M, sizeof(u8), &ndp_ack_1m);
-		nrc_wim_set_ndp_preq(nw, skb, true);
+		if (sta_type == WIM_STA_TYPE_AP) {
+			nrc_wim_set_ndp_preq(nw, skb, true);
+		}
 	}
 
 	return nrc_xmit_wim_request(nw, skb);
@@ -721,16 +734,10 @@ static int nrc_wim_event_handler(struct nrc *nw,
 		ieee80211_chswitch_done(vif, true);
 		break;
 	case WIM_EVENT_LBT_ENABLED:
-		if (!enable_usn) {
-			enable_usn = true;
-			nrc_dbg(NRC_DBG_HIF, "lbt enabled");
-		}
+		nrc_dbg(NRC_DBG_HIF, "lbt enabled");
 		break;
 	case WIM_EVENT_LBT_DISABLED:
-		if (enable_usn) {
-			enable_usn = false;
-			nrc_dbg(NRC_DBG_HIF, "lbt disabled");
-		}
+		nrc_dbg(NRC_DBG_HIF, "lbt disabled");
 		break;
 	}
 
