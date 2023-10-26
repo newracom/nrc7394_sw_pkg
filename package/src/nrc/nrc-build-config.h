@@ -204,6 +204,11 @@
 #if KERNEL_VERSION(5, 16, 0) <= NRC_TARGET_KERNEL_VERSION
 #define CONFIG_SPI_USE_DT
 #endif
+
+#if !defined(CONFIG_SPI_USE_DT) && KERNEL_VERSION(5, 16, 0) <= NRC_TARGET_KERNEL_VERSION
+#define CONFIG_SPI_DYNAMIC
+#endif
+
 /* You can enable forcely in current version */
 //#define CONFIG_SPI_USE_DT
 
