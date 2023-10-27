@@ -29,25 +29,30 @@
 # Script to download Newrcom NRC7394 driver and build a kernel 
 # module from source code and install it in the running system.
 
-DKMS_REPO_URL="https://github.com/newracom/nrc7394_sw_pkg"
+DKMS_REPO_URL="https://github.com/teledatics/nrc7394_sw_pkg -b netlink_newer_fix"
 MODULE_NAME="nrc"
 TEMP_DIR=$(mktemp -d)
 
 if [ ! -d "$TEMP_DIR" ]; then
 	exit 1;
 fi
- 
- 
+
 # Clone the repo
-git clone --depth 1 $DKMS_REPO_URL $TEMP_DIR
+NRC_SRC=$TEMP_DIR/nrc_src
+git clone --depth 1 $DKMS_REPO_URL $NRC_SRC
+
+mkdir -p $TEMP_DIR/src
 
 # Move into the cloned directory
 cd $TEMP_DIR
 
+# Copy source code
+cp -f $NRC_SRC/package/src/nrc/* $TEMP_DIR/src/ 2>/dev/null
+
 # Assign version
-MODULE_MAJOR=$(grep VERSION_MAJOR $TEMP_DIR/package/VERSION-SDK | sed s/VERSION_MAJOR=*.//)
-MODULE_MINOR=$(grep VERSION_MINOR $TEMP_DIR/package/VERSION-SDK | sed s/VERSION_MINOR=*.//)
-MODULE_VERSION="$MODULE_MAJOR-$MODULE_MINOR"
+MODULE_MAJOR=$(grep VERSION_MAJOR $NRC_SRC/package/VERSION-SDK | sed s/VERSION_MAJOR=*.//)
+MODULE_MINOR=$(grep VERSION_MINOR $NRC_SRC/package/VERSION-SDK | sed s/VERSION_MINOR=*.//)
+MODULE_VERSION="$MODULE_MAJOR.$MODULE_MINOR"
 
 if [ -z "$MODULE_MAJOR" -a ! "$MODULE_MAJOR" ]; then
 	exit 1;
@@ -57,14 +62,16 @@ if [ -z "$MODULE_MINOR" -a ! "$MODULE_MINOR" ]; then
 	exit 1;
 fi
 
+rm -Rf $NRC_SRC
+
 # Create a dkms.conf file
 cat << EOF > dkms.conf
-MAKE[0]="make -C package/src/nrc/ KERNEL_DIR=/usr/src/linux-headers-$(uname -r) modules"
-CLEAN="make -C package/src/nrc/ KERNEL_DIR=/usr/src/linux-headers-$(uname -r) clean"
+MAKE[0]="make -C src KERNEL_DIR=/usr/src/linux-headers-$(uname -r) modules"
+CLEAN="make -C src KERNEL_DIR=/usr/src/linux-headers-$(uname -r) clean"
 PACKAGE_NAME="$MODULE_NAME"
 PACKAGE_VERSION="$MODULE_VERSION"
 BUILT_MODULE_NAME[0]="$MODULE_NAME"
-BUILT_MODULE_LOCATION[0]="package/src/nrc/"
+BUILT_MODULE_LOCATION[0]="src"
 DEST_MODULE_LOCATION[0]="/updates"
 REMAKE_INITRD=yes
 AUTOINSTALL=yes
@@ -74,9 +81,8 @@ EOF
 sudo dkms remove $MODULE_NAME/$MODULE_VERSION --all 2>/dev/null
 sudo dkms add .
 sudo dkms build -m $MODULE_NAME -v $MODULE_VERSION
-sudo dkms mkdsc -m $MODULE_NAME -v $MODULE_VERSION
 sudo dkms install -m $MODULE_NAME -v $MODULE_VERSION
-sudo dkms mkdeb -m $MODULE_NAME -v $MODULE_VERSION
+sudo dkms mkdsc -m $MODULE_NAME -v $MODULE_VERSION --source-only
 
 # Clean up
 rm -rf $TEMP_DIR
