@@ -33,6 +33,11 @@ DKMS_REPO_URL="https://github.com/newracom/nrc7394_sw_pkg"
 MODULE_NAME="nrc"
 TEMP_DIR=$(mktemp -d)
 
+if [ ! -d "$TEMP_DIR" ]; then
+	exit 1;
+fi
+ 
+ 
 # Clone the repo
 git clone --depth 1 $DKMS_REPO_URL $TEMP_DIR
 
@@ -44,6 +49,14 @@ MODULE_MAJOR=$(grep VERSION_MAJOR $TEMP_DIR/package/VERSION-SDK | sed s/VERSION_
 MODULE_MINOR=$(grep VERSION_MINOR $TEMP_DIR/package/VERSION-SDK | sed s/VERSION_MINOR=*.//)
 MODULE_VERSION="$MODULE_MAJOR-$MODULE_MINOR"
 
+if [ -z "$MODULE_MAJOR" -a ! "$MODULE_MAJOR" ]; then
+	exit 1;
+fi
+
+if [ -z "$MODULE_MINOR" -a ! "$MODULE_MINOR" ]; then
+	exit 1;
+fi
+
 # Create a dkms.conf file
 cat << EOF > dkms.conf
 MAKE[0]="make -C package/src/nrc/ KERNEL_DIR=/usr/src/linux-headers-$(uname -r) modules"
@@ -51,18 +64,19 @@ CLEAN="make -C package/src/nrc/ KERNEL_DIR=/usr/src/linux-headers-$(uname -r) cl
 PACKAGE_NAME="$MODULE_NAME"
 PACKAGE_VERSION="$MODULE_VERSION"
 BUILT_MODULE_NAME[0]="$MODULE_NAME"
-BUILT_MODULE_LOCATION[0]=package/src/nrc/
-DEST_MODULE_LOCATION[0]="/updates/dkms"
-REMAKE_INITRD="yes"
-AUTOINSTALL="yes"
+BUILT_MODULE_LOCATION[0]="package/src/nrc/"
+DEST_MODULE_LOCATION[0]="/updates"
+REMAKE_INITRD=yes
+AUTOINSTALL=yes
 EOF
 
 # Create the Debian packages (both source and binary)
-dkms remove $MODULE_NAME/$MODULE_VERSION --all 2>/dev/null
-dkms add .
-dkms build -m $MODULE_NAME -v $MODULE_VERSION
-dkms mkdsc -m $MODULE_NAME -v $MODULE_VERSION --source-only
-dkms mkdsc -m $MODULE_NAME -v $MODULE_VERSION --binaries-only
+sudo dkms remove $MODULE_NAME/$MODULE_VERSION --all 2>/dev/null
+sudo dkms add .
+sudo dkms build -m $MODULE_NAME -v $MODULE_VERSION
+sudo dkms mkdsc -m $MODULE_NAME -v $MODULE_VERSION
+sudo dkms install -m $MODULE_NAME -v $MODULE_VERSION
+sudo dkms mkdeb -m $MODULE_NAME -v $MODULE_VERSION
 
 # Clean up
 rm -rf $TEMP_DIR
