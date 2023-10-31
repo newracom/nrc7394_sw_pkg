@@ -28,6 +28,9 @@
 # Script to download Newrcom NRC7394 driver and build a kernel 
 # module from source code and install it in the running system.
 
+# TODO: fix debian files & directories permissions
+# TODO: add /etc/modprobe/nrc.conf file
+
 # NOTE: modify the following variables for the proper values
 MAINTAINER_NAME_EMAIL="Teledatics Incorporated <support@teledatics.com>"
 DKMS_REPO_URL="https://github.com/teledatics/nrc7394_sw_pkg -b netlink_newer_fix"
