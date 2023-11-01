@@ -153,7 +153,7 @@ echo -n "################## Package $MODULE_NAME-dkms-$MODULE_VERSION built"
 
 # Sign the package
 if [ ! -z "$GPG_KEY" ]; then
-	dpkg-sig --sign builder -k $GPG_KEY $MOD_DIR/*.deb
+	dpkg-sig --sign builder -k $GPG_KEY ../$MODULE_NAME-dkms_$MODULE_VERSION*.deb 2>&1 > /dev/null
 	echo -n " and signed"
 fi
 
