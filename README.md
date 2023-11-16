@@ -12,7 +12,7 @@
 - (2023.04.05) v1.0 
 
 ### Latest stable release
-- [NRC7394_SW_PKG_v1.1](https://github.com/newracom/nrc7394_sw_pkg/releases/tag/v1.2)
+- [NRC7394_SW_PKG_v1.2](https://github.com/newracom/nrc7394_sw_pkg/releases/tag/v1.2)
 
 ### Release package contents
 - package: NRC7394 software package for global regulatory domains
