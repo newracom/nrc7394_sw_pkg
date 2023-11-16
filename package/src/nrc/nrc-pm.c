@@ -335,6 +335,13 @@ static void sta_max_idle_period_expire(struct timer_list *t)
 	}
 	control.sta = to_ieee80211_sta(i_sta);
 
+#ifdef CONFIG_QOS_NULL_OFFLOAD /* QoS Null For keep alive is sent within uCode */
+	if (power_save == NRC_PS_DEEPSLEEP_TIM && i_sta->nw->drv_state == NRC_DRV_PS) {
+		nrc_mac_dbg("%s: skipping a keep-alive (QoS Null Frame)", __func__);
+		goto skip_qos_null;
+	}
+#endif
+
 	nrc_mac_dbg("%s: sending a keep-alive (QoS Null Frame)", __func__);
 	/* Send a Null frame as a keep alive frame */
 #if KERNEL_VERSION(4, 14, 17) <= NRC_TARGET_KERNEL_VERSION
@@ -379,6 +386,9 @@ static void sta_max_idle_period_expire(struct timer_list *t)
 #endif
 
 done:
+#ifdef CONFIG_QOS_NULL_OFFLOAD
+skip_qos_null:
+#endif
 	/* Re-arm the timer */
 	mod_timer(&i_vif->max_idle_timer, jiffies + i_sta->max_idle.idle_period);
 
@@ -436,13 +446,24 @@ static int sta_h_bss_max_idle_period(struct ieee80211_hw *hw,
 #define state_changed(old, new)	\
 (old_state == IEEE80211_STA_##old && new_state == IEEE80211_STA_##new)
 
-	if (state_changed(AUTHORIZED, ASSOC)) {
+	if (state_changed(ASSOC, AUTH)) {
 		if(vif->type == NL80211_IFTYPE_STATION &&
 		  i_sta->max_idle.period > 0) {
 			nrc_mac_dbg("STA(%pM) deauth. Delete bss_max_idle timer(%u)",
 				sta->addr,i_sta->max_idle.idle_period);
 			del_timer_sync(&i_vif->max_idle_timer);
 			i_sta->max_idle.idle_period = 0;
+		} else if(vif->type == NL80211_IFTYPE_AP) {
+			struct nrc_sta *bss_sta = NULL, *tmp = NULL;
+			unsigned long flags;
+			spin_lock_irqsave(&i_vif->preassoc_sta_lock, flags);
+			list_for_each_entry_safe(bss_sta, tmp, &i_vif->preassoc_sta_list, list){
+				spin_unlock_irqrestore(&i_vif->preassoc_sta_lock, flags);
+				return 0;
+			}
+			spin_unlock_irqrestore(&i_vif->preassoc_sta_lock, flags);
+			nrc_mac_dbg("%s: vif(%d) Delete AP bss_max_idle timer", __func__, i_vif->index);
+			del_timer_sync(&i_vif->max_idle_timer);
 		}
 		return 0;
 	} else if (!state_changed(ASSOC, AUTHORIZED)) {
@@ -551,6 +572,11 @@ static int tx_h_bss_max_idle_period(struct nrc_trx_data *tx)
 	struct ieee80211_hdr *mh = (void *) tx->skb->data;
 	__le16 fc = mh->frame_control;
 
+		/* Handle TX (Re)Assoc REQ (STA) and TX (Re)Assoc RESP (AP) */
+	if (!ieee80211_is_assoc_resp(fc) && !ieee80211_is_reassoc_resp(fc) &&
+	    !ieee80211_is_assoc_req(fc) && !ieee80211_is_reassoc_req(fc))
+		return 0;
+
 	if (tx->vif == NULL) {
 		nrc_mac_dbg("%s tx->vif is NULL",__func__);
 		return 0;
@@ -564,6 +590,9 @@ static int tx_h_bss_max_idle_period(struct nrc_trx_data *tx)
 			nrc_mac_dbg("%s i_sta is NULL",__func__);
 			return 0;
 		}
+	}else {
+		nrc_mac_dbg("%s sta is NULL",__func__);
+		return 0;
 	}
 
 #if 0 //Remove not-reached codes (tx->sta is NULL). TBD: need to move codes in right place
@@ -586,11 +615,6 @@ static int tx_h_bss_max_idle_period(struct nrc_trx_data *tx)
 	}
 #endif
 
-	/* Handle TX (Re)Assoc REQ (STA) and TX (Re)Assoc RESP (AP) */
-	if (!ieee80211_is_assoc_resp(fc) && !ieee80211_is_reassoc_resp(fc) &&
-	    !ieee80211_is_assoc_req(fc) && !ieee80211_is_reassoc_req(fc))
-		return 0;
-
 	ie = (void *) find_bss_max_idle_ie(tx->skb);
 
 	if (ie) {
@@ -612,8 +636,8 @@ static int tx_h_bss_max_idle_period(struct nrc_trx_data *tx)
 		goto out;
 	}
 
-	if((tx->vif->type == NL80211_IFTYPE_STATION && i_vif->max_idle_period == 0) ||
-	   (tx->vif->type == NL80211_IFTYPE_AP && (i_vif->max_idle_period == 0 && i_sta->max_idle.period == 0)))
+	if(tx->vif->type == NL80211_IFTYPE_STATION ||
+	   (tx->vif->type == NL80211_IFTYPE_AP && i_vif->max_idle_period == 0))
 		return 0;
 
 	/* Add Extended BSS Max Idle Period IE */
@@ -627,13 +651,8 @@ static int tx_h_bss_max_idle_period(struct nrc_trx_data *tx)
 		goto out;
 	}
 
-	if(tx->vif->type == NL80211_IFTYPE_STATION){
-		ie->max_idle_period = i_vif->max_idle_period;
-		ie->idle_option = 0;
-	}else{
-		ie->max_idle_period = i_sta->max_idle.period;
-		ie->idle_option = i_sta->max_idle.options;
-	}
+	ie->max_idle_period = i_sta->max_idle.period;
+	ie->idle_option = i_sta->max_idle.options;
 
  out:
 	nrc_mac_dbg("%s: %s, max_idle_period(16bit)=0x%x", __func__,
@@ -699,13 +718,13 @@ static int rx_h_bss_max_idle_period(struct nrc_trx_data *rx)
 	/* Find BSS Max Idle Element and Save fields in i_sta->max_idle.period and options */
 	ie = (struct bss_max_idle_period_ie *) find_bss_max_idle_ie(rx->skb);
 	if (ie) {
-		/*
-		 * For a NL80211_IFTYPE_STATION vif, we are recording
-		 * 'agreed' BSS Max Idle Period, whereas NL80211_IFTYPE_AP vif,
-		 * we are recoding STA's 'preferred' value.
-		 */
-		i_sta->max_idle.period = ie->max_idle_period;
-		i_sta->max_idle.options = ie->idle_option;
+		if (rx->vif->type == NL80211_IFTYPE_AP) {
+			i_sta->max_idle.period = i_vif->max_idle_period;
+			i_sta->max_idle.options = 0;
+		}else{
+			i_sta->max_idle.period = ie->max_idle_period;
+			i_sta->max_idle.options = ie->idle_option;
+		}
 
 	} else {
 		i_sta->max_idle.options = 0;
