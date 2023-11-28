@@ -52,11 +52,6 @@ static void setup_ba_session(struct nrc *nw, struct ieee80211_vif *vif, struct s
 
 /* TX */
 #define USF2SF(usf)	((usf == 0) ? 1 : (usf == 1) ? 10 : (usf == 2) ? 1000 : 10000)
-static uint32_t restore_usf(uint16_t usf)
-{
-	uint32_t sf = (usf & 0x3fff) * USF2SF(usf >> 14);
-	return sf;
-}
 
 bool nrc_is_valid_vif (struct nrc *nw, struct ieee80211_vif *vif)
 {
@@ -152,7 +147,7 @@ void nrc_mac_tx(struct ieee80211_hw *hw,
 			if (tx.nw->drv_state == NRC_DRV_PS) {
 				memset(&tx.nw->d_deauth, 0, sizeof(struct nrc_delayed_deauth));
 				if (ieee80211_is_deauth(mh->frame_control)) {
-					nrc_ps_dbg("[%s,L%d][deauth] drv_state:%d\n", __func__, __LINE__, tx.nw->drv_state);
+					nrc_common_dbg("[%s,L%d][deauth] drv_state:%d\n", __func__, __LINE__, tx.nw->drv_state);
 					memcpy(&tx.nw->d_deauth.v, tx.vif, sizeof(struct ieee80211_vif));
 					memcpy(&tx.nw->d_deauth.s, tx.sta, sizeof(struct ieee80211_sta));
 					nrc_hif_wake_target(tx.nw->hif);
@@ -197,28 +192,6 @@ void nrc_mac_tx(struct ieee80211_hw *hw,
 		res = h->handler(&tx);
 		if (res < 0)
 			goto txh_out;
-	}
-
-	/* (AP) check listen interval is greater than bss max idle.
-		If then, forcefully reject connection by setting status code 51 in assoc resp */
-	if (!ignore_listen_interval && tx.sta && (ieee80211_is_assoc_resp(mh->frame_control) ||
-		ieee80211_is_reassoc_resp(mh->frame_control))) {
-		struct nrc_sta *i_sta = to_i_sta(tx.sta);
-		uint32_t max_idle_period;
-		if(!i_sta){
-			nrc_dbg(NRC_DBG_STATE,
-				"Fail to find nrc data during associate response(%pM)", tx.sta->addr);
-			goto txh_out;
-		}
-		max_idle_period = restore_usf(i_sta->max_idle.period);
-		if (max_idle_period > 0 &&
-			((uint32_t)i_sta->listen_interval * (uint32_t)tx.nw->beacon_int / 1000) >= max_idle_period) {
-			struct ieee80211_mgmt *mgmt = (struct ieee80211_mgmt *)tx.skb->data;
-			nrc_dbg(NRC_DBG_STATE,
-				"[AP] Send associate response with DENIED_LISTEN_INTERVAL_TOO_LARGE(51) (%pM)",
-				tx.sta->addr);
-			mgmt->u.assoc_resp.status_code = 51; // DENIED_LISTEN_INTERVAL_TOO_LARGE
-		}
 	}
 
 	if (!atomic_read(&tx.nw->d_deauth.delayed_deauth))
@@ -854,7 +827,9 @@ int nrc_mac_rx(struct nrc *nw, struct sk_buff *skb)
 
 	if (!rx.result) {
 		if (!disable_cqm) {
-			if (nw->associated_vif && ieee80211_is_probe_resp(fc)) {
+			if (nw->associated_vif &&
+				ieee80211_is_probe_resp(fc) &&
+				nw->scan_mode == NRC_SCAN_MODE_IDLE) {
 				mod_timer(&nw->bcn_mon_timer,
 					jiffies + msecs_to_jiffies(nw->beacon_timeout));
 			}
@@ -1121,6 +1096,49 @@ static int rx_h_debug_print(struct nrc_trx_data *rx)
 RXH(rx_h_debug_print, NL80211_IFTYPE_ALL);
 #endif //#if NRC_DBG_PRINT_FRAME_RX
 
+#ifdef CONFIG_SUPPORT_MESH_ROUTING
+static int rx_h_mesh(struct nrc_trx_data *rx)
+{
+	struct ieee80211_mgmt *mgmt;
+	struct nrc_sta *i_sta;
+	__le16 fc;
+	int rssi = nrc_stats_get_mesh_rssi_threshold();
+	bool is_mesh_action = false;
+
+	if(!rx->sta) {
+		return 0;
+	}
+
+	i_sta = to_i_sta(rx->sta);
+	mgmt = (void *) rx->skb->data;
+	fc = mgmt->frame_control;
+
+	if (i_sta && i_sta->state == IEEE80211_STA_AUTHORIZED &&
+		ieee80211_is_action(fc)) {
+		if (ieee80211_has_protected(fc) && sw_enc != WIM_ENCDEC_HW) {
+			is_mesh_action = true;
+		} else {
+			if (mgmt->u.action.category == WLAN_CATEGORY_MESH_ACTION) {
+				if (mgmt->u.action.u.mesh_action.action_code ==
+					WLAN_MESH_ACTION_HWMP_PATH_SELECTION) {
+					is_mesh_action = true;
+				}
+			}
+		}
+	}
+
+	if (is_mesh_action) {
+		if (nrc_stats_metric(rx->sta->addr) < nrc_stats_calc_metric(rssi)) {
+			nrc_mac_dbg("%s: LOW RSSI!(< %d) drop mesh action from %pM",
+				__func__, rssi, rx->sta->addr);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+RXH(rx_h_mesh, BIT(NL80211_IFTYPE_MESH_POINT));
+#endif
 
 /**
  * nrc_mac_trx_init() - Initialize TRX data path

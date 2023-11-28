@@ -34,14 +34,26 @@
 #define SHOW_VERSION_KEY_LIST	"Newracom Firmware Version,gerrit/master,Board Revision,Description"
 
 /* show config */
-#define SHOW_CONFIG_DISP		"%s,%s,\
-%s,%s,%d (%d),%d (%d),%s,%d,%s,%s,\
-%s,%s,%s,%d,%s,%s,%s,\
-0x%x,%s,%s,%s,%s,%d,%d,%s"
-#define SHOW_CONFIG_KEY_LIST "[MAC Configuration]\nDevice Mode,MAC Address,\
-Country,Bandwidth,Frequency,MAC80211_freq,Rate Control, -MCS, -bw,Guard Interval,\
-Security,Type,RTS,RTS threshold,Format,Preamble type,Promiscuous Mode,\
-color,Auto CFO Cal,BSSID,AID,\n[PHY Configuration]\nTX_Gain,Base RX_Gain,Compensated RX_Gain,Tx Power Type"
+#define SHOW_CONFIG_DISP "%s,%s,%s,\
+%s,%s,%s,%d,%s,\
+%d (%d),%d (%d),\
+%d,%s,%s,%s,%s,%s,\
+%s,%s,%s,%s,\
+%s,%s,%s,%s,%s,\
+0x%x,%s,%s,%d,%s,%s,%s,\
+%s,%s,%s,%s,%s,\
+%s,%s,%s,%d,%d,%s"
+
+
+#define SHOW_CONFIG_KEY_LIST "[MAC Configuration]\nBoot Mode,Device Mode,MAC Address,\
+Country,Bandwidth, - PRI CH BW, - PRI CH LO, - Center LO,\
+Frequency,MAC80211_freq,\
+Default MCS,Rate Control, - Mode, - Info, - MCS10(MGMT),Guard Interval,\
+Security,  - AKM,  - Cipher,  - Type,\
+RTS, - threshold,Format,Preamble type,Promiscuous Mode,\
+Color,RF,Auto CFO Cal,TX Retry Limit,Fragment,Defragment,PS pretend,\
+Bitmap Encoding,Reverse Scrambler,Power Save, - type, - duration,\
+BSSID,AID,\n[PHY Configuration]\nTx Gain,Base Rx Gain,Compensated Rx Gain,Tx Power Type"
 
 /* show edca */
 #define SHOW_EDCA_DISP		"%d,%d,%d,%d,\
@@ -190,6 +202,11 @@ Tx power index for MCS 6,Tx power index for MCS 7,Tx power index for MCS 10"
 /* show xtal status */
 #define SHOW_XTAL_STATUS_DISP "%d"
 #define SHOW_XTAL_STATUS_LIST "XTAL status"
+
+/* show rc */
+#define SHOW_RC_KEY_DISP	"%2d %2d,%2d %2d,%2d %2d,%2d %2d"
+#define SHOW_RC_KEY_LIST	" maxtp, tp2, maxp, lowest"
+
 
 /* show rc_pf */
 #define SHOW_RC_PF_KEY_DISP	"%d"
