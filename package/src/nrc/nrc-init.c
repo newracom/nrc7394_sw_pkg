@@ -120,10 +120,6 @@ int bss_max_idle;
 module_param(bss_max_idle, int, 0600);
 MODULE_PARM_DESC(bss_max_idle, "BSS Max Idle");
 
-int bss_max_idle_vif1;
-module_param(bss_max_idle_vif1, int, 0600);
-MODULE_PARM_DESC(bss_max_idle_vif1, "BSS Max Idle VIF1");
-
 /**
  * bss_max_idle_usf_format
  */
@@ -259,13 +255,6 @@ module_param(debug_level_all, bool, 0600);
 MODULE_PARM_DESC(debug_level_all, "Driver debug level all");
 
 /**
- * credit number for AC_BE
- */
-int credit_ac_be = 40; //default 40
-module_param(credit_ac_be, int, 0600);
-MODULE_PARM_DESC(credit_ac_be, "(Test only) credit number for AC_BE");
-
-/**
  * discard TX deauth frame for Mult-STA test
  */
 bool discard_deauth = false;
@@ -319,6 +308,42 @@ MODULE_PARM_DESC(beacon_loss_count, "Number of beacon intervals before we decide
 bool ignore_listen_interval = false;
 module_param(ignore_listen_interval, bool, 0600);
 MODULE_PARM_DESC(ignore_listen_interval, "Ignore listen interval value while comparing it with bss max idle on AP");
+
+/**
+ * Supported CH width (0 (1/2Mhz)  or 1 (1/2/4MHz))
+ */
+int support_ch_width = 1;
+module_param(support_ch_width, int, 0600);
+MODULE_PARM_DESC(support_ch_width, "Supported CH width (0:1/2MHz Support, 1:1/2/4Mhz Support");
+
+/**
+ * Set rate control mode
+ */
+uint8_t ap_rc_mode = 0;
+//module_param(ap_rc_mode, byte, 0600);
+//MODULE_PARM_DESC(ap_rc_mode, "AP Rate control mode (1:Disable,Use default_mcs, 2:Individual RC for each STA. 3:RC incorporating RX MCS");
+
+uint8_t sta_rc_mode = 0;
+//module_param(sta_rc_mode, byte, 0600);
+//MODULE_PARM_DESC(sta_rc_mode, "STA Rate control mode (1:Disable,Use default_mcs, 2:Individual RC for each STA. 3:RC incorporating RX MCS");
+
+/**
+ * Set default mcs
+ */
+uint8_t ap_rc_default_mcs = 2;
+//module_param(ap_rc_default_mcs, byte, 0600);
+//MODULE_PARM_DESC(ap_rc_default_mcs, "AP Default MCS");
+
+uint8_t sta_rc_default_mcs = 2;
+//module_param(sta_rc_default_mcs, byte, 0600);
+//MODULE_PARM_DESC(sta_rc_default_mcs, "STA Default MCS");
+
+/**
+ * Power save pretend value for no response STA
+ */
+bool ps_pretend = false;
+module_param(ps_pretend, bool, 0600);
+MODULE_PARM_DESC(ps_pretend, "Power save pretend for no response STA");
 
 static bool has_macaddr_param(uint8_t *dev_mac)
 {
@@ -449,11 +474,12 @@ static void nrc_on_fw_ready(struct sk_buff *skb, struct nrc *nw)
 						ready->v.cap.cap);
 	nrc_dbg(NRC_DBG_HIF, "  -- cap_li: %d, %d",
 						ready->v.cap.listen_interval, listen_interval);
-	nrc_dbg(NRC_DBG_HIF, "  -- cap_idle: %d, %d, %d",
-						ready->v.cap.bss_max_idle, bss_max_idle, bss_max_idle_vif1);
+	nrc_dbg(NRC_DBG_HIF, "  -- cap_idle: %d, %d",
+						ready->v.cap.bss_max_idle, bss_max_idle);
 
 	nw->cap.cap_mask = ready->v.cap.cap;
 	nw->cap.listen_interval = ready->v.cap.listen_interval;
+	nw->cap.bss_max_idle = ready->v.cap.bss_max_idle;
 	nw->cap.max_vif = ready->v.cap.max_vif;
 
 	if (has_macaddr_param(nw->mac_addr[0].addr)) {
@@ -498,28 +524,16 @@ static void nrc_on_fw_ready(struct sk_buff *skb, struct nrc *nw)
 	if (nrc_mac_is_s1g(hw->priv) && bss_max_idle_usf_format) {
 		/* bss_max_idle: in unit of 1000 TUs (1024ms = 1.024 seconds) */
 		if (bss_max_idle > 16383 * 10000 || bss_max_idle <= 0) {
-			nw->cap.vif_bss_max_idle[0] = 0;
+			nw->cap.bss_max_idle = 0;
 		} else {
 			/* Convert in USF Format (Value (14bit) * USF(2bit)) and save it */
-			nw->cap.vif_bss_max_idle[0] = convert_usf(bss_max_idle);
-		}
-		/* bss_max_idle_vif1: in unit of 1000 TUs (1024ms = 1.024 seconds) */
-		if (bss_max_idle_vif1 > 16383 * 10000 || bss_max_idle_vif1 <= 0) {
-			nw->cap.vif_bss_max_idle[1] = 0;
-		} else {
-			/* Convert in USF Format (Value (14bit) * USF(2bit)) and save it */
-			nw->cap.vif_bss_max_idle[1] = convert_usf(bss_max_idle_vif1);
+			nw->cap.bss_max_idle = convert_usf(bss_max_idle);
 		}
 	} else {
 		if (bss_max_idle > 65535 || bss_max_idle <= 0) {
-			nw->cap.vif_bss_max_idle[0] = 0;
+			nw->cap.bss_max_idle = 0;
 		} else {
-			nw->cap.vif_bss_max_idle[0] = bss_max_idle;
-		}
-		if (bss_max_idle_vif1 > 65535 || bss_max_idle_vif1 <= 0) {
-			nw->cap.vif_bss_max_idle[1] = 0;
-		} else {
-			nw->cap.vif_bss_max_idle[1] = bss_max_idle_vif1;
+			nw->cap.bss_max_idle = bss_max_idle;
 		}
 	}
 
@@ -542,6 +556,7 @@ int nrc_fw_start(struct nrc *nw)
 	p->bitmap_encoding = bitmap_encoding;
 	p->reverse_scrambler = reverse_scrambler;
 	p->kern_ver = (NRC_TARGET_KERNEL_VERSION>>8)&0x0fff; // 12 bits for kernel version (4 for major, 8 for minor)
+	p->ps_pretend_flag = ps_pretend;
 	p->vendor_oui = VENDOR_OUI;
 	if (nw->chip_id == 0x7292) {
 		p->deepsleep_gpio_dir = TARGET_DEEP_SLEEP_GPIO_DIR_7292;
@@ -554,6 +569,7 @@ int nrc_fw_start(struct nrc *nw)
 	if(sw_enc < 0)
 		sw_enc = 0;
 	p->sw_enc = sw_enc;
+	p->supported_ch_width = support_ch_width;
 	skb_resp = nrc_xmit_wim_request_wait(nw, skb_req, (WIM_RESP_TIMEOUT * 30));
 	if (skb_resp)
 		nrc_on_fw_ready(skb_resp, nw);

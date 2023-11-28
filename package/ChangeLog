@@ -4,97 +4,151 @@
 *
 *******************************************************************
 
+[2023-11-15]
+Change summary for version 1.2:
+
+  New features
+    * Multi-STA rate control (RC) for AP: provide individual RC for each STA
+    * RSSI-based rate control (RC) for STA
+      o cli_app set rc_pf <1|2> (This should be done before the Wi-Fi connection.)
+        1: original RC (default)
+        2: RSSI based RC
+
+  Bugfix
+    * Throughput degradation by fragmented A-MPDU MAC frame
+    * NDP CTS compliance for RTS with response indication (RI) 1 on AP
+    * Not to send WIM message when target is in deep sleep
+    * Delayed ping issue triggerd by powering off the STA
+    * Long beacon only duty cycle setting issue
+    * Null pointer dereference triggerd by a keep alive frame after the disassociation
+    * Bandwidth misconfiguration in the MCS10 frame triggered by fragmentation cancellation under strong RSSI
+    * Kernel panic triggerd by the inaccessable vif address when hostapd is disabled in 4-address (bridge) mode
+    * Fail to enable hybrid security on the relay node
+    * Occasional modem recovery operation on the bridged relay node
+    * Prohibit scan operations during deep sleep mode
+    * Flush the mac80211 TX queue in Kernel 4.x. 
+      (The mac80211 TX queue scheduling function is not supported in Kernel 4.x. 
+       Therefore, flush the mac80211 TX queue and clean the NRC TX queue.)
+    * Set an invalid AID in the AID response element when sending an association response
+
+  Changes
+    * Update cli_app commands: refer to UG-7394-007-Commnad line application document
+    * Coverage enhancement by using 1/2MHz MCS0 frame on 2/4MHz channels
+    * 1/2MHz STA support at 4MHz AP
+    * DTS update for SPI interface: enable spidev0.1
+    * Enhance auto guard interval (GI) with peer node's GI capability check
+    * Add auto RX gain control
+    * Increase buffer pool and credit number of AC_BE for flow control between host and target 
+      (from 40 to 80 and it's not configurable anymore via the module parameter)
+    * WDT reset recovery support on MAP
+    * Enhance to discard frames with corrupted host interface header
+    * Check traveling pilot support field of S1G capabilities element
+    * Enhance to conduct TRX operation during the background scanning
+    * Improve routing at the low RSSI on the mesh node
+    * Recover 'rxskb' error through the reset HSPI controller
+    * Mesh inactivity timer off by default
+    * China channel update: 749.0MHz ~ 757.0MHz
+    * Multi-STA support change: up to 484 STAs (due to the increased memory usage of multi-STA RC)
+    * PS Pretend mode to maintain network performance and minimize the impact of non-responsive STAs
+
+  Known Issues
+    * In multi-hop mesh network, DHCP may experience delays or failures. 
+      It is recommended to use static IP addresses for networks with more than three hops.
+    * Using a short guard interval on 1 or 2 MHz channels can lead to degraded performance.
+    * The issue of deauthentication frame delivery failure can occur 
+      between PMF-enabled NRC7394 and PMF-enabled NRC7292 devices.
+
 [2023-09-20]
 Change summary for version 1.1:
 
-    New features
-      * GPIO configuration for deep sleep
-          o Host mode (Build-time configuration)
-            - build-time configuration by editing in nrc-vendor.h
-              : TARGET_DEEP_SLEEP_GPIO_DIR
-                TARGET_DEEP_SLEEP_GPIO_OUT
-                TARGET_DEEP_SLEEP_GPIO_PULLUP
-          o Host mode (Run-time configuration)
-            - run-time configuration by cli_app
-              : cli_app set deepsleep_gpio <dir> <out> <pullup>
-	    * Support preferred BSS Max Idle period of STA on AP
+  New features
+    * GPIO configuration for deep sleep
+        o Host mode (Build-time configuration)
+          - build-time configuration by editing in nrc-vendor.h
+            : TARGET_DEEP_SLEEP_GPIO_DIR
+              TARGET_DEEP_SLEEP_GPIO_OUT
+              TARGET_DEEP_SLEEP_GPIO_PULLUP
+        o Host mode (Run-time configuration)
+          - run-time configuration by cli_app
+            : cli_app set deepsleep_gpio <dir> <out> <pullup>
+    * Support preferred BSS Max Idle period of STA on AP
 
-    Bugfix
-      * Unstable power consumption under deep sleep mode
-      * Duplicate TIM checking
-      * AP's downlink throughput is abnormally high under LBT condition of KR domain
-      * AP sends 1/2/4M probe response frame according to bandwidth of probe request from STA
-      * Delayed response for 'iw scan' command under the heavy traffic
-      * Multicast frame's SN is not sequential when duty cycle is on
-      * Kernel panic caused when beacon_bypass_enable of start.py is 1
-      * Invalid secondary CCA on JP 2/4MHz channels
-      * Occaionsal WDT reset occurs when performing frequent ifconfig up/down operations on AP
-      * 1MHz primary channel location compliance issue: device should follow the location of the 1MHz primary channel
-      * frame format compliance issue: the same frame format should be used within a single frame sequence
-      * RI of RTS compliance issue: legacy CTS frame format was used in open mode AP
+  Bugfix
+    * Unstable power consumption under deep sleep mode
+    * Duplicate TIM checking
+    * AP's downlink throughput is abnormally high under LBT condition of KR domain
+    * AP sends 1/2/4M probe response frame according to bandwidth of probe request from STA
+    * Delayed response for 'iw scan' command under the heavy traffic
+    * Multicast frame's SN is not sequential when duty cycle is on
+    * Kernel panic caused when beacon_bypass_enable of start.py is 1
+    * Invalid secondary CCA on JP 2/4MHz channels
+    * Occaionsal WDT reset occurs when performing frequent ifconfig up/down operations on AP
+    * 1MHz primary channel location compliance issue: device should follow the location of the 1MHz primary channel
+    * frame format compliance issue: the same frame format should be used within a single frame sequence
+    * RI of RTS compliance issue: legacy CTS frame format was used in open mode AP
 
-    Changes
-      * Update cli_app commands: refer to UG-7394-007-Commnad line application document
-      * Update KR/CN channels: refer to UG-7394-003-S1G_Channel document
-      * Enable MIC detection in the mesh device on KR-USN5 band
-      * Apply 128usec CS time and 2sec pause time for all JP channels
-      * Duty cycle 2.8% support only for EU STA
-      * Support kernel 6.1.21 (32-bit/64-bit)
-      * Support iwconfig wlan0 frag <threshold value>
-      * Add vendor IE in probe request/respone and assoc request frames
-  		* Add retransmission scheme about sending QoS Null with PM1 for power save operation
-      * Optimize the initialization process of uCode
-      * Change module parameter of the host driver for the configuration of A-MPDU (0:disable, 1:manual, 2:auto(default))
-      * Support 'iw scan' command on the mesh node
+  Changes
+    * Update cli_app commands: refer to UG-7394-007-Commnad line application document
+    * Update KR/CN channels: refer to UG-7394-003-S1G_Channel document
+    * Enable MIC detection in the mesh device on KR-USN5 band
+    * Apply 128usec CS time and 2sec pause time for all JP channels
+    * Duty cycle 2.8% support only for EU STA
+    * Support kernel 6.1.21 (32-bit/64-bit)
+    * Support iwconfig wlan0 frag <threshold value>
+    * Add vendor IE in probe request/respone and assoc request frames
+		* Add retransmission scheme about sending QoS Null with PM1 for power save operation
+    * Optimize the initialization process of uCode
+    * Change module parameter of the host driver for the configuration of A-MPDU (0:disable, 1:manual, 2:auto(default))
+    * Support 'iw scan' command on the mesh node
 
-    Known Issues
-      * In multi-hop mesh network, DHCP may experience delays or failures. 
-        It is recommended to use static IP addresses for networks with more than three hops.
-      * Using a short guard interval on 1 or 2 MHz channels can lead to degraded performance.
-      * WDT reset recovery is not supported on MAP.
-      * The issue of deauthentication frame delivery failure can occur 
-        between PMF-enabled NRC7394 and PMF-enabled NRC7292 devices.
+  Known Issues
+    * In multi-hop mesh network, DHCP may experience delays or failures. 
+      It is recommended to use static IP addresses for networks with more than three hops.
+    * Using a short guard interval on 1 or 2 MHz channels can lead to degraded performance.
+    * WDT reset recovery is not supported on MAP.
+    * The issue of deauthentication frame delivery failure can occur 
+      between PMF-enabled NRC7394 and PMF-enabled NRC7292 devices.
 
 [2023-04-12]
-    Change summary for version 1.1-rc1:
+  Change summary for version 1.1-rc1:
 
-    New features
-      * Mutiple country code RF calibration support: US/JP/K1/K2 (v1.1)
-      * Temperature sensor and power offset compensation (v1.1)
+  New features
+    * Mutiple country code RF calibration support: US/JP/K1/K2 (v1.1)
+    * Temperature sensor and power offset compensation (v1.1)
 
 [2023-04-05]
-    Change summary for version 1.0:
+  Change summary for version 1.0:
 
-    New features
-      * HaLow certification features
-        o HaLow R1 mandatory features (v1.0)
-        o HaLow R1 optional features (v1.0)
-          - AP optional features: BSS color, fragmentation
-          - STA optional features: MCS 3-7, NDP probing, A-MPDU TX, power save
-      * Security features
-        o WPA3-SAE (v1.0)
-        o OWE (v1.0)
-        o Kr00k vulnerability (v1.0)
-      * Network stack features
-        o Channel switch announcement (CSA) (v1.0)
-        o Dynamic vendor IE (v1.0)
-        o WPS-PBC (v1.0)
-        o IEEE 802.11s mesh network (v1.0)
-        o Tree-based relay network (v1.0)
-        o Network bridge (v1.0)
-        o Self-configuration (v1.0)
-        o RSSI-based roaming (v1.0)
-        o Passive scan (v1.0)
-      * Regulation features
-        o Duty cycle (v1.0)
-      * System features
-        o Power save – deep sleep (v1.0)
-        o WDT/Recovery (v1.0)
+  New features
+    * HaLow certification features
+      o HaLow R1 mandatory features (v1.0)
+      o HaLow R1 optional features (v1.0)
+        - AP optional features: BSS color, fragmentation
+        - STA optional features: MCS 3-7, NDP probing, A-MPDU TX, power save
+    * Security features
+      o WPA3-SAE (v1.0)
+      o OWE (v1.0)
+      o Kr00k vulnerability (v1.0)
+    * Network stack features
+      o Channel switch announcement (CSA) (v1.0)
+      o Dynamic vendor IE (v1.0)
+      o WPS-PBC (v1.0)
+      o IEEE 802.11s mesh network (v1.0)
+      o Tree-based relay network (v1.0)
+      o Network bridge (v1.0)
+      o Self-configuration (v1.0)
+      o RSSI-based roaming (v1.0)
+      o Passive scan (v1.0)
+    * Regulation features
+      o Duty cycle (v1.0)
+    * System features
+      o Power save – deep sleep (v1.0)
+      o WDT/Recovery (v1.0)
 
-    Known Issues
-      * In multi-hop mesh network, DHCP may experience delays or failures. 
-        It is recommended to use static IP addresses for networks with more than three hops.
-      * Using a short guard interval on 1 or 2 MHz channels can lead to degraded performance.
-      * WDT reset recovery is not supported on concurrent mode devices such as MAP or relay.
-      * The issue of deauthentication frame delivery failure can occur 
-        between PMF-enabled NRC7394 and PMF-enabled NRC7292 devices.
+  Known Issues
+    * In multi-hop mesh network, DHCP may experience delays or failures. 
+      It is recommended to use static IP addresses for networks with more than three hops.
+    * Using a short guard interval on 1 or 2 MHz channels can lead to degraded performance.
+    * WDT reset recovery is not supported on concurrent mode devices such as MAP or relay.
+    * The issue of deauthentication frame delivery failure can occur 
+      between PMF-enabled NRC7394 and PMF-enabled NRC7292 devices.
