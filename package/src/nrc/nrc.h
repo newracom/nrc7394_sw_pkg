@@ -73,6 +73,9 @@ enum NRC_SCAN_MODE {
 #define	NRC_FW_PREPARE_SLEEP			(2)
 #define	NRC_FW_SLEEP					(3)
 
+#define NRC_BD_READY			(0)
+#define NRC_BD_LOADING			(1)
+
 enum NRC_DRV_STATE {
 	NRC_DRV_REBOOT = -2,
 	NRC_DRV_BOOT = -1,
@@ -136,7 +139,7 @@ struct vif_capabilities {
 struct nrc_capabilities {
 	uint64_t cap_mask;
 	uint16_t listen_interval;
-	uint16_t vif_bss_max_idle[NR_NRC_VIF];
+	uint16_t bss_max_idle;
 	uint8_t bss_max_idle_options;
 	uint8_t max_vif;
 	struct vif_capabilities vif_caps[NR_NRC_VIF];
@@ -203,6 +206,7 @@ struct nrc {
 	struct mac_address mac_addr[NR_NRC_VIF];
 
 	int drv_state;
+	atomic_t bd_down;
 	atomic_t fw_state;
 	atomic_t fw_tx;
 	atomic_t fw_rx;
@@ -519,7 +523,6 @@ extern bool signal_monitor;
 extern int kr_band;
 extern bool debug_level_all;
 extern bool enable_short_bi;
-extern int credit_ac_be;
 extern bool discard_deauth;
 extern bool dbg_flow_control;
 #if defined(CONFIG_S1G_CHANNEL)
@@ -538,6 +541,11 @@ extern int power_save_gpio[];
 extern int beacon_loss_count;
 extern bool ignore_listen_interval;
 extern const char *const eu_countries_cc[];
+extern int support_ch_width;
+extern uint8_t ap_rc_mode;
+extern uint8_t sta_rc_mode;
+extern uint8_t ap_rc_default_mcs;
+extern uint8_t sta_rc_default_mcs;
 
 void nrc_set_bss_max_idle_offset(int value);
 void nrc_set_auto_ba(bool toggle);
