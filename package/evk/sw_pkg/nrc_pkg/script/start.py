@@ -49,7 +49,6 @@ ft232h_usb_spi = 0            # FTDI FT232H USB-SPI bridge
 #################################################################################
 # RF Conf.
 max_txpwr         = 24       # Maximum TX Power (in dBm)
-epa               = 0        # (7394 only) External PA : 0(none) or 1(used)
 bd_name           = ''       # board data name (bd defines max TX Power per CH/MCS/CC)
                              # specify your bd name here. If not, follow naming rules in strBDName()
 ##################################################################################

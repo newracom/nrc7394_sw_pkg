@@ -143,7 +143,6 @@ static int cmd_set_mesh_rssi_threshold(cmd_tbl_t *t, int argc, char *argv[]);
 * sub commands on set and show
 *******************************************************************************/
 static int cmd_self_configuration(cmd_tbl_t *t, int argc, char *argv[]);
-static int cmd_set_rc_pf(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_rc_param(cmd_tbl_t *t, int argc, char *argv[]);
 
 /*******************************************************************************
@@ -244,7 +243,6 @@ cmd_tbl_t show_sub_list[] = {
 	{ "app_version", cmd_show_app_version, "show app version", "show app_version",  "", 0},
 	{ "sysconfig", cmd_show_sysconfig, "show sysconfig", "show sysconfig",  "", 0},
 	{ "rc", cmd_show_rc, "show tx's retry mcs info, maxtp/tp2/maxp/lowest","show rc [vif_id] [aid]", SHOW_RC_KEY_LIST, 0},
-	{ "rc_pf", cmd_show_rc_pf, "show rate control profile number", "show rc_pf", SHOW_RC_PF_KEY_LIST, 0},
 	{ "rc_param", cmd_show_rc_param, "show configured rate control parameter", "show rc_param", SHOW_RC_PARAM_KEY_LIST, 0},
 	{ "xtal_status", cmd_show_xtal_status, "show xtal_status", "show xtal_status",  SHOW_XTAL_STATUS_LIST, 0},
 	{ "bcn_mcs", cmd_show_bcn_mcs, "show beacon mcs", "show bcn_mcs [vif_id]",  "", 1},
@@ -276,8 +274,7 @@ cmd_tbl_t set_sub_list[] = {
 	{ "support_ch_width", cmd_set_support_ch_width, "set supported ch width in s1g capa ie (0:1/2M, 1:1/2/4M)", "set support_ch_width [0|1]", "", 0},
 	{ "ampdu_mode", cmd_set_ampdu_mode, "set ampdu_mode ", "set ampdu_mode [disable|manual|auto]", "", 0},
 	{ "bcn_mcs", cmd_set_bcn_mcs, "set bcn_mcs ", "set bcn_mcs [vif_id] [10|0|1|2|3|4|5|6|7]\n", "", 0},
-	{ "rc_pf", cmd_set_rc_pf, "set rate control profile number", "set rc_pf [1|2]", SET_RC_PF_KEY_LIST, 0},
-	{ "rc_param", cmd_set_rc_param, "set rate control parameter", "set rc_param {1|2|3|4|5} {1|2|3|4|5|6|7}", SET_RC_PARAM_KEY_LIST, 0},
+	{ "rc_param", cmd_set_rc_param, "set rate control parameter", "set rc_param {1|2|3|4|5} {1|2|3|4|5|6|7} {1|..|255}", SET_RC_PARAM_KEY_LIST, 0},
 	{ "bgscan_trx", cmd_set_bgscan_trx, "set bgscan_trx ", "set bgscan_trx [1:enable|0:disable] [wait time operation ch for rx: (0~100)msec]", "", 0},
 	{ "scan_period", cmd_set_scan_period, "set scan_period", "set scan_period [dwell time (min 20ms)]", "", 0},
 	{ "mesh_rssi_threshold", cmd_set_mesh_rssi_threshold, "set mesh_rssi_threshold ", "set mesh_rssi_threshold {-120~-10dBm}", "", 0},
@@ -1419,24 +1416,11 @@ static int cmd_show_rc(cmd_tbl_t *t, int argc, char *argv[])
 	return ret;
 }
 
-static int cmd_show_rc_pf(cmd_tbl_t *t, int argc, char *argv[])
-{
-	int ret = CMD_RET_SUCCESS;
-	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	const int display_per_line= 1;
-
-	ret = run_shell_cmd(t, argc, argv, "show rc_pf", response, sizeof(response));
-	if(ret == CMD_RET_SUCCESS){
-		cmd_result_parse((char*)t->key_list, response, display_per_line);
-	}
-	return ret;
-}
-
 static int cmd_show_rc_param(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_SUCCESS;
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	const int display_per_line= 2;
+	const int display_per_line= 1;
 
 	ret = run_shell_cmd(t, argc, argv, "show rc_param", response, sizeof(response));
 	if(ret == CMD_RET_SUCCESS){
@@ -2340,18 +2324,9 @@ static int cmd_set_color(cmd_tbl_t *t, int argc, char *argv[])
 	return run_shell_cmd(t, argc, argv, "set color", NULL, 0);
 }
 
-static int cmd_set_rc_pf(cmd_tbl_t *t, int argc, char *argv[])
-{
-	if(argc != 3){
-		printf("usage : %s\n", (char*)t->usage);
-		return CMD_RET_FAILURE;
-	}
-	return run_shell_cmd(t, argc, argv, "set rc_pf", NULL, 0);
-}
-
 static int cmd_set_rc_param(cmd_tbl_t *t, int argc, char *argv[])
 {
-	if(argc != 4){
+	if(argc != 5){
 		printf("usage : %s\n", (char*)t->usage);
 		return CMD_RET_FAILURE;
 	}

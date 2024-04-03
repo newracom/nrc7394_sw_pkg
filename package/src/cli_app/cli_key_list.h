@@ -126,13 +126,9 @@ ampdu_len_exp,min mpdu_start_spacing,rx_s1gmcs_map"
 #define SET_RC_KEY_DISP	"%s,%d,%s"
 #define SET_RC_KEY_LIST	"rc,vif_id,mode"
 
-/* set rc_pf [Profile#] */
-#define SET_RC_PF_KEY_DISP	"%d"
-#define SET_RC_PF_KEY_LIST	"Profile#"
-
 /* set rc_param <EWMA value> <Update interval value> */
-#define SET_RC_PARAM_KEY_DISP	"%d,%d"
-#define SET_RC_PARAM_KEY_LIST	"EWMA value,Update interval value"
+#define SET_RC_PARAM_KEY_DISP	"%d,%d,%d"
+#define SET_RC_PARAM_KEY_LIST	"EWMA value,Update interval value,Probe interval value"
 
 /* set duty <on|off> {duty window} {tx duration in duty window} {duty margin}*/
 #define SET_DUTY_KEY_DISP	"%s,%lu,%lu,%lu"
@@ -207,13 +203,8 @@ Tx power index for MCS 6,Tx power index for MCS 7,Tx power index for MCS 10"
 #define SHOW_RC_KEY_DISP	"%2d %2d,%2d %2d,%2d %2d,%2d %2d"
 #define SHOW_RC_KEY_LIST	" maxtp, tp2, maxp, lowest"
 
-
-/* show rc_pf */
-#define SHOW_RC_PF_KEY_DISP	"%d"
-#define SHOW_RC_PF_KEY_LIST	"Profile#"
-
 /* show rc_param */
-#define SHOW_RC_PARAM_KEY_DISP	"%ld,%d"
-#define SHOW_RC_PARAM_KEY_LIST	"EWMA(%),Update interval(ms)"
+#define SHOW_RC_PARAM_KEY_DISP	"%ld,%d,%d"
+#define SHOW_RC_PARAM_KEY_LIST	"EWMA(%),Update interval(ms),Probe interval(ms)"
 
 #endif /* _CLI_KEY_LIST_H_ */

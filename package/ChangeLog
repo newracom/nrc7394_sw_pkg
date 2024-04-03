@@ -4,6 +4,17 @@
 *
 *******************************************************************
 
+[2024-04-03]
+Change summary for version 1.2.1:
+
+  Hotfix
+    * Enhanced RC scheme
+      o Hotfix for slow rate adaptation in specific RF environments
+
+  Changes
+    * BDF update: K1 max power update
+    * Enable RTS/CTS for all data frames
+
 [2023-11-15]
 Change summary for version 1.2:
 
