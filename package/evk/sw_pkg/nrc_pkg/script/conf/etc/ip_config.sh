@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #This script is for setting IP and DHCP
-source /home/pi/nrc_pkg/script/conf/etc/CONFIG_IP
+source ${HOME}/nrc_pkg/script/conf/etc/CONFIG_IP
 
 if [ $# -eq 0 ]; then
 	echo "Usage: ./ip_config.sh [STA|AP|RELAY|SNIFFER|MESH|IBSS|IBSS_DHCPS] [relay_type] [static_ip] [batman]"
@@ -103,12 +103,12 @@ elif [ "$1" == "IBSS_DHCPS" ]; then
 fi
 echo "===================================="
 
-if [ -d "/home/pi/nrc_pkg" ]; then
+if [ -d "${HOME}/nrc_pkg" ]; then
 	# HaLow STA and Sniffer
 	if [[ "$1" == "STA" ]] || [[ "$1" == "SNIFFER" ]]; then
 		#interface wlan0 for HaLow STA
 		sed -i "59s/.*/interface wlan0/g" $DHCPCD_CONF_FILE
-		sed -i "60s/.*/metric 100/g" /home/pi/nrc_pkg/etc/dhcpcd/dhcpcd.conf
+		sed -i "60s/.*/metric 100/g" ${HOME}/nrc_pkg/etc/dhcpcd/dhcpcd.conf
 		if [ $USE_HALOW_STA_STATIC_IP == 'Y' ];then
 			sed -i "61s/.*/static ip_address=$HALOW_STA_IP\/$HALOW_STA_NETMASK/g" $DHCPCD_CONF_FILE
 			sed -i "62s/.*/static routers=$HALOW_STA_DEFAULT_GW/g" $DHCPCD_CONF_FILE

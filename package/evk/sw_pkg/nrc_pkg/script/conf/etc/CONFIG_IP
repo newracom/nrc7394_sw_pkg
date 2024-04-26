@@ -1,12 +1,12 @@
 ##############################################################################################
-# File /home/pi/nrc_pkg/etc/dhcpcd/dhcpcd.conf
+# File ${HOME}/nrc_pkg/etc/dhcpcd/dhcpcd.conf
 # Lines for IP for wlan0, wlan1 and eth0 should be fixed for "sed" command.
 # Do NOT move them into another line
 #  - Line 59 ~ 62 for wlan0
 #  - Line 65 ~ 68 for wlan1
 #  - Line 71 ~ 72 for eth0
 #
-# File /home/pi/nrc_pkg/etc/dnsmaq/dnsmasq.conf
+# File ${HOME}/nrc_pkg/etc/dnsmaq/dnsmasq.conf
 # Lines for IP config for wlan0, wlan1 and eth0 should be fixed for "sed" command.
 # Do NOT move them into another line
 #  - Line 1 ~ 2 for eth0
@@ -47,7 +47,7 @@ HALOW_MESH_DHCPS_CONFIG=192.168.200.0,192.168.200.255,255.255.255.0,infinite
 
 # Local Confguration files for DHCPCD and DNSMASQ
 # Those files are copied into /etc/dhcpcd.conf and /etc/dnsmaq.conf
-DHCPCD_CONF_FILE=/home/pi/nrc_pkg/etc/dhcpcd/dhcpcd.conf
-DNSMASQ_CONF_FILE=/home/pi/nrc_pkg/etc/dnsmasq/dnsmasq.conf
+DHCPCD_CONF_FILE=${HOME}/nrc_pkg/etc/dhcpcd/dhcpcd.conf
+DNSMASQ_CONF_FILE=${HOME}/nrc_pkg/etc/dnsmasq/dnsmasq.conf
 ##############################################################################################
 

@@ -16,8 +16,8 @@ from libnl.socket_ import nl_socket_add_membership, nl_socket_alloc, nl_socket_d
 
 NL_CMD_RECOVERY_MSG = 27
 
-PATH_TO_DRIVER = "/home/pi/nrc_pkg/sw/driver/nrc.ko"
-PATH_TO_CONFIG = "/home/pi/nrc_pkg/script/conf/{}/"
+PATH_TO_DRIVER = "${HOME}/nrc_pkg/sw/driver/nrc.ko"
+PATH_TO_CONFIG = "${HOME}/nrc_pkg/script/conf/{}/"
 FIRMWARE = "uni_s1g.bin"
 
 class Recovery:

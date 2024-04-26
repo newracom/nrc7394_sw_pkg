@@ -204,8 +204,8 @@ add_peer() {
 
 enable_drv() {
 	local ifname=${1}
-	sudo cp /home/pi/nrc_pkg/sw/firmware/nrc7292_cspi.bin /lib/firmware/uni_s1g.bin
-	sudo insmod /home/pi/nrc_pkg/sw/driver/nrc.ko fw_name=uni_s1g.bin hifspeed=20000000 power_save=0 sw_enc=1
+	sudo cp ${HOME}/nrc_pkg/sw/firmware/nrc7292_cspi.bin /lib/firmware/uni_s1g.bin
+	sudo insmod ${HOME}/nrc_pkg/sw/driver/nrc.ko fw_name=uni_s1g.bin hifspeed=20000000 power_save=0 sw_enc=1
 	wait_for_intf $ifname
 }
 
@@ -384,7 +384,7 @@ run_mp() {
 	enable_drv ${1}
 	sudo ifconfig ${1} up
 	echo set txpwr 17
-	/home/pi/nrc_pkg/script/cli_app set txpwr 17
+	${HOME}/nrc_pkg/script/cli_app set txpwr 17
 
 	if [ "$KEY_MGMT" != "NONE" ]; then
 		KEY_MGMT="SAE"
@@ -417,7 +417,7 @@ run_mpp() {
 	enable_drv ${1}
 	sudo ifconfig ${1} up
 	echo set txpwr 17
-	/home/pi/nrc_pkg/script/cli_app set txpwr 17
+	${HOME}/nrc_pkg/script/cli_app set txpwr 17
 
 	if [ "$KEY_MGMT" != "NONE" ]; then
 		KEY_MGMT="SAE"
@@ -451,7 +451,7 @@ run_map() {
 	enable_drv ${1}
 	enable_conc_intf ${1} ${2}
 	echo set txpwr 17
-	/home/pi/nrc_pkg/script/cli_app set txpwr 17
+	${HOME}/nrc_pkg/script/cli_app set txpwr 17
 
 	write_config_ap ap.conf ${1}
 	if [ "$KEY_MGMT" == "WPA2" ]; then

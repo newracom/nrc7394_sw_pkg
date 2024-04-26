@@ -133,13 +133,13 @@ wait_for_intf() {
 
 enable_drv() {
 	local ifname=wlan0
-	sudo cp /home/pi/nrc_pkg/sw/firmware/nrc7292_cspi.bin /lib/firmware/uni_s1g.bin
-	sudo insmod /home/pi/nrc_pkg/sw/driver/nrc.ko fw_name=uni_s1g.bin hifspeed=10000000
+	sudo cp ${HOME}/nrc_pkg/sw/firmware/nrc7292_cspi.bin /lib/firmware/uni_s1g.bin
+	sudo insmod ${HOME}/nrc_pkg/sw/driver/nrc.ko fw_name=uni_s1g.bin hifspeed=10000000
 	wait_for_intf $ifname
         sleep 5
         sudo ifconfig $ifname up
         echo set txpwr 17
-        /home/pi/nrc_pkg/script/cli_app set txpwr 17
+        ${HOME}/nrc_pkg/script/cli_app set txpwr 17
 }
 
 # Enable conc interface

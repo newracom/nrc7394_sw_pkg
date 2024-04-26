@@ -1,24 +1,24 @@
 1. Alias
  There are 4 aliases for fast access to folder or files.
  You can just type aliases to access them fast.
- For example, type "script" to access folder(/home/pi/nrc_pkg/script/) where there are scripts to manipulate 11ah AP, STA and SNIFFER.
+ For example, type "script" to access folder(${HOME}/nrc_pkg/script/) where there are scripts to manipulate 11ah AP, STA and SNIFFER.
 
-  1) nrc='cd /home/pi/nrc_pkg'
-  2) script='cd /home/pi/nrc_pkg/script/'
+  1) nrc='cd ${HOME}/nrc_pkg'
+  2) script='cd ${HOME}/nrc_pkg/script/'
   3) ipset='sudo vi /etc/dhcpcd.conf'
   4) dhcpset='sudo vi /etc/dnsmasq.conf'
 
 2. Before running EVK, you should change python files included in nrc_pkg as executable.
    Just do like below.
 
-  cd /home/pi/nrc_pkg
+  cd ${HOME}/nrc_pkg
   chmod -R 755 *
 
 
 3. Run EVK as AP, STA or Sniffer
  We provide the python script to run and stop STA, AP and Sniffer, so it's not difficult to run and stop.
  You should give 4 or 6 arguments when running them by script.
- Usage is like below. (This script is at /home/pi/nrc_pkg/script)
+ Usage is like below. (This script is at ${HOME}/nrc_pkg/script)
 
 Usage:
         start.py [sta_type] [security_mode] [country] [channel] [sniffer_mode]
@@ -45,6 +45,6 @@ Note:
 
 5. Changing Channel for Sniffer
  Running-change of channel is possible only during Sniffer Mode.
- It can be done by the script below which are on /home/pi/nrc_pkg/script/sniffer/
+ It can be done by the script below which are on ${HOME}/nrc_pkg/script/sniffer/
 
   ./change_channel [channel]
