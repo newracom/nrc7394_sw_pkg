@@ -1,24 +1,24 @@
 #!/bin/bash
 
-if [ -d "/home/${USER}/nrc_pkg_bk" ]; then
+if [ -d "${HOME}/nrc_pkg_bk" ]; then
  echo "Remove backup folder"
- rm -rf /home/${USER}/nrc_pkg_bk
+ rm -rf ${HOME}/nrc_pkg_bk
 fi
-if [ -d "/home/${USER}/nrc_pkg" ]; then
+if [ -d "${HOME}/nrc_pkg" ]; then
  echo "Backup previous package"
- mv /home/${USER}/nrc_pkg /home/${USER}/nrc_pkg_bk
+ mv ${HOME}/nrc_pkg ${HOME}/nrc_pkg_bk
 fi
 sleep 1
 
 echo "Copy new package"
 echo "apply nrc_pkg "
-cp -r ./nrc_pkg/  /home/${USER}/nrc_pkg/
+cp -r ./nrc_pkg/  ${HOME}/nrc_pkg/
 
 echo "Change mode"
-cd /home/${USER}/nrc_pkg
+cd ${HOME}/nrc_pkg
 sudo chmod -R 755 *
-sudo chmod -R 777 /home/${USER}/nrc_pkg/script/*
-sudo chmod -R 777 /home/${USER}/nrc_pkg/sw/firmware/copy
+sudo chmod -R 777 ${HOME}/nrc_pkg/script/*
+sudo chmod -R 777 ${HOME}/nrc_pkg/sw/firmware/copy
 sleep 1
 
 echo "Done"
