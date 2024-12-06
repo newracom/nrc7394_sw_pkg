@@ -4,6 +4,16 @@
 *
 *******************************************************************
 
+[2024-12-04]
+Change summary for version 1.2.2:
+
+    Hotfix
+    * Bugfix for corner cases related to 1MHz primary channel location
+
+    Changes
+    * RTS default disable
+    * Clean up obsolete feature-related parts of the start.py script
+
 [2024-04-03]
 Change summary for version 1.2.1:
 
