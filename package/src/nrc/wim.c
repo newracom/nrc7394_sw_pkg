@@ -133,6 +133,21 @@ void nrc_wim_set_ndp_preq(struct nrc *nw, struct sk_buff *skb, u8 enable)
 	nrc_wim_skb_add_tlv(skb, WIM_TLV_NDP_PREQ, sizeof(u8), &enable);
 }
 
+void nrc_wim_set_twt_responder (struct nrc *nw, struct sk_buff *skb, u8 enable)
+{
+	nrc_wim_skb_add_tlv(skb, WIM_TLV_TWT_RESPONDER, sizeof(u8), &enable);
+}
+
+void nrc_wim_set_twt_requester (struct nrc *nw, struct sk_buff *skb, u8 enable)
+{
+	nrc_wim_skb_add_tlv(skb, WIM_TLV_TWT_REQUESTER, sizeof(u8), &enable);
+}
+
+void nrc_wim_set_twt_grouping (struct nrc *nw, struct sk_buff *skb, u8 enable)
+{
+	nrc_wim_skb_add_tlv(skb, WIM_TLV_TWT_GROUPING, sizeof(u8), &enable);
+}
+
 void nrc_wim_set_rc_mode (struct nrc *nw, struct sk_buff *skb, u8 mode)
 {
 	nrc_wim_skb_add_tlv(skb, WIM_TLV_RC_MODE, sizeof(u8), &mode);
@@ -370,6 +385,7 @@ int nrc_wim_install_key(struct nrc *nw, enum set_key_cmd cmd,
 	u8 cipher;
 	const u8 *addr;
 	u16 aid = 0;
+	int ret = 0;
 
 	cipher = nrc_to_wim_cipher_type(key->cipher);
 	if (cipher == -1)
@@ -450,8 +466,11 @@ int nrc_wim_install_key(struct nrc *nw, enum set_key_cmd cmd,
 		key->keyidx,
 		p->aid);
 
+	ret = nrc_xmit_wim_request_and_return(nw, skb, WIM_RESP_TIMEOUT * 10);
 
-	return nrc_xmit_wim_request(nw, skb);
+	nrc_dbg(NRC_DBG_MAC, "%s: ret=%d(0x%x)\n", __func__, ret, ret);
+
+	return ret;
 }
 
 
@@ -526,27 +545,50 @@ int nrc_wim_set_sta_type(struct nrc *nw, struct ieee80211_vif *vif)
 		nrc_wim_skb_add_tlv(skb, WIM_TLV_NDP_ACK_1M, sizeof(u8), &ndp_ack_1m);
 		if (sta_type == WIM_STA_TYPE_AP) {
 			nrc_wim_set_ndp_preq(nw, skb, true);
-
-			if (ap_rc_mode > 3) {
-				ap_rc_mode = 3;
+			nrc_wim_set_twt_requester(nw, skb, false);
+			//if (nw->twt_responder) {
+			if (twt_sp + twt_num + twt_int != 0) {
+				nrc_wim_set_twt_responder(nw, skb, true);
+			} else {
+				nrc_wim_set_twt_responder(nw, skb, false);
 			}
-			nrc_wim_set_rc_mode(nw, skb, ap_rc_mode);
 
-			if (ap_rc_default_mcs > 7) {
-				ap_rc_default_mcs = 7;
+			if (ap_rc_mode >= 1 && ap_rc_mode <= 3) {
+				nrc_dbg(NRC_DBG_MAC, "set ap rc_mode to %d", ap_rc_mode);
+				nrc_wim_set_rc_mode(nw, skb, ap_rc_mode);
+			} else {
+				nrc_dbg(NRC_DBG_MAC, "system default ap rc_mode");
 			}
-			nrc_wim_set_default_mcs(nw, skb, ap_rc_default_mcs);
+
+			if ((ap_rc_default_mcs >= 0 && ap_rc_default_mcs <= 7) || ap_rc_default_mcs == 10) {
+				nrc_dbg(NRC_DBG_MAC, "set ap default mcs to %d", ap_rc_default_mcs);
+				nrc_wim_set_default_mcs(nw, skb, ap_rc_default_mcs);
+			} else {
+				nrc_dbg(NRC_DBG_MAC, "system default ap mcs");
+			}
 		}
 		else if(sta_type == WIM_STA_TYPE_STA) {
-			if (sta_rc_mode > 3) {
-				sta_rc_mode = 3;
+			nrc_wim_set_twt_responder(nw, skb, false);
+			if (twt_sp + twt_num + twt_int != 0) {
+				nrc_wim_set_twt_requester(nw, skb, true);
+			} else {
+				nrc_wim_set_twt_requester(nw, skb, false);
 			}
-			nrc_wim_set_rc_mode(nw, skb, sta_rc_mode);
 
-			if (sta_rc_default_mcs > 7) {
-				sta_rc_default_mcs = 7;
+			if (sta_rc_mode >= 1 && sta_rc_mode <= 3) {
+				nrc_dbg(NRC_DBG_MAC, "set sta rc_mode to %d", sta_rc_mode);
+				nrc_wim_set_rc_mode(nw, skb, sta_rc_mode);
+			} else {
+				nrc_dbg(NRC_DBG_MAC, "system default sta rc_mode");
 			}
-			nrc_wim_set_default_mcs(nw, skb, sta_rc_default_mcs);
+
+			if ((sta_rc_default_mcs >= 0 && sta_rc_default_mcs <= 7) || sta_rc_default_mcs == 10) {
+				nrc_dbg(NRC_DBG_MAC, "set sta default mcs to %d", sta_rc_default_mcs);
+				nrc_wim_set_default_mcs(nw, skb, sta_rc_default_mcs);
+			} else {
+				nrc_dbg(NRC_DBG_MAC, "system default sta mcs");
+			}
+
 		}
 	}
 
@@ -610,6 +652,45 @@ bool nrc_wim_reset_hif_tx (struct nrc *nw)
 	return (ret == 0);
 }
 
+bool nrc_wim_reset_hif_rx (struct nrc *nw)
+{
+	int ret;
+
+	ret = nrc_xmit_wim_simple_request(nw, WIM_CMD_RESET_HIF_RX);
+	return (ret == 0);
+}
+
+u64 nrc_wim_get_tsf (struct nrc *nw, struct ieee80211_vif *vif)
+{
+	struct sk_buff *req_skb, *resp_skb;
+	struct wim *wim;
+
+	u64 tsf = 0;
+
+	req_skb = nrc_wim_alloc_skb_vif(nw, vif, WIM_CMD_GET, tlv_len(0));
+	nrc_wim_skb_add_tlv(req_skb, WIM_TLV_TSF, 0, NULL);
+	resp_skb = nrc_xmit_wim_request_wait(nw, req_skb, WIM_RESP_TIMEOUT);
+
+	if (resp_skb == NULL) {
+		dev_err(nw->dev, "Failed to get TSF\n");
+		goto done;
+	}
+
+	wim = (struct wim *)resp_skb->data;
+	if (wim->cmd == WIM_CMD_GET) {
+		struct wim_tlv *tlv = (struct wim_tlv *)(wim + 1);
+		if (tlv->t == WIM_TLV_TSF) {
+			memcpy(&tsf, &tlv->v, tlv->l);
+		}
+	}
+
+	dev_kfree_skb(resp_skb);
+
+done:
+	//dev_info(nw->dev, "CUR TSF: %llu\n", tsf);
+	return tsf;
+}
+
 void nrc_wim_handle_fw_ready(struct nrc *nw)
 {
 	struct nrc_hif_device *hdev = nw->hif;
@@ -667,16 +748,61 @@ static int nrc_wim_request_handler(struct nrc *nw,
 	return 0;
 }
 
+int nrc_wim_response_init(struct nrc *nw)
+{
+	int i;
+
+	if (nw->wim_resp) {
+		dev_err(nw->dev, "wim response already exist");
+		return -EEXIST;
+	}
+
+	nw->wim_resp = kzalloc(sizeof(struct nrc_wim_response) * WIM_CMD_MAX, GFP_KERNEL);
+	if (!nw->wim_resp) {
+		dev_err(nw->dev, "failed to allocate memory for wim response");
+		return -ENOMEM;
+	}
+
+	for (i = 0; i < WIM_CMD_MAX; i++) {
+		init_completion(&nw->wim_resp[i].work);
+	}
+
+	return 0;
+}
+
+int nrc_wim_response_deinit(struct nrc *nw)
+{
+	int i;
+
+	if (nw->wim_resp) {
+		for (i = 0; i < WIM_CMD_MAX; i++) {
+			if (nw->wim_resp[i].skb) {
+				dev_kfree_skb_any(nw->wim_resp[i].skb);
+			}
+		}
+		kfree(nw->wim_resp);
+	}
+
+	return 0;
+}
+
 static int nrc_wim_response_handler(struct nrc *nw,
 				    struct sk_buff *skb)
 {
-	nw->last_wim_responded = skb;
-	if (completion_done(&nw->wim_responded)) {
+	struct wim *wim;
+
+	mutex_lock(&nw->target_mtx);
+	wim = (struct wim *)skb->data;
+	BUG_ON(wim->cmd >= WIM_CMD_MAX);
+	if (completion_done(&nw->wim_resp[wim->cmd].work)) {
 	/* No completion waiters, free the SKB */
-		pr_err("no completion");
+		dev_err(nw->dev, "no completion for wim[%d]", wim->cmd);
+		mutex_unlock(&nw->target_mtx);
 		return 0;
 	}
-	complete(&nw->wim_responded);
+	nw->wim_resp[wim->cmd].skb = skb;
+	mutex_unlock(&nw->target_mtx);
+	complete(&nw->wim_resp[wim->cmd].work);
 	return 1;
 }
 
@@ -735,12 +861,22 @@ static int nrc_wim_event_handler(struct nrc *nw,
 		nrc_mac_cancel_hw_scan(nw->hw, vif);
 		if(nw->associated_vif) {
 			if (!disable_cqm) {
-				mod_timer(&nw->bcn_mon_timer,
-					jiffies + msecs_to_jiffies(nw->beacon_timeout));
+				if (disable_cqm_on_scan) {
+					mod_timer(&nw->bcn_mon_timer,
+							jiffies + msecs_to_jiffies(nw->beacon_timeout));
+				}
+				else {
+					if(nw->is_bcn_timeout) {
+						nrc_dbg(NRC_DBG_MAC, "delayed beacon loss event");
+						nw->is_bcn_timeout = false;
+						nrc_send_beacon_loss(nw);
+					} 
+				}
 			}
 
 			if (ieee80211_hw_check(nw->hw, SUPPORTS_DYNAMIC_PS)) {
 				if (nw->drv_state >= NRC_DRV_RUNNING &&
+					!(nw->twt_sched && twt_force_sleep) &&
 					nw->hw->conf.dynamic_ps_timeout > 0) {
 					mod_timer(&nw->dynamic_ps_timer,
 						jiffies + msecs_to_jiffies(nw->hw->conf.dynamic_ps_timeout));
@@ -850,6 +986,26 @@ int nrc_wim_ampdu_action(struct nrc *nw, struct ieee80211_vif *vif,
 	nrc_wim_skb_add_tlv(skb, WIM_TLV_AMPDU_MODE, sizeof(u16), &action);
 	nrc_wim_add_mac_addr(nw, skb, sta->addr);
 	nrc_wim_skb_add_tlv(skb, WIM_TLV_TID, sizeof(u16), &tid);
+
+	return nrc_xmit_wim_request(nw, skb);
+}
+
+int nrc_wim_set_ps (struct nrc *nw, enum NRC_PS_MODE mode, int timeout)
+{
+	struct sk_buff *skb;
+	struct wim_pm_param *p;
+
+	skb = nrc_wim_alloc_skb(nw, WIM_CMD_SET, tlv_len(sizeof(struct wim_pm_param)));
+
+	p = nrc_wim_skb_add_tlv(skb, WIM_TLV_PS_ENABLE, sizeof(struct wim_pm_param), NULL);
+	memset(p, 0, sizeof(struct wim_pm_param));
+
+	p->ps_mode = mode;
+	p->ps_enable = 1;
+	p->ps_timeout = 0; 								/* deprecated modem sleep config */
+	p->ps_wakeup_pin = power_save_gpio[1];
+	p->ps_wakeup_high = power_save_gpio[2];
+	p->ps_duration = timeout;
 
 	return nrc_xmit_wim_request(nw, skb);
 }

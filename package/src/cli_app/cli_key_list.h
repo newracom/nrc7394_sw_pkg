@@ -35,25 +35,25 @@
 
 /* show config */
 #define SHOW_CONFIG_DISP "%s,%s,%s,\
-%s,%s,%s,%d,%s,\
+%s,%s,%s,%d,%d,%s,\
 %d (%d),%d (%d),\
 %d,%s,%s,%s,%s,%s,\
 %s,%s,%s,%s,\
-%s,%s,%s,%s,%s,\
+%s,%s,%s,%s,%s,%s,%s,\
 0x%x,%s,%s,%d,%s,%s,%s,\
 %s,%s,%s,%s,%s,\
-%s,%s,%s,%d,%d,%s"
+%s,%s,%s,%s,%s,%d,%s"
 
 
 #define SHOW_CONFIG_KEY_LIST "[MAC Configuration]\nBoot Mode,Device Mode,MAC Address,\
-Country,Bandwidth, - PRI CH BW, - PRI CH LO, - Center LO,\
+Country,Bandwidth, - PRI CH BW, - PRI CH LO, - PRI CH NUM, - Center LO,\
 Frequency,MAC80211_freq,\
 Default MCS,Rate Control, - Mode, - Info, - MCS10(MGMT),Guard Interval,\
 Security,  - AKM,  - Cipher,  - Type,\
-RTS, - threshold,Format,Preamble type,Promiscuous Mode,\
+RTS, - threshold, - rid,CTS,Format,Preamble type,Promiscuous Mode,\
 Color,RF,Auto CFO Cal,TX Retry Limit,Fragment,Defragment,PS pretend,\
 Bitmap Encoding,Reverse Scrambler,Power Save, - type, - duration,\
-BSSID,AID,\n[PHY Configuration]\nTx Gain,Base Rx Gain,Compensated Rx Gain,Tx Power Type"
+BSSID,AID,Scan Type,Scan Mode,\n[PHY Configuration]\nTx Gain,Base Rx Gain,Tx Power Type"
 
 /* show edca */
 #define SHOW_EDCA_DISP		"%d,%d,%d,%d,\
@@ -206,5 +206,9 @@ Tx power index for MCS 6,Tx power index for MCS 7,Tx power index for MCS 10"
 /* show rc_param */
 #define SHOW_RC_PARAM_KEY_DISP	"%ld,%d,%d"
 #define SHOW_RC_PARAM_KEY_LIST	"EWMA(%),Update interval(ms),Probe interval(ms)"
+
+/* show rxgain_table */
+#define SHOW_RXGAIN_TABLE_KEY_DISP	"%x"
+#define SHOW_RXGAIN_TABLE_KEY_LIST	"idx,"
 
 #endif /* _CLI_KEY_LIST_H_ */

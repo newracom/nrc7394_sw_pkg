@@ -210,12 +210,12 @@ typedef struct {
 	xfer_sys_config_trx_pass_fail_t   trx_pass_fail;
 	uint16_t                        hw_version; /* HW Version */
 	uint32_t                        reserved1[2]; /* Previously rf_pllldo12_tr struct */
-	xfer_sys_config_chip_type_t       chip_type; /* NRC7393/7394 module name - TBD */
+	xfer_sys_config_chip_type_t       chip_type; /* 7394 module name - TBD */
 	xfer_sys_config_module_type_t     module_type;
 	xfer_sys_config_module_feature_t  module_feature;
 	xfer_sys_config_txpwr_boosting_t  txpwr_boosting;
-	uint8_t                         max_txgain; /* NRC7393/7394 max txgain */
-	uint8_t                         max_txpwr; /* NRC7393/7394 max txpwr */
+	uint8_t                         max_txgain; /* 7394 max txgain */
+	uint8_t                         max_txpwr; /* 7394 max txpwr */
 	uint8_t                         fem_polarity;
 	xfer_sys_config_gpio_index_map_t  gpio_index_map;
 	char                            serial_number[32];

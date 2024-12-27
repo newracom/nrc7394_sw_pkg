@@ -56,6 +56,9 @@ void nrc_mac_free_hw (struct ieee80211_hw *hw);
 int nrc_register_hw(struct nrc *nw);
 void nrc_unregister_hw(struct nrc *nw);
 
+void nrc_ampdu_mon_init(void );
+void nrc_ampdu_mon_deinit(void );
+
 void nrc_kick_txq(struct nrc *hw);
 int nrc_handle_frame(struct nrc *nw, struct sk_buff *skb);
 void nrc_mac_cancel_hw_scan(struct ieee80211_hw *hw, struct ieee80211_vif *vif);
@@ -126,6 +129,8 @@ void nrc_send_beacon_loss(struct nrc *nw);
 
 void nrc_mac_roc_finish(struct work_struct *work);
 void nrc_rm_vendor_ie_wowlan_pattern(struct work_struct *work);
+void nrc_vcmd_backup_set_wdt_flag(u8 vif_id);
+
 #if KERNEL_VERSION(4, 15, 0) > LINUX_VERSION_CODE
 void nrc_probe_timer(unsigned long data);
 void nrc_bcn_mon_timer(unsigned long data);
@@ -148,5 +153,7 @@ void nrc_cleanup_txq_by_macaddr (struct nrc *nw, struct ieee80211_vif *vif,
 void nrc_cleanup_ba_session_sta (void *data, struct ieee80211_sta *sta);
 void nrc_cleanup_ba_session_vif (struct nrc *nw, struct ieee80211_vif *vif);
 void nrc_cleanup_ba_session_all (struct nrc *nw);
+
+int nrc_mac_restart (struct nrc *nw);
 
 #endif

@@ -32,7 +32,8 @@ struct moving_average {
 	int min;
 	int max;
 	int index;
-	int (*compute)(void *arr_t, int index, int count);
+	bool early;
+	int (*compute)(void *arr_t, int index, int count, bool early);
 	uint8_t arr[];
 };
 
@@ -44,7 +45,7 @@ static struct list_head state_head;
 
 static struct moving_average *
 moving_average_init(int size, int count,
-			   int (*compute)(void *arr, int index, int count))
+			   int (*compute)(void *arr, int index, int count, bool early))
 {
 	struct moving_average *ma;
 
@@ -57,6 +58,7 @@ moving_average_init(int size, int count,
 	ma->size = size;
 	ma->count = count;
 	ma->compute = compute;
+	ma->early = 1;
 
 	return ma;
 }
@@ -84,6 +86,9 @@ static void moving_average_update(struct moving_average *ma, void *arg)
 	memcpy(p, arg, size);
 
 	index++;
+	if(ma->early && index >= ma->count)
+		ma->early = 0;
+
 	ma->index = index % ma->count;
 }
 
@@ -91,7 +96,7 @@ static int moving_average_compute(struct moving_average *ma)
 {
 	BUG_ON(!ma);
 	BUG_ON(!ma->compute);
-	return ma->compute(ma->arr, ma->index, ma->count);
+	return ma->compute(ma->arr, ma->index, ma->count, ma->early);
 }
 
 static struct moving_average *snr_h;
@@ -100,7 +105,7 @@ static struct moving_average *nrc_stats_snr_get(void)
 	return snr_h;
 }
 
-static int snr_compute(void *arr_t, int index, int count)
+static int snr_compute(void *arr_t, int index, int count, bool early)
 {
 	int i;
 	uint8_t min = U8_MAX;
@@ -110,18 +115,28 @@ static int snr_compute(void *arr_t, int index, int count)
 
 	BUG_ON(!arr);
 
-	for (i = 0; i < count; i++) {
+	for (i = 0; i < (early && index > 2 ? index : count); i++) {
 		uint8_t snr = arr[i];
 
 		min = min(snr, min);
 		max = max(snr, max);
 		sum += snr;
 	}
+	BUG_ON(count == 2);
+
+	if (early) {
+		if (index > 2) {
+			sum -= min;
+			sum -= max;
+			return sum / (index - 2);
+		} else {
+			return sum / index;
+		}
+	}
 
 	sum -= min;
 	sum -= max;
 
-	BUG_ON(count == 2);
 	return sum/(count-2);
 }
 
@@ -169,7 +184,7 @@ static struct moving_average *nrc_stats_rssi_get(void)
 	return rssi_h;
 }
 
-static int rssi_compute(void *arr_t, int index, int count)
+static int rssi_compute(void *arr_t, int index, int count, bool early)
 {
 	int i;
 	int8_t min = S8_MAX;
@@ -179,7 +194,7 @@ static int rssi_compute(void *arr_t, int index, int count)
 
 	BUG_ON(!arr);
 
-	for (i = 0; i < count; i++) {
+	for (i = 0; i < (early && index > 2 ? index : count); i++) {
 		int8_t rssi = (int8_t) arr[i];
 
 		min = min(rssi, min);
@@ -187,10 +202,21 @@ static int rssi_compute(void *arr_t, int index, int count)
 		sum += rssi;
 	}
 
+	BUG_ON(count == 2);
+
+	if (early) {
+		if (index > 2) {
+			sum -= min;
+			sum -= max;
+			return sum / (index - 2);
+		} else {
+			return sum / index;
+		}
+	}
+
 	sum -= min;
 	sum -= max;
 
-	BUG_ON(count == 2);
 	return sum/(count-2);
 }
 
@@ -245,7 +271,7 @@ uint32_t nrc_stats_metric(uint8_t *macaddr)
 	}
 	spin_unlock(&state_lock);
 
-	return nrc_stats_calc_metric(rssi);
+	return nrc_stats_calc_metric();
 }
 
 static struct moving_average *nrc_stats_rssi_init2(void)
@@ -303,33 +329,40 @@ int nrc_stats_get_mesh_rssi_threshold(void)
  * Getting lower RSSI lower than -80, more lower metric. */
 #define METRIC_WEIGHT_THRESHOLD (-80)
 
-uint32_t nrc_stats_calc_metric(int rssi)
+static struct nrc_tx_stats nrc_tx_stats_t = {0,};
+
+void nrc_stats_update_tx_stats(struct nrc_tx_stats* tx_stats)
 {
-	uint32_t metric;
-	uint32_t weight = 1;
+	nrc_tx_stats_t.mcs = tx_stats->mcs;
+	nrc_tx_stats_t.bw = tx_stats->bw;
+	nrc_tx_stats_t.gi = tx_stats->gi;
+}
 
-	/* return default metric before rssi measured once */
-	if (rssi >= 0) {
-		return METRIC_DEFAULT;
+uint32_t nrc_stats_calc_metric(void)
+{
+	uint32_t halow_tp_lgi[3][11] = { //upto 64 QAM
+		{300, 600, 900, 1200, 1800, 2400, 2700, 3000, 0, 0, 150}, //1MHz, Long Guard Interval
+		{650, 1300, 1950, 2600, 3900, 5200, 5850, 6500, 0, 0, 0}, //2MHz, Long Guard Interval
+		{1350, 2700, 4050, 5400, 8100, 10800, 12200, 13500, 0,0,0}, //4MHz, Long Guard Interval
+	};
+
+	uint32_t halow_tp_sgi[3][11] = {//upto 64 QAM
+		{330, 670, 1000, 1300, 2000, 2670, 3000, 3340, 0, 0, 170}, // 1MHz, Short Guard Interval
+		{720, 1440, 2170, 2890, 4300, 5780, 6500, 7220, 0, 0, 0}, //2MHz, Short Guard Interval
+		{1500, 3000, 4500, 6000, 9000, 12000, 13500, 15000, 0, 0, 0} //4MHz, Short Guard Interval
+
+	};
+
+	int long_guard = nrc_tx_stats_t.gi; // 0->short, 1->long
+	int current_bw = nrc_tx_stats_t.bw; //0->1Mhz, 1->2Mhz, 2->4Mhz
+	int current_mcs = nrc_tx_stats_t.mcs; //
+	int mac_efficiency = 50; //50%, this needs to be calculated with more testing for each mcs.
+
+	if(long_guard) {
+		return (halow_tp_lgi[current_bw][current_mcs] * mac_efficiency / 100 );
+	} else {
+		return (halow_tp_sgi[current_bw][current_mcs] * mac_efficiency / 100);
 	}
-
-	if (METRIC_TX_OFFSET + rssi < 0) {
-		rssi = -METRIC_TX_OFFSET;
-	}
-
-#ifdef CONFIG_SUPPORT_MESH_ROUTING
-	if (rssi < METRIC_WEIGHT_THRESHOLD) {
-		weight = METRIC_WEIGHT_THRESHOLD - rssi;
-	}
-#endif
-
-	/* simplified rssi conversion formula */
-	metric = (uint32_t)(METRIC_TX_OFFSET + rssi) * 1000 / weight;
-	if (metric < 0) {
-		metric = 0;
-	}
-
-	return metric;
 }
 
 int nrc_stats_init(void)
@@ -464,21 +497,40 @@ int nrc_stats_report(struct nrc* nw, uint8_t *output, int index, int number)
 			int8_t rssi = moving_average_compute(cur->rssi);
 			if (nw->chip_id == 0x7292) {
 				rssi = (rssi > MAX_SHOWN_RSSI) ? MAX_SHOWN_RSSI : rssi;
-			} else {
-				if (rssi <= -6 && rssi > -39) {
-					rssi -= 1;
-				} else if (rssi <= -69) {
-					rssi -= 1;
-					if (rssi <= -92)
+			} else if (nw->chip_id == 0x7394) {
+				if (nw->use_ext_lna) {
+					if (rssi >= -10) rssi = 0;
+					else if (rssi == -11) rssi = 1;
+					else if (rssi == -12) rssi = -2;
+					else if (rssi == -13) rssi = -3;
+					else if (rssi == -14) rssi = -6;
+					else if (rssi == -15) rssi = -9;
+					else if (rssi == -16) rssi = -10;
+					else if (rssi == -17) rssi = -13;
+					else if (rssi >= -22) rssi = rssi + (22 + rssi);
+					else if (rssi < -22 && rssi > -60); // do nothing
+					else {
+						if (rssi < -66) rssi += 1;
+						if (rssi < -71) rssi += 1;
+						if (rssi < -76) rssi += 1;
+						if (rssi < -79) rssi += 1;
+						if (rssi < -82) rssi += 1;
+						if (rssi < -86) rssi -= 1;
+						if (rssi < -100) rssi -= 1;
+						if (rssi < -103) rssi -= 1;
+						if (rssi < -104) rssi -= 1;
+						if (rssi < -106) rssi -= 1;
+					}
+				} else {
+					if (rssi <= -6 && rssi > -39) rssi -= 1;
+					else if (rssi <= -69) {
 						rssi -= 1;
-					if (rssi <= -99)
-						rssi -= 1;
-					if (rssi <= -100)
-						rssi -= 1;
-					if (rssi <= -102)
-						rssi -= 1;
-					if (rssi <= -104)
-						rssi -= 1;
+						if (rssi <= -92) rssi -= 1;
+						if (rssi <= -99) rssi -= 1;
+						if (rssi <= -100) rssi -= 1;
+						if (rssi <= -102) rssi -= 1;
+						if (rssi <= -104) rssi -= 1;
+					}
 				}
 			}
 			if (count > 0)

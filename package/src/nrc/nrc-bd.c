@@ -41,12 +41,15 @@ enum {
 	CC_US=1,
 	CC_JP,
 	CC_K1,	//KR USN1(non-standard) (LBT is necessary)
-	CC_TW,
+	CC_T8,  // TW 8xxMHz
 	CC_EU,
 	CC_CN,
 	CC_NZ,
 	CC_AU,
 	CC_K2,	//KR USN5 (MIC detection is necessary)
+	CC_S8,	// Singapore 866-869 MHz
+	CC_S9,	// Singapore 920-925 MHz
+	CC_T9,  // TW 9xxMHz
 	CC_MAX,
 } CC_TYPE;
 
@@ -124,7 +127,7 @@ static const struct bd_ch_table g_bd_ch_table[CC_MAX][NRC_BD_MAX_CH_LIST] = {
 		{9225,  5185,   3,	37}
 	},
 	{
-		/*  Taiwan */
+		/* Taiwan (T8) 8xx MHz */
 		{8390,  5180,    1, 36},
 		{8400,  5185,    3, 37},
 		{8410,  5190,    5, 38},
@@ -233,6 +236,34 @@ static const struct bd_ch_table g_bd_ch_table[CC_MAX][NRC_BD_MAX_CH_LIST] = {
 		{9305,	5205,	11,	41},
 		{9280,	5210,	4,	42},
 		{9300,	5215,	8,	43}
+	},
+	{
+		// Singapore (S8) 866-869 MHz
+		{8665,	5180,	7,	36},
+		{8675,	5185,	9,	37},
+		{8685,	5190,	11,	38},
+		{8680,	5195,	10,	39}
+	},
+	{
+		// Singapore (S9) 920-925 MHz
+		{9205,	5180,	37,	36},
+		{9215,	5185,	39,	37},
+		{9225,	5190,	41,	38},
+		{9235,	5195,	43,	39},
+		{9245,	5200,	45,	40},
+		{9210,	5205,	38,	41},
+		{9230,	5210,	42,	42},
+		{9220,	5215,	40,	43}
+	},
+	{
+		// Taiwan (T9) 9xx MHz
+		{9210,	5180,	38,	36},
+		{9220,	5185,	40,	37},
+		{9230,	5190,	42,	38},
+		{9240,	5195,	44,	39},
+		{9215,	5200,	39,	40},
+		{9235,	5205,	43,	41},
+		{9225,	5210,	41,	42}
 	},
 };
 
@@ -433,8 +464,22 @@ struct wim_bd_param * nrc_read_bd_tx_pwr(struct nrc *nw, uint8_t *country_code)
 			cc_index = CC_K2;
 			country_code[1] = '2';
 		}
+	} else if (country_code[0] == 'S' && country_code[1] == 'G') {
+		if (sg_band == 8) {
+			cc_index = CC_S8;
+			country_code[1] = '8';
+		} else {
+			cc_index = CC_S9;
+			country_code[1] = '9';
+		}
 	} else if (country_code[0] == 'T' && country_code[1] == 'W')
-		cc_index = CC_TW;
+		if (tw_band == 8) {
+			cc_index = CC_T8;
+			country_code[1] = '8';
+		} else {
+			cc_index = CC_T9;
+			country_code[1] = '9';
+		}
 	else if (country_code[0] == 'C' && country_code[1] == 'N')
 		cc_index = CC_CN;
 	else if (country_code[0] == 'N' && country_code[1] == 'Z')

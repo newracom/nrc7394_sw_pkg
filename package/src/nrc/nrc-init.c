@@ -36,6 +36,7 @@
 #include <asm/uaccess.h>
 #include "nrc-bd.h"
 #endif /* defined(CONFIG_SUPPORT_BD) */
+#include "nrc-twt-sched.h"
 
 char *fw_name;
 module_param(fw_name, charp, 0444);
@@ -85,7 +86,7 @@ int spi_cs_num;
 module_param(spi_cs_num, int, 0600);
 MODULE_PARM_DESC(spi_cs_num, "SPI chip select number");
 
-int spi_gpio_irq = 5;
+int spi_gpio_irq = -1;
 module_param(spi_gpio_irq, int, 0600);
 MODULE_PARM_DESC(spi_gpio_irq, "SPI gpio irq");
 
@@ -109,6 +110,10 @@ int disable_cqm = 0;
 module_param(disable_cqm, int, 0600);
 MODULE_PARM_DESC(disable_cqm, "Disable CQM (0: enable, 1: disable)");
 
+int disable_cqm_on_scan = 0;
+module_param(disable_cqm_on_scan, int, 0600);
+MODULE_PARM_DESC(disable_cqm_on_scan, "Disable CQM on scan (0: enable, 1: disable)");
+
 int listen_interval = 100;
 module_param(listen_interval, int, 0600);
 MODULE_PARM_DESC(listen_interval, "Listen Interval");
@@ -119,13 +124,6 @@ MODULE_PARM_DESC(listen_interval, "Listen Interval");
 int bss_max_idle;
 module_param(bss_max_idle, int, 0600);
 MODULE_PARM_DESC(bss_max_idle, "BSS Max Idle");
-
-/**
- * bss_max_idle_usf_format
- */
-bool bss_max_idle_usf_format=true;
-module_param(bss_max_idle_usf_format, bool, 0600);
-MODULE_PARM_DESC(bss_max_idle_usf_format, "BSS Max Idle specified in units of usf");
 
 /**
  * enable/disable the s1g short beacon
@@ -147,6 +145,13 @@ bool enable_beacon_bypass = false;
 module_param(enable_beacon_bypass, bool, 0600);
 MODULE_PARM_DESC(enable_beacon_bypass, "Enable Beacon Bypass");
 #endif /* CONFIG_SUPPORT_BEACON_BYPASS */
+
+#if defined(CONFIG_SUPPORT_AUTH_CONTROL)
+/* set enable/disable and authentication control parameters*/
+int set_auth_control[5] = {0, 0, 0, 0,0};
+module_param_array(set_auth_control, int, NULL, 0600);
+MODULE_PARM_DESC(set_auth_control, "Set auth control (0|1(off,on), slot, ti_min, ti_max, scale");
+#endif /* CONFIG_SUPPORT_AUTH_CONTROL */
 
 bool enable_monitor;
 module_param(enable_monitor, bool, 0600);
@@ -174,6 +179,13 @@ MODULE_PARM_DESC(macaddr, "MAC Address");
 int power_save = NRC_PS_NONE;;
 module_param(power_save, int, 0600);
 MODULE_PARM_DESC(power_save, "power save");
+
+/**
+ * enable/disable the idle mode by default
+ */
+bool idle_mode = false;;
+module_param(idle_mode, bool, 0600);
+MODULE_PARM_DESC(idle_mode, "idle mode");
 
 /**
  * deepsleep duration of non-TIM mode power save
@@ -248,6 +260,20 @@ module_param(kr_band, int, 0600);
 MODULE_PARM_DESC(kr_band, "Specify KR band (KR USN1(1) or KR USN5(2))");
 
 /**
+ * Set configuration of SG Band
+ */
+int sg_band = -1;
+module_param(sg_band, int, 0600);
+MODULE_PARM_DESC(sg_band, "Specify SG band (866-869 MHz(8) or 920-925 MHz(9))");
+
+/**
+ * Set configuration of TW Band
+ */
+int tw_band = -1;
+module_param(tw_band, int, 0600);
+MODULE_PARM_DESC(tw_band, "Specify TW band (8xxMHz(8) or 9xxMHz(9))");
+
+/**
  * Debug Level All
  */
 bool debug_level_all = false;
@@ -291,14 +317,14 @@ MODULE_PARM_DESC(nrc_country_code, "Two letter fw country code");
 /**
  * gpio for power save (default Host_output(GP20) --> Target_input(GP11))
  */
-int power_save_gpio[2] = {RPI_GPIO_FOR_PS, TARGET_GPIO_FOR_WAKEUP};
+int power_save_gpio[3] = {HOST_GPIO_FOR_TARGET_WAKEUP, TARGET_GPIO_FOR_WAKEUP, TARGET_WAKEUP_ACTIVE_HIGH};
 module_param_array(power_save_gpio, int, NULL, 0600);
 MODULE_PARM_DESC(power_save_gpio, "gpio for power save");
 
 /**
  * Maximum beacon loss count
  */
-int beacon_loss_count = 7;
+int beacon_loss_count = 20;
 module_param(beacon_loss_count, int, 0600);
 MODULE_PARM_DESC(beacon_loss_count, "Number of beacon intervals before we decide beacon was lost");
 
@@ -319,22 +345,22 @@ MODULE_PARM_DESC(support_ch_width, "Supported CH width (0:1/2MHz Support, 1:1/2/
 /**
  * Set rate control mode
  */
-uint8_t ap_rc_mode = 0;
+uint8_t ap_rc_mode = 0xff;
 //module_param(ap_rc_mode, byte, 0600);
 //MODULE_PARM_DESC(ap_rc_mode, "AP Rate control mode (1:Disable,Use default_mcs, 2:Individual RC for each STA. 3:RC incorporating RX MCS");
 
-uint8_t sta_rc_mode = 0;
+uint8_t sta_rc_mode = 0xff;
 //module_param(sta_rc_mode, byte, 0600);
 //MODULE_PARM_DESC(sta_rc_mode, "STA Rate control mode (1:Disable,Use default_mcs, 2:Individual RC for each STA. 3:RC incorporating RX MCS");
 
 /**
  * Set default mcs
  */
-uint8_t ap_rc_default_mcs = 2;
+uint8_t ap_rc_default_mcs = 0xff;
 //module_param(ap_rc_default_mcs, byte, 0600);
 //MODULE_PARM_DESC(ap_rc_default_mcs, "AP Default MCS");
 
-uint8_t sta_rc_default_mcs = 2;
+uint8_t sta_rc_default_mcs = 0xff;
 //module_param(sta_rc_default_mcs, byte, 0600);
 //MODULE_PARM_DESC(sta_rc_default_mcs, "STA Default MCS");
 
@@ -344,6 +370,52 @@ uint8_t sta_rc_default_mcs = 2;
 bool ps_pretend = false;
 module_param(ps_pretend, bool, 0600);
 MODULE_PARM_DESC(ps_pretend, "Power save pretend for no response STA");
+
+/**
+ * set duty cycle (default: off)
+ */
+int set_duty_cycle[3] = {0, 0, 0};
+module_param_array(set_duty_cycle, int, NULL, 0600);
+MODULE_PARM_DESC(set_duty_cycle, "Set duty cycle (0|1(off,on), window, duration");
+
+/**
+ * set cca threshold (default: -75)
+ */
+int set_cca_threshold = -75;
+module_param(set_cca_threshold, int, 0600);
+MODULE_PARM_DESC(set_cca_threshold, "Set cca threshold (default: -75)");
+
+/**
+ * TWT 
+ */
+
+uint twt_num;
+module_param(twt_num, uint, 0600);
+MODULE_PARM_DESC(twt_num, "Total TWT service number (default: 0, disabled)");
+
+u64 twt_sp;
+module_param(twt_sp, ullong, 0600);
+MODULE_PARM_DESC(twt_sp, "TWT service period (default: 0, usec)");
+
+u64 twt_int;
+module_param(twt_int, ullong, 0600);
+MODULE_PARM_DESC(twt_int, "TWT Wake Interval (default: 0, usec)");
+
+bool twt_service;
+module_param(twt_service, bool, S_IRUSR);
+MODULE_PARM_DESC(twt_service, "Indicate TWT service on (only STA)");
+
+bool twt_force_sleep;
+module_param(twt_force_sleep, bool, S_IRUSR | S_IWUSR);
+MODULE_PARM_DESC(twt_force_sleep, "Force sleep at the end of service (only STA)");
+
+uint twt_num_in_group;
+module_param(twt_num_in_group, uint, S_IRUSR | S_IWUSR);
+MODULE_PARM_DESC(twt_num_in_group, "TWT Max STA Number in a Group (only AP)");
+
+uint8_t twt_algo;
+module_param(twt_algo, byte, S_IRUSR | S_IWUSR);
+MODULE_PARM_DESC(twt_algo, "TWT scheduling algorithm (only AP, 0:Balanced, 1:FCFS)");
 
 static bool has_macaddr_param(uint8_t *dev_mac)
 {
@@ -357,33 +429,6 @@ static bool has_macaddr_param(uint8_t *dev_mac)
 				&dev_mac[3], &dev_mac[4], &dev_mac[5]);
 
 	return (res == 6);
-}
-
-static int s1g_unscaled_interval_max = 0x3fff;
-static int convert_usf(int interval)
-{
-	int ui, usf = 0, interval_usf;
-
-	if (interval <= s1g_unscaled_interval_max) {
-		ui = interval;
-		usf = 0;
-	} else if (interval / 10 <= s1g_unscaled_interval_max) {
-		ui= interval / 10;
-		usf = 1;
-	} else if (interval / 1000 <= s1g_unscaled_interval_max) {
-		ui = interval / 1000;
-		usf = 2;
-	} else if (interval / 10000 <= s1g_unscaled_interval_max) {
-		ui = interval / 10000;
-		usf = 3;
-	} else {
-		ui = 0;
-		usf = 0;
-	}
-
-	interval_usf = (usf << 14) + ui;
-
-	return interval_usf;
 }
 
 /****************************************************************************
@@ -463,6 +508,14 @@ static void nrc_on_fw_ready(struct sk_buff *skb, struct nrc *nw)
 						ready->v.payload_align);
 	nw->fwinfo.ready = NRC_FW_ACTIVE;
 	nw->fwinfo.version = ready->v.version;
+	if (nw->chip_id == 0x7394) {
+		if (ready->v.chip_rev_num > 0) {
+			nw->fwinfo.chip_rev_num = ready->v.chip_rev_num;
+		} else {
+			nw->fwinfo.chip_rev_num = 0;
+		}
+	}
+
 	nw->fwinfo.rx_head_size = ready->v.rx_head_size;
 	nw->fwinfo.tx_head_size = ready->v.tx_head_size;
 	nw->fwinfo.payload_align = ready->v.payload_align;
@@ -509,10 +562,9 @@ static void nrc_on_fw_ready(struct sk_buff *skb, struct nrc *nw)
 							nw->cap.vif_caps[i].cap_mask);
 	}
 
-	if (nw->chip_id == 0x7394 && ready->v.xtal_status != 1) {
-		dev_err(nw->dev,
-			"[CAUTION] Need to check the status of external 32KHz XTAL (%d)\n",
-			ready->v.xtal_status);
+	if (nw->chip_id == 0x7394) {
+		nw->use_ext_lna = (ready->v.lna_offset < -10) ? 1 : 0;
+		nrc_dbg(NRC_DBG_HIF, "  -- use_ext_lna:%d (%d)", nw->use_ext_lna, ready->v.lna_offset);
 	}
 
 	/* Override with insmod parameters */
@@ -521,16 +573,15 @@ static void nrc_on_fw_ready(struct sk_buff *skb, struct nrc *nw)
 		nw->cap.listen_interval = listen_interval;
 	}
 
-	if (nrc_mac_is_s1g(hw->priv) && bss_max_idle_usf_format) {
+	if (nrc_mac_is_s1g(hw->priv)) {
 		/* bss_max_idle: in unit of 1000 TUs (1024ms = 1.024 seconds) */
-		if (bss_max_idle > 16383 * 10000 || bss_max_idle <= 0) {
+		if (bss_max_idle > S1G_UNSCALED_INTERVAL_MAX * 10000 || bss_max_idle <= 0) {
 			nw->cap.bss_max_idle = 0;
 		} else {
-			/* Convert in USF Format (Value (14bit) * USF(2bit)) and save it */
-			nw->cap.bss_max_idle = convert_usf(bss_max_idle);
+			nw->cap.bss_max_idle = bss_max_idle;
 		}
 	} else {
-		if (bss_max_idle > 65535 || bss_max_idle <= 0) {
+		if (bss_max_idle > __UINT16_MAX__ || bss_max_idle <= 0) {
 			nw->cap.bss_max_idle = 0;
 		} else {
 			nw->cap.bss_max_idle = bss_max_idle;
@@ -545,7 +596,7 @@ int nrc_fw_start(struct nrc *nw)
 	struct sk_buff *skb_req, *skb_resp;
 	struct wim_drv_info_param *p;
 
-	skb_req = nrc_wim_alloc_skb(nw, WIM_CMD_START, sizeof(int));
+	skb_req = nrc_wim_alloc_skb(nw, WIM_CMD_START, tlv_len(sizeof(struct wim_drv_info_param)));
 	if (!skb_req)
 		return -ENOMEM;
 
@@ -570,7 +621,23 @@ int nrc_fw_start(struct nrc *nw)
 		sw_enc = 0;
 	p->sw_enc = sw_enc;
 	p->supported_ch_width = support_ch_width;
-	skb_resp = nrc_xmit_wim_request_wait(nw, skb_req, (WIM_RESP_TIMEOUT * 30));
+	p->duty_cycle_enable = set_duty_cycle[0]?true:false;
+	p->duty_cycle_window = set_duty_cycle[1];
+	p->duty_cycle_duration = set_duty_cycle[2];
+	p->cca_threshold = set_cca_threshold;
+	if (nw->twt_sched) {
+		p->twt_wake_interval = nw->twt_sched->interval;
+	} else {
+		p->twt_wake_interval = 0;
+	}
+
+	p->auth_control_enable = set_auth_control[0]?true:false;
+	p->auth_control_slot = set_auth_control[1];
+	// 1-bit scale (0:1, 1:10)
+	p->auth_control_ti_min = set_auth_control[2] |(set_auth_control[4] == 10? 1<<7:0);
+	p->auth_control_ti_max = set_auth_control[3];
+
+	skb_resp = nrc_xmit_wim_request_wait(nw, skb_req, (WIM_RESP_TIMEOUT * 70));
 	if (skb_resp)
 		nrc_on_fw_ready(skb_resp, nw);
 	else
@@ -609,7 +676,6 @@ int nrc_nw_set_model_conf(struct nrc *nw, u16 chip_id)
 			nw->hw_queues = 6;
 			nw->wowlan_pattern_num = 1;
 			break;
-		case 0x7393:
 		case 0x7394:
 			nw->hw_queues = 11;
 			nw->wowlan_pattern_num = 2;
@@ -632,7 +698,10 @@ int nrc_nw_set_model_conf(struct nrc *nw, u16 chip_id)
 const char *const eu_countries_cc[] = {
 	"AT", "BE", "BG", "CY", "CZ", "DE",	"DK", "EE", "ES", "FI",
 	"FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "MT",
-	"NL", "PL", "PT", "RO", "SE", "SI", "SK", NULL
+	"NL", "PL", "PT", "RO", "SE", "SI", "SK",
+	// Below countries are using the same S1G channels of EU even though not EU countries.
+	"GB", "SA",
+	NULL
 };
 
 int country_match(const char *const cc[], const char *const country)
@@ -650,7 +719,7 @@ int country_match(const char *const cc[], const char *const country)
 }
 
 #define MAX_FW_RETRY_CNT  30
-int nrc_nw_start(struct nrc *nw)
+int nrc_nw_start(struct nrc *nw, bool restart)
 {
 	int ret;
 	int i;
@@ -709,25 +778,46 @@ ready:
 		goto err_return;
 	}
 
-	ret = nrc_register_hw(nw);
-	if (ret) {
-		dev_err(nw->dev, "Failed to nrc_register_hw\n");
-		goto err_netlink_deinit;
+	if (!restart) {
+		ret = nrc_register_hw(nw);
+		if (ret) {
+			dev_err(nw->dev, "Failed to nrc_register_hw\n");
+			goto err_netlink_deinit;
+		}
+		nrc_init_debugfs(nw); /* This function must be called after ieee80211_register_hw */
+	}
+	else {
+		nrc_mac_restart(nw);
+		ieee80211_restart_hw(nw->hw);
 	}
 
-	nrc_init_debugfs(nw); /* This function must be called after ieee80211_register_hw */
+	ieee80211_wake_queues(nw->hw);
 
 	return 0;
 
 err_netlink_deinit:
 	nrc_netlink_exit();
 err_return:
+	nrc_hif_stop(nw->hif);
+	nrc_hif_reset_device(nw->hif);
+	nw->drv_state = NRC_DRV_INIT;
 	return ret;
 }
 
-int nrc_nw_stop(struct nrc *nw)
+int nrc_nw_stop(struct nrc *nw, bool restart)
 {
 	int counter = 0;
+
+	if (nw->drv_state == NRC_DRV_INIT) {
+		return 0;
+	}
+
+	if (!loopback) {
+		nrc_netlink_exit();
+		nrc_hif_sleep_target_prepare(nw->hif, power_save);
+		if (!restart)
+			nrc_unregister_hw(nw);
+	}
 
 	while(atomic_read(&nw->d_deauth.delayed_deauth)) {
 		msleep(100);
@@ -738,12 +828,10 @@ int nrc_nw_stop(struct nrc *nw)
 		}
 	}
 
-	if (nw->drv_state == NRC_DRV_PS) {
-		nrc_hif_wake_target(nw->hif);
-		msleep(20);
-	}
-
 	nw->drv_state = NRC_DRV_CLOSING;
+
+	ieee80211_stop_queues(nw->hw);
+
 #ifdef CONFIG_USE_TXQ
 	nrc_cleanup_txq_all(nw);
 #endif
@@ -754,13 +842,35 @@ int nrc_nw_stop(struct nrc *nw)
 
 	nrc_hif_reset_device(nw->hif);
 
-	if (!loopback) {
-		nrc_netlink_exit();
-		nrc_hif_sleep_target_prepare(nw->hif, power_save);
-		nrc_unregister_hw(nw);
-	}
-
+	nw->drv_state = NRC_DRV_INIT;
 	return 0;
+}
+
+
+static void restart_worker (struct work_struct *work)
+{
+	struct nrc *nw = container_of(work, struct nrc, restart_work);
+	struct nrc_hif_device *hdev = nw->hif;
+
+#if defined(CONFIG_SUPPORT_BD)
+    struct regulatory_request request;
+
+	request.alpha2[0] = nw->alpha2[0];
+	request.alpha2[1] = nw->alpha2[1];
+	request.initiator = NL80211_REGDOM_SET_BY_DRIVER;
+#endif
+
+
+	dev_info(nw->dev, "Restart NRC\n");
+	nrc_nw_stop(nw, true);
+	nrc_hif_probe(hdev);
+	nrc_reg_notifier(nw->hw->wiphy, &request);
+	nrc_nw_start(nw, true);
+}
+
+void nrc_nw_restart(struct nrc *nw)
+{
+	queue_work(nw->restart_workqueue, &nw->restart_work);
 }
 
 struct nrc *nrc_nw_alloc(struct device *dev, struct nrc_hif_device *hdev)
@@ -804,14 +914,18 @@ struct nrc *nrc_nw_alloc(struct device *dev, struct nrc_hif_device *hdev)
 	init_completion(&nw->hif_tx_stopped);
 	init_completion(&nw->hif_rx_stopped);
 	init_completion(&nw->hif_irq_stopped);
-	init_completion(&nw->wim_responded);
-
+	if (nrc_wim_response_init(nw) < 0) {
+		goto err_hw_free;
+	}
 
 	nw->workqueue = create_singlethread_workqueue("nrc_wq");
 	nw->ps_wq = create_singlethread_workqueue("nrc_ps_wq");
+	nw->restart_workqueue = create_singlethread_workqueue("nrc_restart");
 
 	INIT_DELAYED_WORK(&nw->roc_finish, nrc_mac_roc_finish);
 	INIT_DELAYED_WORK(&nw->rm_vendor_ie_wowlan_pattern, nrc_rm_vendor_ie_wowlan_pattern);
+
+	INIT_WORK(&nw->restart_work, restart_worker);
 
 #ifdef CONFIG_USE_TXQ
 #ifdef CONFIG_NEW_TASKLET_API
@@ -832,6 +946,21 @@ struct nrc *nrc_nw_alloc(struct device *dev, struct nrc_hif_device *hdev)
 #endif
 	}
 
+	if (twt_sp + twt_num + twt_int != 0) {
+		if (twt_num_in_group == 0) {
+			twt_num_in_group = 1;
+		}
+		nw->twt_sched = nrc_twt_sched_init(nw, twt_sp, twt_num, twt_int,
+			twt_num_in_group, twt_algo);
+		//nw->twt_requester = false;
+		//nw->twt_responder = true;
+	} else {
+		nw->twt_sched = NULL;
+		//nw->twt_requester = false;
+		//nw->twt_responder = false;
+		dev_info(nw->dev, "TWT is disabled\n");
+	}
+
 	return nw;
 
 err_hw_free:
@@ -845,6 +974,8 @@ void nrc_nw_free(struct nrc *nw)
 	if (nw->fw_priv) {
 		nrc_fw_exit(nw->fw_priv);
 	}
+
+	nrc_twt_sched_deinit(nw);
 
 	tasklet_kill(&nw->tx_tasklet);
 
@@ -860,6 +991,11 @@ void nrc_nw_free(struct nrc *nw)
 	if (nw->ps_wq != NULL) {
 		flush_workqueue(nw->ps_wq);
 		destroy_workqueue(nw->ps_wq);
+	}
+
+	if (nw->restart_workqueue != NULL) {
+		flush_workqueue(nw->restart_workqueue);
+		destroy_workqueue(nw->restart_workqueue);
 	}
 
 	if (nw->vendor_skb_beacon) {
@@ -878,6 +1014,7 @@ void nrc_nw_free(struct nrc *nw)
 		dev_kfree_skb_any(nw->vendor_skb_assoc_req);
 	}
 
+	nrc_wim_response_deinit(nw);
 	nrc_stats_deinit();
 
 	nrc_mac_free_hw (nw->hw);

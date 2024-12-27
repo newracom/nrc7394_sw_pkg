@@ -32,6 +32,7 @@ enum NRC_DEBUG_MASK {
 	NRC_DBG_STATE	= 8,
 	NRC_DBG_BD	= 9,
 	NRC_DBG_COMMON	= 10,
+	NRC_DBG_MON	= 11,
 };
 #define NRC_DBG_MASK_ANY   (0xFFFFFFFF)
 
@@ -41,6 +42,9 @@ enum NRC_DEBUG_MASK {
 #define NRC_DBG_PRINT_FRAME_TX 0 /* print tx frames for debug */
 #define NRC_DBG_PRINT_FRAME_RX 0 /* print rx frames for debug */
 #define NRC_DBG_PRINT_ARP_FRAME 0  /* print ARP frames for debug */
+
+#define MAC2STR(a) (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5]
+#define MACSTR "%02x:%02x:%02x:%02x:%02x:%02x"
 
 enum LOOPBACK_MODE {
 	LOOPBACK_MODE_ROUNDTRIP,
@@ -83,4 +87,5 @@ void nrc_exit_debugfs(void);
 #define nrc_ps_dbg(fmt, ...) nrc_dbg(NRC_DBG_PS, fmt, ##__VA_ARGS__)
 #define nrc_stats_dbg(fmt, ...) nrc_dbg(NRC_DBG_STATS, fmt, ##__VA_ARGS__)
 #define nrc_common_dbg(fmt, ...) nrc_dbg(NRC_DBG_COMMON, fmt, ##__VA_ARGS__)
+#define nrc_mon_dbg(fmt, ...) nrc_dbg(NRC_DBG_MON, fmt, ##__VA_ARGS__)
 #endif

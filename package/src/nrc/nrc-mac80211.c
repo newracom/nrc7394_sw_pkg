@@ -24,6 +24,8 @@
 #include "nrc-vendor.h"
 #include "nrc-stats.h"
 #include "nrc-dump.h"
+#include "nrc-pm.h"
+#include "nrc-ps.h"
 #include <linux/list.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
@@ -47,6 +49,10 @@
 #if defined(CONFIG_S1G_CHANNEL)
 #include "nrc-s1g.h"
 #endif /* defined(CONFIG_S1G_CHANNEL) */
+
+#include "nrc-mac80211-twt.h"
+#include "nrc-twt-sched.h"
+
 #if defined(CONFIG_SUPPORT_BD)
 #include <linux/kernel.h>
 #include <linux/fs.h>
@@ -56,13 +62,31 @@
 #define US_BASE_FREQ	2412
 #define K1_BASE_FREQ	5180
 #define K2_BASE_FREQ	5180
-#define JP_BASE_FREQ	5180
+#define JP_BASE_FREQ	5200
 #define TW_BASE_FREQ	5180
 #define EU_BASE_FREQ	5180
 #define CN_BASE_FREQ	5180
 #define NZ_BASE_FREQ	5180
 #define AU_BASE_FREQ	5180
+#define S8_BASE_FREQ	5180
+#define S9_BASE_FREQ	5180
 #endif /* defined(CONFIG_SUPPORT_BD) */
+
+typedef struct _vendor_cmd_entry{
+	struct list_head list;
+	u8 subcmd;
+	u8 data_len;
+	u8 data[];
+} VCMD_ENTRY;
+
+typedef struct _vendor_cmd_info{
+	bool initialized;
+	bool reset_by_wdt;
+	u8 vif_id;
+	struct nrc *nw;
+	struct delayed_work vcmd_backup_reinstall;
+	struct list_head head;
+} VCMD_BACKUP_INFO;
 
 char nrc_cc[2];
 
@@ -307,6 +331,11 @@ static const struct ieee80211_iface_combination if_comb_multi[] = {
 u64 current_bssid_beacon_timestamp;
 #endif
 
+static void nrc_vcmd_backup_init_info(u8 vif_id, struct nrc *nw);
+static VCMD_BACKUP_INFO *nrc_vcmd_backup_get_info_addr(u8 vif_id);
+static void nrc_vcmd_backup_del_all_entry(u8 vif_id);
+static int nrc_vcmd_backup_remove_entry(struct ieee80211_vif *vif, u8 subcmd);
+
 static void force_sw_enc_mode_by_sta_type (struct nrc *nw, struct ieee80211_vif *vif)
 {
 	int is_relay = ((nw->vif[0] && nw->vif[1]) && (sw_enc != WIM_ENCDEC_HYBRID));
@@ -326,15 +355,21 @@ static void force_sw_enc_mode_by_sta_type (struct nrc *nw, struct ieee80211_vif 
 				nrc_mac_dbg("Force sw enc\n");
 			}
 			break;
-		case 0x7393:
 		case 0x7394:
-			if (is_ibss || is_mesh) {
+			if (is_mesh) {
 				sw_enc = WIM_ENCDEC_SW;
 				nrc_mac_dbg("Force sw enc\n");
+			} else if (is_ibss) {
+				if (nw->fwinfo.chip_rev_num > 0) {
+					// if metal revised 7394, uses WIM_ENCDEC_HW.
+					sw_enc = WIM_ENCDEC_HW;
+				} else {
+					sw_enc = WIM_ENCDEC_SW;
+				}
 			}
 			break;
 		default:
-			pr_err("Unknown Newracom IEEE80211 chipset %04x",
+			dev_err(nw->dev, "Unknown Newracom IEEE80211 chipset %04x",
 					nw->chip_id);
 			BUG();
 	}
@@ -528,7 +563,9 @@ void nrc_wake_tx_queue(struct ieee80211_hw *hw, struct ieee80211_txq *txq)
 
 	if (nw->drv_state == NRC_DRV_PS) {
 		//ieee80211_stop_queues(nw->hw); /* wake_queues in spi_resume */
-		nrc_hif_wake_target(nw->hif);
+		if (!(nw->twt_sched && twt_force_sleep)) {
+			nrc_hif_wake_target(nw->hif, 0);
+		}
 	}
 
 	spin_lock_bh(&nw->txq_lock);
@@ -641,11 +678,19 @@ void nrc_cleanup_txq_by_macaddr (struct nrc *nw, struct ieee80211_vif *vif,
 	struct ieee80211_sta *sta;
 	int i;
 
+	rcu_read_lock();
 	sta = ieee80211_find_all_sta(vif, macaddr);
+
+	if (!sta) {
+		rcu_read_unlock();
+		nrc_mac_dbg("[%s] sta is NULL", __func__);
+		return;
+	}
 
 	for (i = 0; i < ARRAY_SIZE(sta->txq); i++) {
 		nrc_cleanup_txq(nw, sta->txq[i]);
 	}
+	rcu_read_unlock();
 }
 
 #else
@@ -847,10 +892,7 @@ static int nrc_vendor_update_beacon(struct ieee80211_hw *hw,
 	if (b->len > WIM_MAX_SIZE) {
 		nrc_mac_dbg("Fail to alloc skb for wim(b->len:%d, max: %d)",
 			b->len, WIM_MAX_SIZE);
-		dev_kfree_skb_any(b);
-		dev_kfree_skb_any(nw->vendor_skb_beacon);
-		nw->vendor_skb_beacon = NULL;
-		return 0;
+		return -EMSGSIZE;
 	}
 
 	skb = nrc_wim_alloc_skb_vif(nw, vif, WIM_CMD_SET, WIM_MAX_SIZE);
@@ -869,7 +911,7 @@ static int nrc_vendor_update_probe_req(struct ieee80211_hw *hw,
 	if (nw->vendor_skb_probe_req->len > WIM_MAX_SIZE) {
 		nrc_mac_dbg("Fail to alloc skb for wim(vendor_skb_probe_req->len:%d, max: %d)",
 			nw->vendor_skb_probe_req->len, WIM_MAX_SIZE);
-		return 0;
+		return -EMSGSIZE;
 	}
 
 	skb = nrc_wim_alloc_skb_vif(nw, vif, WIM_CMD_SET, WIM_MAX_SIZE);
@@ -889,7 +931,7 @@ static int nrc_vendor_update_probe_rsp(struct ieee80211_hw *hw,
 	if (nw->vendor_skb_probe_rsp->len > WIM_MAX_SIZE) {
 		nrc_mac_dbg("Fail to alloc skb for wim(vendor_skb_probe_rsp->len:%d, max: %d)",
 			nw->vendor_skb_probe_rsp->len, WIM_MAX_SIZE);
-		return 0;
+		return -EMSGSIZE;
 	}
 
 	skb = nrc_wim_alloc_skb_vif(nw, vif, WIM_CMD_SET, WIM_MAX_SIZE);
@@ -909,7 +951,7 @@ static int nrc_vendor_update_assoc_req(struct ieee80211_hw *hw,
 	if (nw->vendor_skb_assoc_req->len > WIM_MAX_SIZE) {
 		nrc_mac_dbg("Fail to alloc skb for wim(vendor_skb_assoc_req->len:%d, max: %d)",
 			nw->vendor_skb_assoc_req->len, WIM_MAX_SIZE);
-		return 0;
+		return -EMSGSIZE;
 	}
 
 	skb = nrc_wim_alloc_skb_vif(nw, vif, WIM_CMD_SET, WIM_MAX_SIZE);
@@ -1099,7 +1141,7 @@ static int nrc_mac_add_interface(struct ieee80211_hw *hw,
 		 * Put the target into promiscuous mode
 		 */
 		nw->promisc = true;
-
+		nrc_ampdu_mon_init();
 		nrc_mac_dbg("promiscuous mode on");
 		goto out;
 	}
@@ -1124,7 +1166,7 @@ static int nrc_mac_add_interface(struct ieee80211_hw *hw,
 			else if(nw->hw_queues == 11) { /* 7393 type, Use BK1, BE1,... */
 				vif->cab_queue = 10;
 			} else {
-				pr_err("Invalid Chip ID(0x%x), queues:%d\n", nw->chip_id, nw->hw_queues);
+				dev_err(nw->dev, "Invalid Chip ID(0x%x), queues:%d\n", nw->chip_id, nw->hw_queues);
 				BUG();
 			}
 			
@@ -1156,12 +1198,12 @@ static int nrc_mac_add_interface(struct ieee80211_hw *hw,
 				vif->hw_queue[IEEE80211_AC_BK] = 6;
 				break;
 			default:
-				pr_err("Invalid Chip ID(0x%x), queues:%d\n", nw->chip_id, nw->hw_queues);
+				dev_err(nw->dev, "Invalid Chip ID(0x%x), queues:%d\n", nw->chip_id, nw->hw_queues);
 				BUG();
 		}
 	}
 	if (i_vif->index > 1) {
-		pr_err("Invalid Vif Index(%d)\n", i_vif->index);
+		dev_err(nw->dev, "Invalid Vif Index(%d)\n", i_vif->index);
 		BUG();
 	}
 	nrc_dbg(NRC_DBG_MAC, "%s: VIF%d's hwqueue:%d", __func__, i_vif->index, nw->hw_queues);
@@ -1200,6 +1242,13 @@ static int nrc_mac_add_interface(struct ieee80211_hw *hw,
 			i_vif->dev ? netdev_name(i_vif->dev):"NULL",
 			vif->addr, i_vif->index, iftype_string(vif->type));
 
+	if (vif->type == NL80211_IFTYPE_AP) {
+		ap_max_idle_timer_start(nw, i_vif);
+		/* CKLEE_TODO, check capability */
+		// nrc_twt_sched_start(nw, vif);
+		/* CKLEE_TODO, stop if changed to sta */
+	}
+
  out:
 
 	if (vif->p2p)
@@ -1210,6 +1259,11 @@ static int nrc_mac_add_interface(struct ieee80211_hw *hw,
 	force_sw_enc_mode_by_sta_type(nw, vif);
 	nrc_wim_set_sta_type(nw, vif);
 	nrc_hif_resume_rx_thread(nw->hif);
+
+	if ((vif->type == NL80211_IFTYPE_AP) ||
+		(vif->type == NL80211_IFTYPE_STATION)) {
+		nrc_vcmd_backup_init_info(i_vif->index, nw);
+	}
 
 	return 0;
 }
@@ -1230,6 +1284,11 @@ static int nrc_mac_change_interface(struct ieee80211_hw *hw,
 	 * interface may change from non-AP to AP in
 	 * which case this needs to be set up again
 	 */
+
+	if (vif->type == NL80211_IFTYPE_AP) {
+		nrc_twt_sched_stop(nw, vif);
+	}
+
 	vif->type = newtype;
 	vif->p2p = newp2p;
 
@@ -1245,6 +1304,16 @@ static int nrc_mac_change_interface(struct ieee80211_hw *hw,
 	vif->cab_queue = 0;
 #endif
 
+	ap_max_idle_timer_stop(nw, i_vif);
+
+	if (newtype == NL80211_IFTYPE_AP) {
+		ap_max_idle_timer_start(nw, i_vif);
+
+		/* CKLEE_TODO, check capability */
+		//nrc_twt_sched_start(nw, vif);
+		/* CKLEE_TODO, stop if changed to sta */
+	} 
+
 	return 0;
 }
 
@@ -1253,13 +1322,47 @@ static void nrc_mac_remove_interface(struct ieee80211_hw *hw,
 {
 	struct nrc *nw = hw->priv;
 	struct nrc_vif *i_vif = to_i_vif(vif);
+	int ret;
 
-	if (vif->type == NL80211_IFTYPE_MONITOR || vif->p2p)
+	if (vif->type == NL80211_IFTYPE_MONITOR || vif->p2p){
+		if(vif->type == NL80211_IFTYPE_MONITOR){
+			nrc_ampdu_mon_deinit();
+		}
 		return;
+	}
 
 	nrc_mac_dbg("%s %s addr:%pM hwindex:%d %s", __func__,
 				i_vif->dev ? netdev_name(i_vif->dev) : "NULL",
 				vif->addr, i_vif->index, iftype_string(vif->type));
+
+	if (vif->type == NL80211_IFTYPE_AP) {
+		ap_max_idle_timer_stop(nw, i_vif);
+	}
+
+	/** 
+	 * when ifconfig wlan0 down on idle_mode, nrc_mac_config is not called such as power_save 
+	 * so, forcely wake-up.
+	 */
+#if 0
+	nw->hw->conf.flags &= ~IEEE80211_CONF_IDLE;
+	nrc_mac_config(nw->hw, IEEE80211_CONF_CHANGE_IDLE);
+#else
+	if(nw->drv_state == NRC_DRV_PS) {
+		dev_info(nw->dev, "Wake target for remove interface");
+		ret = nrc_ps_set_mode(nw, NRC_PS_NONE, 2000);
+		if (ret == -1) {
+			dev_err(nw->dev, "Failed to wake to remove interface\n");
+		}
+	}
+#endif
+
+	if ((vif->type == NL80211_IFTYPE_AP) ||
+		(vif->type == NL80211_IFTYPE_STATION)) {
+		nrc_vcmd_backup_del_all_entry(i_vif->index);
+
+		if ((vif->type == NL80211_IFTYPE_STATION) && (i_vif->index < VIF_MAX))
+			cancel_delayed_work_sync(&nrc_vcmd_backup_get_info_addr(i_vif->index)->vcmd_backup_reinstall);
+	}
 
 #ifdef CONFIG_USE_TXQ
 	nrc_cleanup_txq(nw, vif->txq);
@@ -1279,7 +1382,146 @@ static void nrc_mac_remove_interface(struct ieee80211_hw *hw,
 	} else {
 		nw->d_deauth.removed = true;
 	}
+
+	if (vif->type == NL80211_IFTYPE_AP) {
+		nrc_twt_sched_stop(nw, vif);
+	}
 	nrc_mac_dbg("%s:end", __func__);
+}
+
+
+static u16 total_sta=0; /* total number of STA  connected */
+static u16 remain_sta=0; /* number of STA remaining after clearing STA */
+
+static void prepare_deauth_sta(void *data,  struct ieee80211_sta *sta)
+{
+	struct nrc_sta *i_sta = to_i_sta(sta);
+	struct ieee80211_hw *hw = i_sta->nw->hw;
+	struct ieee80211_vif *vif = data;
+	struct sk_buff *skb = NULL;
+
+	if (!sta || !vif) {
+		nrc_dbg(NRC_DBG_STATE, "%s Invalid argument", __func__);
+		return;
+	}
+
+	if(!ieee80211_find_sta(vif, sta->addr))
+		return;
+
+	/* (AP Recovry) Pretend to receive a deauth from @sta */
+	skb = ieee80211_deauth_get(hw, vif->addr, sta->addr, vif->addr,
+			WLAN_REASON_DEAUTH_LEAVING, sta, false);
+	if (!skb) {
+		nrc_dbg(NRC_DBG_STATE, "%s Fail to alloc skb", __func__);
+		return;
+	}
+	nrc_dbg(NRC_DBG_STATE, "(AP Recovery) Disconnect STA(%pM) by force", sta->addr);
+	ieee80211_rx_irqsafe(hw, skb);
+
+	++total_sta;
+}
+
+static void get_sta_cnt(void *data,  struct ieee80211_sta *sta)
+{
+	struct ieee80211_vif *vif = data;
+
+	if (!sta || !vif) {
+		nrc_dbg(NRC_DBG_STATE, "%s Invalid argument", __func__);
+		return;
+	}
+
+	if(!ieee80211_find_sta(vif, sta->addr))
+		return;
+
+	++remain_sta;
+	nrc_dbg(NRC_DBG_STATE, "(AP Recovery) remaining sta_cnt:%d", remain_sta);
+}
+
+int nrc_mac_restart (struct nrc *nw)
+{
+	int is_relay;
+	int i;
+	u16 cleared_sta=0;
+	int retry_cnt = 0;
+	struct nrc_vif *i_vif;
+	struct nrc_hif_device *hdev = nw->hif;
+
+	nrc_mac_dbg("Restart NRC MAC");
+	is_relay = (nw->vif[0] && nw->vif[1]);
+
+	//nrc_hif_config(hdev);
+
+	for (i = 0; i < ARRAY_SIZE(nw->vif); i++) {
+		if (nw->vif[i]) {
+			if (nw->vif[i]->type == NL80211_IFTYPE_STATION) {
+				/*
+				 * The target was rebooted due to watchdog.
+				 * Then, driver always requests deauth for trying to reconnect.
+				 */
+				if ((int)atomic_read(&nw->fw_state) != NRC_FW_ACTIVE) {
+					atomic_set(&nw->fw_state, NRC_FW_ACTIVE);
+					nrc_hif_resume(hdev);
+				}
+				nrc_dbg(NRC_DBG_STATE, "STA(%d) : Reconnect to AP", i);
+				mdelay(300);
+				nrc_mac_cancel_hw_scan(nw->hw, nw->vif[i]);
+				ieee80211_connection_loss(nw->vif[i]);
+				if(!is_relay) {
+					nrc_vcmd_backup_init_info(i, nw);
+					return 0;
+				} else {
+					nrc_free_vif_index(nw, nw->vif[i]);
+				}
+			} else if (nw->vif[i]->type == NL80211_IFTYPE_AP) {
+				i_vif = to_i_vif(nw->vif[i]);
+				ap_max_idle_timer_stop(nw, i_vif);
+
+				ieee80211_iterate_stations_atomic(nw->hw, prepare_deauth_sta, (void *)nw->vif[i]);
+				nrc_dbg(NRC_DBG_STATE, "AP(%d) : Now try to clear all STAs(total cnt:%d)", i, total_sta);
+				while (1) {
+					//wait for all the sta are locally deauthenticated by mac80211
+					if (!total_sta) break;
+					msleep(2000);
+					remain_sta = 0;
+					ieee80211_iterate_stations_atomic(nw->hw, get_sta_cnt, (void *)nw->vif[i]);
+					cleared_sta = total_sta - remain_sta;
+					if (!remain_sta) {
+						nrc_dbg(NRC_DBG_STATE, "Completed! (Remaining STA cnt:%d)", remain_sta);
+						remain_sta = 0;
+						break;
+					}
+					retry_cnt++;
+					if (retry_cnt > 10) {
+						nrc_dbg(NRC_DBG_STATE, "10 Trials but fail to clear STAs on mac80211. Reset by Force (Remaining STA cnt:%d)",
+								remain_sta);
+						break;
+					}
+					nrc_dbg(NRC_DBG_STATE, "NOT completed yet. Try again. (cleared STA:%d vs remained STA:%d, retry_cnt:%d)",
+							cleared_sta, remain_sta, retry_cnt);
+					total_sta = 0;
+					ieee80211_iterate_stations_atomic(nw->hw, prepare_deauth_sta, (void *)nw->vif[i]);
+				}
+				nrc_dbg(NRC_DBG_STATE, "All STAs are cleared.(retry_cnt:%d remaining sta cnt:%d)",
+						retry_cnt, nrc_stats_report_count());
+				total_sta = 0;
+				mdelay(5000); //it's for STA's reconnect by CQM
+				nrc_hif_cleanup(nw->hif);
+				nrc_mac_clean_txq(nw);
+				ap_max_idle_timer_stop (nw, to_i_vif(nw->vif[i])); /* when restart or WDT , remove_interface is not called */
+				nrc_free_vif_index(nw, nw->vif[i]);
+			} else if (nw->vif[i]->type == NL80211_IFTYPE_MESH_POINT) {
+				nrc_dbg(NRC_DBG_STATE, "mesh(%d) : Restart and do not repeering", i);
+				nrc_hif_cleanup(nw->hif);
+				nrc_mac_clean_txq(nw);
+				nrc_mac_flush_txq(nw);
+			}
+#ifdef CONFIG_S1G_CHANNEL
+			init_s1g_channels(nw);
+#endif /* #ifdef CONFIG_S1G_CHANNEL */
+		}
+	}
+
+	return 1;
 }
 
 static enum WIM_CHANNEL_PARAM_WIDTH
@@ -1343,6 +1585,8 @@ uint16_t get_base_freq(void)
 		ret_freq = CN_BASE_FREQ;
 	} else if (nrc_cc[0] == 'K' && nrc_cc[1] == 'R') {
 		ret_freq = (kr_band == 1) ? K1_BASE_FREQ : K2_BASE_FREQ;
+	} else if (nrc_cc[0] == 'S' && nrc_cc[1] == 'G') {
+		ret_freq = (sg_band == 8) ? S8_BASE_FREQ : S9_BASE_FREQ;
 	} else if (country_match(eu_countries_cc, nrc_cc)) {
 		ret_freq = EU_BASE_FREQ;
 	}
@@ -1480,6 +1724,7 @@ static int nrc_mac_config(struct ieee80211_hw *hw, u32 changed)
 	chandef.channel = &ch;
 #endif
 
+	nrc_mac_dbg("%s: changed: 0x%x\n", __FUNCTION__, changed);
 #if defined(CONFIG_SUPPORT_BD)
 	if (g_supp_ch_list.num_ch) {
 		if (changed & IEEE80211_CONF_CHANGE_CHANNEL) {
@@ -1526,6 +1771,7 @@ static int nrc_mac_config(struct ieee80211_hw *hw, u32 changed)
 #endif /* CONFIG_SUPPORT_BD */
 
 	if (changed & IEEE80211_CONF_CHANGE_CHANNEL) {
+		nrc_mac_dbg("%s: changed: IEEE80211_CONF_CHANGE_CHANNEL \n", __FUNCTION__);
 		skb = nrc_wim_alloc_skb(nw, WIM_CMD_SET,
 				tlv_len(sizeof(struct wim_channel_param)));
 
@@ -1557,6 +1803,7 @@ static int nrc_mac_config(struct ieee80211_hw *hw, u32 changed)
 	}
 
 	if (changed & IEEE80211_CONF_CHANGE_PS) {
+		nrc_mac_dbg("%s: changed: IEEE80211_CONF_CHANGE_PS\n", __FUNCTION__);
 		nw->ps_enabled = (hw->conf.flags & IEEE80211_CONF_PS);
 		nw->ps_drv_state = nw->ps_enabled;
 
@@ -1575,8 +1822,10 @@ static int nrc_mac_config(struct ieee80211_hw *hw, u32 changed)
 			 */
 			if (nw->ps_enabled)
 				nrc_ps_dbg("Target is already in deepsleep...\n");
-			else
-				nrc_ps_dbg("Target will wake-up after frame type check.\n");
+			else {
+				nrc_ps_dbg("Wake up target.\n");
+				nrc_hif_wake_target(nw->hif, 2000);
+			}
 
 			return ret;
 		}
@@ -1584,8 +1833,10 @@ static int nrc_mac_config(struct ieee80211_hw *hw, u32 changed)
 		if (ieee80211_hw_check(hw, SUPPORTS_DYNAMIC_PS)) {
 			if (hw->conf.dynamic_ps_timeout > 0) {
 				if (nw->ps_enabled) {
-					mod_timer(&nw->dynamic_ps_timer,
-						jiffies + msecs_to_jiffies(hw->conf.dynamic_ps_timeout));
+					if (!(nw->twt_sched && twt_force_sleep)) {
+						mod_timer(&nw->dynamic_ps_timer,
+							jiffies + msecs_to_jiffies(hw->conf.dynamic_ps_timeout));
+					}
 					return ret;
 				} else {
 					if (power_save >= NRC_PS_DEEPSLEEP_TIM)
@@ -1613,6 +1864,7 @@ static int nrc_mac_config(struct ieee80211_hw *hw, u32 changed)
 
 			if (power_save >= NRC_PS_DEEPSLEEP_TIM) {
 				p->ps_wakeup_pin = power_save_gpio[1];
+				p->ps_wakeup_high = power_save_gpio[2];
 				p->ps_duration = sleep_duration[0] * (sleep_duration[1] ? 1000 : 1);
 				ieee80211_stop_queues(nw->hw);
 #ifdef CONFIG_USE_TXQ
@@ -1646,6 +1898,20 @@ static int nrc_mac_config(struct ieee80211_hw *hw, u32 changed)
 			nrc_hif_sleep_target_end(nw->hif, power_save);
 		}
 	}
+
+	if (idle_mode &&
+		(changed & IEEE80211_CONF_CHANGE_IDLE) &&
+		nw->scan_mode == NRC_SCAN_MODE_IDLE) {
+		nrc_mac_dbg("%s: changed: IEEE80211_CONF_CHANGE_IDLE\n", __FUNCTION__);
+		if (hw->conf.flags & IEEE80211_CONF_IDLE) {
+			dev_info(nw->dev, "Changing to IDLE\n");
+			nrc_ps_set_mode(nw, NRC_PS_DEEPSLEEP_NONTIM, -1);
+		} else {
+			dev_info(nw->dev, "Changing to Active\n");
+			nrc_ps_set_mode(nw, NRC_PS_NONE, 2000);
+		}
+	}
+
 
 	return ret;
 }
@@ -1755,17 +2021,25 @@ void nrc_mac_bss_info_changed(struct ieee80211_hw *hw,
 		if (info->assoc) {
 #endif
 			nrc_bss_assoc(hw, vif, info, skb);
+
+			spin_lock_bh(&nw->vif_lock);
+			nw->associated_vif = vif;
 			if (!disable_cqm) {
+				nrc_mac_dbg("mod_timer in %s:%d", __FUNCTION__, __LINE__);
 				mod_timer(&nw->bcn_mon_timer,
 					jiffies + msecs_to_jiffies(nw->beacon_timeout));
 			}
-			nw->associated_vif = vif;
+			spin_unlock_bh(&nw->vif_lock);
 		} else {
+			spin_lock_bh(&nw->vif_lock);
 			if (!disable_cqm) {
 				nw->beacon_timeout = 0;
+				nrc_mac_dbg("del_timer in %s:%d", __FUNCTION__, __LINE__);
 				try_to_del_timer_sync(&nw->bcn_mon_timer);
+				nw->is_bcn_timeout = false;
 			}
 			nw->associated_vif = NULL;
+			spin_unlock_bh(&nw->vif_lock);
 		}
 		nrc_mac_dbg("[BSS_CHANGED_ASSOC] associated_vif:%d beacon_timeout:%lu",
 			nw->associated_vif?i_vif->index:-1, nw->beacon_timeout);
@@ -1857,6 +2131,11 @@ void nrc_mac_bss_info_changed(struct ieee80211_hw *hw,
 			nrc_wim_skb_add_tlv(skb, WIM_TLV_BEACON_ENABLE,
 						sizeof(info->enable_beacon),
 						&info->enable_beacon);
+		}
+
+		if (vif->type == NL80211_IFTYPE_AP) {
+			/* need to start after setting beacon interval */
+			nrc_twt_sched_start(nw, vif);
 		}
 	}
 
@@ -2003,11 +2282,60 @@ int nrc_mac_sta_add(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 int nrc_mac_sta_remove(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 						struct ieee80211_sta *sta)
 {
+	struct nrc *nw = (struct nrc*)hw->priv;
+	struct nrc_sta *i_sta = to_i_sta(sta);
+
 	nrc_stats_del(sta->addr);
+	nrc_twt_sched_entry_del_all(nw, i_sta);
 	//nrc_stats_print();
 	nrc_wim_change_sta(hw->priv, vif, sta, WIM_STA_CMD_REMOVE, 0);
 
 	return 0;
+}
+
+static void nrc_tx_ba_session_work(struct work_struct *work)
+{
+	struct tx_ba_session *ba_session = container_of(work, struct tx_ba_session, ba_session_work);
+	struct nrc_sta *i_sta = ba_session->sta;
+	struct ieee80211_sta *peer_sta = to_ieee80211_sta(i_sta);
+	int ret = 0;
+
+	if (!peer_sta) {
+		nrc_mac_dbg("Fail to set up BA. Fail to find peer (%pM)", peer_sta->addr);
+		return;
+	}
+
+	switch (ba_session->state)
+	{
+		case IEEE80211_BA_NONE:
+		case IEEE80211_BA_CLOSE:
+			nrc_dbg(NRC_DBG_STATE, "%s: Setting up BA session for Tx TID %d with peer (%pM)",
+					__func__, ba_session->tid, peer_sta->addr);
+			i_sta->nw->ampdu_supported = true;
+			i_sta->nw->ampdu_reject = false;
+			if((ret = ieee80211_start_tx_ba_session(peer_sta, ba_session->tid, 0)) != 0) {
+				if (ret == -EBUSY) {
+					nrc_dbg(NRC_DBG_STATE, "%s: receiver does not want A-MPDU so disable BA session (TID:%d)", __func__, ba_session->tid);
+					ba_session->state = IEEE80211_BA_DISABLE;
+				}
+				if (ret == -EAGAIN) {
+					nrc_dbg(NRC_DBG_STATE, "%s: session is not idle (TID:%d)", __func__, ba_session->tid);
+					ieee80211_stop_tx_ba_session(peer_sta, ba_session->tid);
+					ba_session->state = IEEE80211_BA_NONE;
+					ba_session->ba_req_last_jiffies = 0;
+				}
+			}
+			break;
+		case IEEE80211_BA_REJECT:
+			if(jiffies_to_msecs(jiffies - ba_session->ba_req_last_jiffies) > 5000) {
+				ba_session->state = IEEE80211_BA_NONE;
+				ba_session->ba_req_last_jiffies = 0;
+				nrc_dbg(NRC_DBG_STATE, "%s: reset ba status(TID:%d)", __func__, ba_session->tid);
+			}
+			break;
+		default:
+			break;
+	}
 }
 
 static void nrc_init_sta_ba_session(struct ieee80211_sta *sta)
@@ -2019,9 +2347,33 @@ static void nrc_init_sta_ba_session(struct ieee80211_sta *sta)
 		i_sta = to_i_sta(sta);
 		if (i_sta) {
 			for (i=0 ; i < NRC_MAX_TID; i++) {
-				i_sta->tx_ba_session[i] = IEEE80211_BA_NONE;
-				i_sta->ba_req_last_jiffies[i] = 0;
+				i_sta->tx_ba_session[i].sta = i_sta;
+				i_sta->tx_ba_session[i].tid = i;
+				i_sta->tx_ba_session[i].state = IEEE80211_BA_NONE;
+				i_sta->tx_ba_session[i].ba_req_last_jiffies = 0;
+				INIT_WORK(&i_sta->tx_ba_session[i].ba_session_work, nrc_tx_ba_session_work);
+				i_sta->rx_ba_session[i].started = false;
+				i_sta->rx_ba_session[i].sn = 0;
+#if KERNEL_VERSION(4, 19, 0) <= NRC_TARGET_KERNEL_VERSION
+				i_sta->rx_ba_session[i].buf_size = IEEE80211_MAX_AMPDU_BUF_HT;
+#else
+				i_sta->rx_ba_session[i].buf_size = IEEE80211_MAX_AMPDU_BUF;
+#endif
 			}
+		}
+	}
+}
+
+static void nrc_deinit_sta_ba_session(struct nrc_sta *i_sta)
+{
+	int i;
+
+	if (!i_sta)
+		return;
+
+	for (i = 0; i < NRC_MAX_TID; i++) {
+		if (i_sta->tx_ba_session[i].ba_session_work.func) {
+			cancel_work_sync(&i_sta->tx_ba_session[i].ba_session_work);
 		}
 	}
 }
@@ -2072,6 +2424,32 @@ int nrc_wim_change_sta_state(struct nrc *nw, struct ieee80211_vif *vif,
 }
 #endif
 
+static u16 convert_usf(u32 interval)
+{
+	u16 ui, usf, interval_usf;
+
+	if (interval <= S1G_UNSCALED_INTERVAL_MAX) {
+		ui = interval;
+		usf = 0;
+	} else if (interval / 10 <= S1G_UNSCALED_INTERVAL_MAX) {
+		ui = interval / 10;
+		usf = 1;
+	} else if (interval / 1000 <= S1G_UNSCALED_INTERVAL_MAX) {
+		ui = interval / 1000;
+		usf = 2;
+	} else if (interval / 10000 <= S1G_UNSCALED_INTERVAL_MAX) {
+		ui = interval / 10000;
+		usf = 3;
+	} else {
+		ui = 0;
+		usf = 0;
+	}
+
+	interval_usf = (usf << 14) + ui;
+
+	return interval_usf;
+}
+
 #ifdef CONFIG_SUPPORT_AFTER_KERNEL_3_0_36
 static
 int nrc_mac_sta_state(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
@@ -2105,8 +2483,29 @@ int nrc_mac_sta_state(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 		list_add_tail(&i_sta->list, &i_vif->preassoc_sta_list);
 		spin_unlock_irqrestore(&i_vif->preassoc_sta_lock, flags);
 
+
+		/* This value is set in rx_h_bss_max_idle_period normally when assoc frames are received 
+		   but, While test of ifconfig up /down, some weired transition occured without any frame exchanges.
+		   so, values is set to zero. this causes invalid timer setting on STA.
+		*/
+
+		/* set default max_idle_period from AP */
+		nrc_mac_dbg("%s: set default max_idle_period with AP's period: %lu", __FUNCTION__, i_vif->max_idle_period);
+		if (nrc_mac_is_s1g(nw)) {
+			/* Convert in USF Format (Value (14bit) * USF(2bit)) and save it */
+			i_sta->max_idle.period = convert_usf(i_vif->max_idle_period);
+		} else {
+			i_sta->max_idle.period = i_vif->max_idle_period;
+		}
+		i_sta->max_idle.options = 0;
+		if (vif->type == NL80211_IFTYPE_AP) {
+			i_sta->max_idle.idle_period = i_sta->max_idle.sta_idle_timer = i_vif->max_idle_period;
+		}
+
 	} else if (state_changed(NONE, NOTEXIST)) {
 		spin_lock_irqsave(&i_vif->preassoc_sta_lock, flags);
+		nrc_twt_sched_entry_del_all(nw, i_sta);
+		nrc_deinit_sta_ba_session(i_sta);
 		list_del_init(&i_sta->list);
 		spin_unlock_irqrestore(&i_vif->preassoc_sta_lock, flags);
 	} else if (state_changed(NONE, AUTH)) {
@@ -2249,7 +2648,11 @@ int nrc_mac_conf_tx(struct ieee80211_hw *hw,
 			tqp[ac].uapsd = params->uapsd;
 			nrc_wim_skb_add_tlv(skb, WIM_TLV_TXQ_PARAM, sizeof(struct wim_tx_queue_param), &tqp[ac]);
 
-#if 0
+			/* 
+			   don't need to compare values and block log
+			   It's because the incorrect transformation of the short beacon no longer sets the counter value correctly.
+			 */
+#if 1
 			nrc_mac_dbg("%s: ac=%d txop=%d cw_min=%d cw_max=%d aifs=%d uapsd=%d", __func__,
 				ac, params->txop, params->cw_min, params->cw_max, params->aifs, params->uapsd);
 #endif
@@ -2318,6 +2721,8 @@ static int nrc_mac_ampdu_action(struct ieee80211_hw *hw,
 	enum ieee80211_ampdu_mlme_action action = params->action;
 	struct ieee80211_sta *sta = params->sta;
 	u16 tid = params->tid;
+	u16 *ssn = &params->ssn;
+	u16 buf_size = params->buf_size;
 #endif
 
 	if (nw->ampdu_supported && !nw->ampdu_started) {
@@ -2350,31 +2755,31 @@ static int nrc_mac_ampdu_action(struct ieee80211_hw *hw,
 		if (nrc_wim_ampdu_action(nw, vif, WIM_AMPDU_TX_START, sta, tid))
 			return -EOPNOTSUPP;
 
-		i_sta->tx_ba_session[tid] = IEEE80211_BA_REQUEST;
+		i_sta->tx_ba_session[tid].state = IEEE80211_BA_REQUEST;
 		ieee80211_start_tx_ba_cb_irqsafe(vif, sta->addr, tid);
 		break;
 #ifdef CONFIG_SUPPORT_AFTER_KERNEL_3_0_36
 	case IEEE80211_AMPDU_TX_STOP_FLUSH:
 		nrc_dbg(NRC_DBG_MAC, "%s: IEEE80211_AMPDU_TX_STOP_FLUSH", __func__);
-		i_sta->tx_ba_session[tid] = IEEE80211_BA_CLOSE;
+		i_sta->tx_ba_session[tid].state = IEEE80211_BA_CLOSE;
 		break;
 	case IEEE80211_AMPDU_TX_STOP_FLUSH_CONT:
 		nrc_dbg(NRC_DBG_MAC, "%s: IEEE80211_AMPDU_TX_STOP_FLUSH_CONT", __func__);
-		i_sta->tx_ba_session[tid] = IEEE80211_BA_CLOSE;
+		i_sta->tx_ba_session[tid].state = IEEE80211_BA_CLOSE;
 		break;
 	case IEEE80211_AMPDU_TX_STOP_CONT:
 		nrc_dbg(NRC_DBG_MAC, "%s: IEEE80211_AMPDU_TX_STOP_CONT", __func__);
 		if (nrc_wim_ampdu_action(nw, vif, WIM_AMPDU_TX_STOP, sta, tid))
 			return -EOPNOTSUPP;
-		i_sta->tx_ba_session[tid] = IEEE80211_BA_REJECT;
-		i_sta->ba_req_last_jiffies[tid] = jiffies;
+		i_sta->tx_ba_session[tid].state = IEEE80211_BA_REJECT;
+		i_sta->tx_ba_session[tid].ba_req_last_jiffies = jiffies;
 		ieee80211_stop_tx_ba_cb_irqsafe(vif, sta->addr, tid);
 		// nrc_set_auto_ba(false);
 		break;
 #endif
 	case IEEE80211_AMPDU_TX_OPERATIONAL:
 		nrc_dbg(NRC_DBG_MAC, "%s: IEEE80211_AMPDU_TX_OPERATIONAL", __func__);
-		i_sta->tx_ba_session[tid] = IEEE80211_BA_ACCEPT;
+		i_sta->tx_ba_session[tid].state = IEEE80211_BA_ACCEPT;
 		if (nrc_wim_ampdu_action(nw, vif, WIM_AMPDU_TX_OPERATIONAL, sta, tid))
 			return -EOPNOTSUPP;
 
@@ -2382,6 +2787,9 @@ static int nrc_mac_ampdu_action(struct ieee80211_hw *hw,
 		return 0;
 	case IEEE80211_AMPDU_RX_START:
 		nrc_dbg(NRC_DBG_MAC, "%s: IEEE80211_AMPDU_RX_START", __func__);
+		i_sta->rx_ba_session[tid].sn = *ssn;
+		i_sta->rx_ba_session[tid].buf_size = buf_size;
+		i_sta->rx_ba_session[tid].started = true;
 		if (nw->ampdu_reject) {
 			nrc_dbg(NRC_DBG_MAC, "%s: Reject AMPDU", __func__);
 			return -EOPNOTSUPP;
@@ -2389,6 +2797,7 @@ static int nrc_mac_ampdu_action(struct ieee80211_hw *hw,
 		return 0;
 	case IEEE80211_AMPDU_RX_STOP:
 		nrc_dbg(NRC_DBG_MAC, "%s: IEEE80211_AMPDU_RX_STOP", __func__);
+		i_sta->rx_ba_session[tid].started = false;
 		if (nw->ampdu_reject) {
 			nrc_dbg(NRC_DBG_MAC, "%s: Reject AMPDU", __func__);
 			return -EOPNOTSUPP;
@@ -2413,6 +2822,8 @@ static void change_scan_mode(struct nrc *nw, enum NRC_SCAN_MODE new_mode)
 
 void scan_complete(struct ieee80211_hw *hw, bool aborted)
 {
+	struct nrc *nw = hw->priv;
+
 #ifdef CONFIG_USE_CFG80211_SCAN_INFO
 	struct cfg80211_scan_info info = {
 		.aborted = aborted,
@@ -2422,6 +2833,11 @@ void scan_complete(struct ieee80211_hw *hw, bool aborted)
 #else
 	ieee80211_scan_completed(hw, aborted);
 #endif
+
+	if (idle_mode && hw->conf.flags & IEEE80211_CONF_IDLE) {
+		dev_info(nw->dev, "Changing to IDLE after scan\n");
+		nrc_ps_set_mode(nw, NRC_PS_DEEPSLEEP_NONTIM, -1);
+	}
 }
 
 static void nrc_cancel_hw_scan(struct ieee80211_hw *hw,
@@ -2447,10 +2863,22 @@ void nrc_mac_cancel_hw_scan(struct ieee80211_hw *hw,
 							struct ieee80211_vif *vif)
 {
 	struct nrc *nw = hw->priv;
+	int ret;
 
 	if (nw->scan_mode == NRC_SCAN_MODE_IDLE)
 		return;
+	if (nw->drv_state == NRC_DRV_CLOSING)
+		goto skip_wake;
 
+	if(nw->drv_state == NRC_DRV_PS) {
+		dev_info(nw->dev, "Wake target for cancelling scan");
+		ret = nrc_ps_set_mode(nw, NRC_PS_NONE, 2000);
+		if (ret == -1) {
+			dev_err(nw->dev, "Failed to wake to cancel scan\n");
+		}
+	}
+
+skip_wake:
 	nrc_cancel_hw_scan(hw, vif);
 }
 
@@ -2465,6 +2893,9 @@ __nrc_mac_hw_scan(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 #ifdef CONFIG_USE_SCAN_TIMEOUT
 	struct nrc_vif *i_vif = to_i_vif(vif);
 #endif
+	int ret;
+
+	nrc_mac_dbg("%s called", __FUNCTION__);
 
 	if (nw->block_frame ||
 			(int)atomic_read(&nw->fw_state) != NRC_FW_ACTIVE) {
@@ -2473,7 +2904,17 @@ __nrc_mac_hw_scan(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 	}
 
 	if(nw->drv_state == NRC_DRV_PS) {
-		nrc_mac_dbg("%s Scan prohibited when PS", __func__);
+		dev_info(nw->dev, "Wake target for scan\n");
+		ret = nrc_ps_set_mode(nw, NRC_PS_NONE, 2000);
+		if (ret == -1) {
+			dev_err(nw->dev, "Failed to wake to scan\n");
+			ret = -EBUSY;
+			goto out_idle;
+		}
+	}
+
+	if(nw->drv_state != NRC_DRV_RUNNING) {
+		nrc_mac_dbg("%s Not running state", __func__);
 		return -EBUSY;
 	}
 
@@ -2485,8 +2926,10 @@ __nrc_mac_hw_scan(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 
 	if(nw->associated_vif) {
 		if (!disable_cqm) {
-			nrc_mac_dbg("%s CQM timer off %u", __func__, nw->beacon_timeout);
-			try_to_del_timer_sync(&nw->bcn_mon_timer);
+			if (disable_cqm_on_scan) {
+				nrc_mac_dbg("%s CQM timer off %u", __func__, nw->beacon_timeout);
+				try_to_del_timer_sync(&nw->bcn_mon_timer);
+			}
 		}
 
 		if (ieee80211_hw_check(nw->hw, SUPPORTS_DYNAMIC_PS)) {
@@ -2513,6 +2956,14 @@ __nrc_mac_hw_scan(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 #endif
 
 	return 0;
+
+out_idle:
+	if (idle_mode && (hw->conf.flags & IEEE80211_CONF_IDLE)) {
+		dev_info(nw->dev, "Changing to IDLE after scan fail\n");
+		nrc_ps_set_mode(nw, NRC_PS_DEEPSLEEP_NONTIM, -1);
+	}
+
+	return ret;
 }
 
 #ifdef CONFIG_USE_NEW_SCAN_REQ
@@ -2520,6 +2971,7 @@ static int
 nrc_mac_hw_scan(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 		struct ieee80211_scan_request *req)
 {
+	nrc_mac_dbg("%s called", __FUNCTION__);
 	return __nrc_mac_hw_scan(hw, vif, &req->req, &req->ies);
 }
 
@@ -2802,10 +3254,11 @@ static int nrc_mac_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
 
 	/* if not use HW SECURITY of VIF , return 1 */
 	if (!(nw->cap.vif_caps[vif_id].cap_mask & WIM_SYSTEM_CAP_HWSEC)) {
-		pr_err("failed to set caps");
+		dev_err(nw->dev, "failed to set caps");
 		return 1;
 	}
-
+	//nrc_wim_install_key need to wait to receive fw result 
+	//rcu_read_lock();
 	if (sta == NULL && vif->type == NL80211_IFTYPE_STATION &&
 			!(key->flags & IEEE80211_KEY_FLAG_PAIRWISE)) {
 		sta = ieee80211_find_sta(vif, vif->bss_conf.bssid);
@@ -2818,7 +3271,8 @@ static int nrc_mac_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
 		if ((key->flags & IEEE80211_KEY_FLAG_PAIRWISE) && sta == NULL) {
 			nrc_mac_dbg("%s delete ptk but sta is null! (key->flag:%u)",
 				__func__, key->flags);
-			return 1;
+			ret = 1;
+			goto return_with_rcu_unlock;
 		}
 
 		if (key->cipher == WLAN_CIPHER_SUITE_AES_CMAC ||
@@ -2826,7 +3280,8 @@ static int nrc_mac_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
 			key->cipher == WLAN_CIPHER_SUITE_BIP_GMAC_256) {
 			nrc_mac_dbg("%s delete key but not supported key cipher (key->cipher:%u)",
 				__func__, key->cipher);
-			return 1;
+			ret = 1;
+			goto return_with_rcu_unlock;
 		}
 
 		/* If HYBRID SECURITY of VIF,
@@ -2835,7 +3290,8 @@ static int nrc_mac_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
 			if (!(key->flags & IEEE80211_KEY_FLAG_PAIRWISE)) {
 				nrc_mac_dbg("[DEL] VIF(%d) KEY_FLAG(%u) GTK for HYBRID SECURITY. return 1",
 					vif_id, key->flags);
-				return 1;
+				ret = 1;
+				goto return_with_rcu_unlock;
 			}
 		}
 
@@ -2855,7 +3311,8 @@ static int nrc_mac_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
 			key->flags |= IEEE80211_KEY_FLAG_SW_MGMT_TX;
 			nrc_mac_dbg("%s add key but not supported key cipher (key->cipher:%u)",
 				__func__, key->cipher);
-			return 1;
+			ret = 1;
+			goto return_with_rcu_unlock;
 		}
 
 		/* If HYBRID SECURITY of VIF,
@@ -2864,7 +3321,8 @@ static int nrc_mac_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
 			if (!(key->flags & IEEE80211_KEY_FLAG_PAIRWISE)) {
 				nrc_mac_dbg("[ADD] VIF(%d) KEY_FLAG(%u) GTK for HYBRID SECURITY. return 1",
 					vif_id, key->flags);
-				return 1;
+				ret = 1;
+				goto return_with_rcu_unlock;
 			}
 		}
 
@@ -2889,8 +3347,16 @@ static int nrc_mac_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
 	}
 
 	ret = nrc_wim_install_key(nw, cmd, vif, sta, key);
-	if (ret < 0)
+	if (ret < 0) {
+		dev_err(nw->dev, "Failed to install key in HW");
 		ret = 1; /* fallback to software crypto */
+	}
+
+	if (0xDEAD == ret) {
+		dev_err(nw->dev, "Failed to tx EAPOL M4");
+		ieee80211_hw_set(hw, SW_CRYPTO_CONTROL); /* Disable fallback to SW */
+		return -EINVAL;
+	}
 
 	key->flags |= IEEE80211_KEY_FLAG_GENERATE_IV;	/* IV by the stack */
 #if defined(CONFIG_SUPPORT_KEY_RESERVE_TAILROOM)
@@ -2898,6 +3364,9 @@ static int nrc_mac_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
 	if (nw->cap.cap_mask & WIM_SYSTEM_CAP_HWSEC_OFFL)
 		key->flags |= IEEE80211_KEY_FLAG_RESERVE_TAILROOM;
 #endif
+
+return_with_rcu_unlock:
+	//rcu_read_unlock();
 	return ret;
 }
 
@@ -3282,10 +3751,7 @@ int nrc_mac_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan)
 	 * and then the wowlan info should be transferred.
 	 */
 	if (nw->drv_state == NRC_DRV_PS) {
-		nrc_hif_wake_target(nw->hif);
-		while (nw->drv_state == NRC_DRV_PS) {
-			msleep(100);
-		}
+		nrc_hif_wake_target(nw->hif, 2000);
 	}
 
 	skb = nrc_wim_alloc_skb(nw, WIM_CMD_SET, WIM_MAX_SIZE);
@@ -3296,6 +3762,7 @@ int nrc_mac_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan)
 	p->ps_mode = NRC_PS_DEEPSLEEP_TIM;
 	p->ps_enable = true;
 	p->ps_wakeup_pin = power_save_gpio[1];
+	p->ps_wakeup_high = power_save_gpio[2];
 	p->wowlan_wakeup_host_pin = TARGET_GPIO_FOR_WAKEUP_HOST;
 	p->wowlan_enable_any = wowlan->any;
 	p->wowlan_enable_magicpacket = wowlan->magic_pkt;
@@ -3348,9 +3815,32 @@ static u32 nrc_get_expected_throughput(struct ieee80211_sta *sta)
 #endif
 {
 	uint32_t tput = 0;
+	struct sk_buff *skb_resp;
+#if KERNEL_VERSION(4, 8, 0) <= NRC_TARGET_KERNEL_VERSION
+	struct nrc *nw = hw->priv;
+#else
+	struct nrc_sta *i_sta;
+	struct nrc *nw;
+	i_sta = to_i_sta(sta);
+	nw = i_sta->nw;
+#endif
 
 	if (!sta)
 		return 0;
+
+	skb_resp = nrc_xmit_wim_simple_request_wait(nw, WIM_CMD_GET_TX_STATS, (WIM_RESP_TIMEOUT * 30));
+	if(skb_resp) {
+		struct wim *wim = (struct wim *)skb_resp->data;
+		struct wim_tlv *tlv = (struct wim_tlv *)(wim + 1);
+		struct nrc_tx_stats* tx_stats = (struct nrc_tx_stats*) tlv->v;
+		nrc_common_dbg("mcs:%d bw:%d gi:%d", tx_stats->mcs, tx_stats->bw, tx_stats->gi);
+		if (tx_stats->bw < 3 && tx_stats->mcs < 11) {
+			nrc_stats_update_tx_stats(tx_stats);
+		}
+		dev_kfree_skb(skb_resp);
+	} else {
+
+	}
 
 	tput = nrc_stats_metric(sta->addr);
 	/* prevent overflow in mac80211 */
@@ -3463,7 +3953,13 @@ static const struct ieee80211_ops nrc_mac80211_ops = {
 	.pre_channel_switch = nrc_pre_channel_switch,
 	.post_channel_switch = nrc_post_channel_switch,
 	.channel_switch = nrc_channel_switch,
-	.get_expected_throughput = nrc_get_expected_throughput
+	.get_expected_throughput = nrc_get_expected_throughput,
+#ifdef CONFIG_USE_KERNEL_S1G_TWT
+#if 0 // To use this feature, some S1G capabilities patch is needed,
+	.add_twt_setup = nrc_mac_add_twt_setup,
+	.twt_teardown_request = nrc_mac_twt_teardown_request,
+#endif
+#endif
 };
 
 
@@ -3493,7 +3989,7 @@ int nrc_reg_notifier(struct wiphy *wiphy,
 	nrc_cc[1] = request->alpha2[1];
 	if ((request->alpha2[0] == '0' && request->alpha2[1] == '0') ||
 		(request->alpha2[0] == '9' && request->alpha2[1] == '9')) {
-		pr_err("[Error] CC is 00 or 99. Skip loading BD and setting CC");
+		dev_err(nw->dev, "[Error] CC is 00 or 99. Skip loading BD and setting CC");
 #ifdef CONFIG_NEW_REG_NOTIFIER
 		return;
 #else
@@ -3587,8 +4083,9 @@ static u8* nrc_vendor_remove(struct nrc *nw, u8 subcmd)
 	u8 *pos = NULL;
 	struct sk_buff **vendor_skb_ptr = NULL;
 
-	if ((subcmd >= NRC_SUBCMD_ANNOUNCE1) &&
-	    (subcmd <= NRC_SUBCMD_BCAST_FOTA_4)) {
+	if (((subcmd >= NRC_SUBCMD_ANNOUNCE1) &&
+	    (subcmd <= NRC_SUBCMD_BCAST_FOTA_4))||
+			(subcmd == NRC_SUBCMD_UTC)) {
 		vendor_skb_ptr = &nw->vendor_skb_beacon;
 	} else if ((subcmd >= NRC_SUBCMD_ANNOUNCE6) &&
 		       (subcmd <= NRC_SUBCMD_ANNOUNCE10)) {
@@ -3630,7 +4127,8 @@ static int nrc_vendor_update(struct nrc *nw, u8 subcmd,
 	if (!data || data_len < 1 || (data_len + OUI_LEN + 1) > MAX_DATALEN)
 		return -EINVAL;
 
-	if (subcmd >= NRC_SUBCMD_ANNOUNCE1 && subcmd <= NRC_SUBCMD_BCAST_FOTA_4)
+	if ((subcmd >= NRC_SUBCMD_ANNOUNCE1 && subcmd <= NRC_SUBCMD_BCAST_FOTA_4) ||
+			(subcmd == NRC_SUBCMD_UTC))
 		vendor_skb_ptr = &nw->vendor_skb_beacon;
 	else if (subcmd >= NRC_SUBCMD_ANNOUNCE6 && subcmd <= NRC_SUBCMD_ANNOUNCE10)
 		vendor_skb_ptr = &nw->vendor_skb_probe_req;
@@ -3676,8 +4174,11 @@ static int nrc_vendor_cmd_remove(struct wiphy *wiphy,
 	if (nrc_vendor_remove(nw, subcmd) == NULL)
 		return -EINVAL;
 
+	nrc_vcmd_backup_remove_entry(vif, subcmd);
+
 	/* Update beacon */
-	if (subcmd >= NRC_SUBCMD_ANNOUNCE1 && subcmd <= NRC_SUBCMD_BCAST_FOTA_4)
+	if ((subcmd >= NRC_SUBCMD_ANNOUNCE1 && subcmd <= NRC_SUBCMD_BCAST_FOTA_4) ||
+			(subcmd == NRC_SUBCMD_UTC))
 		return nrc_vendor_update_beacon(hw, vif);
 	else if (subcmd >= NRC_SUBCMD_ANNOUNCE6 && subcmd <= NRC_SUBCMD_ANNOUNCE10)
 		return nrc_vendor_update_probe_req(hw, vif);
@@ -3732,6 +4233,175 @@ void remotecmd_schedule_off(struct wiphy *wiphy, struct wireless_dev *wdev,
 #endif
 }
 
+VCMD_BACKUP_INFO vcmd_backup_info[VIF_MAX];
+static int nrc_vcmd_backup_reinstall(u8 vif_id, struct nrc *nw)
+{
+	VCMD_ENTRY *cur, *next;
+	struct ieee80211_hw *hw = nw->hw;
+	struct ieee80211_vif *vif = nw->vif[vif_id];
+
+	if ((hw == NULL) || (vif == NULL)) {
+		nrc_mac_dbg("%s, No hw(0x%x) and vif(0x%x) info\n",__func__, hw, vif);
+		return -EINVAL;
+	}
+
+	if (list_empty(&vcmd_backup_info[vif_id].head) != 0) {
+		nrc_mac_dbg("%s, No vcmd entry\n",__func__);
+		return 0;
+	}
+
+	list_for_each_entry_safe(cur, next, &vcmd_backup_info[vif_id].head, list) {
+		/* Update local vendor data */
+		if (nrc_vendor_update(nw, cur->subcmd, cur->data, cur->data_len) != 0) {
+			nrc_mac_dbg("%s, sub_cmd:%d, error: invalid arg\n",__func__, cur->subcmd );
+			continue;
+		}
+
+		if (cur->subcmd <= NRC_SUBCMD_ANNOUNCE5)
+			nrc_vendor_update_beacon(hw, vif);
+		else if ((cur->subcmd >= NRC_SUBCMD_ANNOUNCE6) && (cur->subcmd < NRC_SUBCMD_ANNOUNCE11))
+			nrc_vendor_update_probe_req(hw, vif);
+		else if ((cur->subcmd >= NRC_SUBCMD_ANNOUNCE11) && (cur->subcmd < NRC_SUBCMD_ANNOUNCE16))
+			nrc_vendor_update_probe_rsp(hw, vif);
+		else if ((cur->subcmd >= NRC_SUBCMD_ANNOUNCE16) && (cur->subcmd <= NRC_SUBCMD_ANNOUNCE20))
+			nrc_vendor_update_assoc_req(hw, vif);
+		else {
+			nrc_mac_dbg("%s, sub_cmd:%d, error: invalid subcmd\n",__func__, cur->subcmd );
+			continue;
+		}
+		nrc_mac_dbg("%s, reinstalled sub_cmd:%d\n",__func__, cur->subcmd );
+	}
+	return 0;
+}
+
+static void nrc_vcmd_backup_delayed_reinstall(struct work_struct *work)
+{
+	VCMD_BACKUP_INFO *vcmd_info;
+	vcmd_info = container_of(work, VCMD_BACKUP_INFO, vcmd_backup_reinstall.work);
+	nrc_vcmd_backup_reinstall(vcmd_info->vif_id, vcmd_info->nw);
+}
+
+static void nrc_vcmd_backup_init_info(u8 vif_id, struct nrc *nw)
+{
+	if (!vcmd_backup_info[vif_id].initialized) {
+		INIT_LIST_HEAD(&vcmd_backup_info[vif_id].head);
+		vcmd_backup_info[vif_id].initialized = true;
+		vcmd_backup_info[vif_id].reset_by_wdt = false;
+		vcmd_backup_info[vif_id].vif_id= vif_id;
+		vcmd_backup_info[vif_id].nw = nw;
+		INIT_DELAYED_WORK(&vcmd_backup_info[vif_id].vcmd_backup_reinstall,
+											nrc_vcmd_backup_delayed_reinstall);
+		nrc_mac_dbg("%s, Init vif(%d) vcmd backup info\n",__func__, vif_id);
+	} else {
+		if (vcmd_backup_info[vif_id].reset_by_wdt) {
+			if (nw->vif[vif_id]->type == NL80211_IFTYPE_AP) {
+				nrc_mac_dbg("%s,AP:vif(%d) is reset by wdt. Restore vcmds\n",__func__, vif_id);
+				nrc_vcmd_backup_reinstall(vif_id, nw);
+
+			} else if(nw->vif[vif_id]->type == NL80211_IFTYPE_STATION) {
+				nrc_mac_dbg("%s,STA:vif(%d) is reset by wdt. Restore vcmds\n",__func__, vif_id);
+				queue_delayed_work(nw->workqueue, &vcmd_backup_info[vif_id].vcmd_backup_reinstall,
+									msecs_to_jiffies(VCMD_BACKUP_RESOTRE_WORK_DELAY_MS));
+			}
+			vcmd_backup_info[vif_id].reset_by_wdt = false;
+		}
+	}
+}
+
+static VCMD_BACKUP_INFO *nrc_vcmd_backup_get_info_addr(u8 vif_id)
+{
+	if (vif_id < VIF_MAX) {
+		return &vcmd_backup_info[vif_id];
+	} else {
+		return NULL;
+	}
+}
+
+void nrc_vcmd_backup_set_wdt_flag(u8 vif_id)
+{
+	if (vif_id < VIF_MAX) {
+		vcmd_backup_info[vif_id].reset_by_wdt = true;
+		nrc_mac_dbg("%s, vif(%d) is reset by wdt\n",__func__, vif_id);
+	}
+}
+
+static void _nrc_vcmd_backup_del_entry(u8 vif_id, u8 subcmd)
+{
+	VCMD_ENTRY *cur, *next;
+
+	if (list_empty(&vcmd_backup_info[vif_id].head) != 0) {
+		nrc_mac_dbg("%s, No vcmd entry\n",__func__);
+		return;
+	}
+
+	list_for_each_entry_safe(cur, next, &vcmd_backup_info[vif_id].head, list) {
+		if (cur->subcmd == subcmd) {
+			nrc_mac_dbg("%s, Del vcmd_entry: sub_cmd:%d\n",__func__, subcmd);
+			list_del(&cur->list);
+			kfree(cur);
+			return;
+		}
+	}
+}
+
+static int _nrc_vcmd_backup_add_entry(u8 vif_id, u8 subcmd, const u8 *data, int data_len)
+{
+	VCMD_ENTRY *vcmd_entry;
+
+	/* Delete same subcmd */
+	_nrc_vcmd_backup_del_entry(vif_id, subcmd);
+
+	vcmd_entry = kzalloc((sizeof(VCMD_ENTRY) + data_len - 1), GFP_KERNEL);
+	if (!vcmd_entry) {
+		nrc_mac_dbg("%s, Failure: kzalloc \n",__func__);
+		return -ENOMEM;
+	}
+
+	vcmd_entry->subcmd = subcmd;
+	vcmd_entry->data_len = data_len;
+	memcpy(vcmd_entry->data, data, data_len);
+	list_add_tail(&vcmd_entry->list, &vcmd_backup_info[vif_id].head);
+	return 0;
+}
+
+static void nrc_vcmd_backup_del_all_entry(u8 vif_id)
+{
+	VCMD_ENTRY *cur, *next;
+
+	if (list_empty(&vcmd_backup_info[vif_id].head) != 0) {
+		nrc_mac_dbg("%s, No vcmd entry\n",__func__);
+		return;
+	}
+
+	list_for_each_entry_safe(cur, next, &vcmd_backup_info[vif_id].head, list) {
+		nrc_mac_dbg("%s, Del vcmd_entry: sub_cmd:%d\n",__func__, cur->subcmd );
+		list_del(&cur->list);
+		kfree(cur);
+	}
+	return;
+}
+
+static int nrc_vcmd_backup_remove_entry(struct ieee80211_vif *vif, u8 subcmd)
+{
+	if (((subcmd >= NRC_SUBCMD_ANNOUNCE1) && (subcmd <= NRC_SUBCMD_ANNOUNCE5)) ||
+		((subcmd >= NRC_SUBCMD_ANNOUNCE6) && (subcmd <= NRC_SUBCMD_ANNOUNCE20))) {
+		u8 vif_id = hw_vifindex(vif);
+		_nrc_vcmd_backup_del_entry(vif_id, subcmd);
+	}
+	return 0;
+}
+
+static int nrc_vcmd_backup_add_entry(struct ieee80211_vif *vif, u8 subcmd, const u8 * data, int data_len)
+{
+	if (((subcmd >= NRC_SUBCMD_ANNOUNCE1) && (subcmd <= NRC_SUBCMD_ANNOUNCE5)) ||
+		((subcmd >= NRC_SUBCMD_ANNOUNCE6) && (subcmd <= NRC_SUBCMD_ANNOUNCE20))) {
+		u8 vif_id = hw_vifindex(vif);
+		_nrc_vcmd_backup_add_entry(vif_id, subcmd, data, data_len);
+	}
+	return 0;
+}
+
+extern int g_nrc_beacon_updated;
 static int nrc_vendor_cmd_append(struct wiphy *wiphy, struct wireless_dev *wdev,
 				u8 subcmd, const void *data, int data_len)
 {
@@ -3751,18 +4421,23 @@ static int nrc_vendor_cmd_append(struct wiphy *wiphy, struct wireless_dev *wdev,
 #endif
 	}
 
-	if (subcmd < NRC_SUBCMD_BCAST_FOTA_1)
+	nrc_vcmd_backup_add_entry(vif, subcmd, data, data_len);
+
+	if ((subcmd < NRC_SUBCMD_BCAST_FOTA_1) || (subcmd == NRC_SUBCMD_UTC)) {
+		g_nrc_beacon_updated = 0;
 		return nrc_vendor_update_beacon(hw, vif);
+	}
 	else if ((subcmd >= NRC_SUBCMD_BCAST_FOTA_1) && (subcmd < NRC_SUBCMD_ANNOUNCE6))
 		return 0;
 	else if ((subcmd >= NRC_SUBCMD_ANNOUNCE6) && (subcmd < NRC_SUBCMD_ANNOUNCE11))
 		return nrc_vendor_update_probe_req(hw, vif);
 	else if ((subcmd >= NRC_SUBCMD_ANNOUNCE11) && (subcmd < NRC_SUBCMD_ANNOUNCE16))
 		return nrc_vendor_update_probe_rsp(hw, vif);
-	else if ((subcmd >= NRC_SUBCMD_ANNOUNCE16) && (subcmd < NRC_SUBCMD_ANNOUNCE20))
+	else if ((subcmd >= NRC_SUBCMD_ANNOUNCE16) && (subcmd <= NRC_SUBCMD_ANNOUNCE20))
 		return nrc_vendor_update_assoc_req(hw, vif);
-	else
+	else{
 		return -EINVAL;
+	}
 }
 
 static int nrc_vendor_cmd_wowlan_pattern(struct wiphy *wiphy,
@@ -4007,6 +4682,17 @@ static int nrc_vendor_cmd_announce20(struct wiphy *wiphy,
 	return nrc_vendor_cmd_append(wiphy, wdev, NRC_SUBCMD_ANNOUNCE20,
 				 data, data_len);
 }
+
+static int nrc_vendor_cmd_utc(struct wiphy *wiphy,
+				struct wireless_dev *wdev,
+				const void *data, int data_len)
+{
+	return nrc_vendor_cmd_append(wiphy, wdev, NRC_SUBCMD_UTC,
+				 data, data_len);
+}
+
+
+
 static struct wiphy_vendor_command nrc_vendor_cmds[] = {
 	{
 		.info = {
@@ -4342,6 +5028,18 @@ static struct wiphy_vendor_command nrc_vendor_cmds[] = {
 		.maxattr = MAX_VENDOR_ATTR,
 #endif
 	},
+	{
+		.info = {
+			.vendor_id = OUI_IEEE_REGISTRATION_AUTHORITY,
+			.subcmd = NRC_SUBCMD_UTC
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = nrc_vendor_cmd_utc,
+#if KERNEL_VERSION(5, 3, 0) <= NRC_TARGET_KERNEL_VERSION
+		.policy = VENDOR_CMD_RAW_DATA,
+		.maxattr = MAX_VENDOR_ATTR,
+#endif
+	},
 };
 
 static const struct nl80211_vendor_cmd_info nrc_vendor_events[] = {
@@ -4453,6 +5151,10 @@ static const struct nl80211_vendor_cmd_info nrc_vendor_events[] = {
 		.vendor_id = OUI_IEEE_REGISTRATION_AUTHORITY,
 		.subcmd = NRC_SUBCMD_ANNOUNCE20
 	},
+	{
+		.vendor_id = OUI_IEEE_REGISTRATION_AUTHORITY,
+		.subcmd = NRC_SUBCMD_UTC
+	},
 };
 
 void nrc_rm_vendor_ie_wowlan_pattern(struct work_struct *work)
@@ -4479,7 +5181,20 @@ void nrc_bcn_mon_timer(struct timer_list *t)
 		nrc_mac_dbg("In PS state, ignore bcn_mon_timeout\n");
 		return;
 	}
-	nrc_send_beacon_loss(nw);
+	if (disable_cqm_on_scan) {
+		nrc_send_beacon_loss(nw);
+	}
+	else {
+		if(nw->scan_mode == NRC_SCAN_MODE_IDLE) {
+			nrc_send_beacon_loss(nw);
+		} 
+		else {
+			nrc_mac_dbg("In scan state, delay beacon loss event\n");
+			nw->is_bcn_timeout = true;
+			mod_timer(&nw->bcn_mon_timer,
+				jiffies + msecs_to_jiffies(nw->beacon_timeout));
+		}
+	}
 }
 
 #if defined(ENABLE_DYNAMIC_PS)
@@ -4630,14 +5345,7 @@ int nrc_register_hw(struct nrc *nw)
 #ifdef CONFIG_SUPPORT_AFTER_KERNEL_3_0_36
 	hw->wiphy->flags |=  WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL;
 	hw->wiphy->flags |=  WIPHY_FLAG_HAS_CHANNEL_SWITCH;
-
-#ifdef CONFIG_SUPPORT_MESH_ROUTING
-	if (nw->cap.bss_max_idle != 0) {
-		hw->wiphy->features |= NL80211_FEATURE_INACTIVITY_TIMER;
-	}
-#else
 	hw->wiphy->features |= NL80211_FEATURE_INACTIVITY_TIMER;
-#endif
 
 	/* hostapd ver > 2.6 need for NL80211_FEATURE_FULL_AP_CLIENT_STATE */
 	hw->wiphy->features |= NL80211_FEATURE_FULL_AP_CLIENT_STATE;
@@ -4752,7 +5460,7 @@ int nrc_register_hw(struct nrc *nw)
 	hw->extra_tx_headroom =
 		(sizeof(struct hif) + sizeof(struct frame_hdr) + 32);
 #ifdef CONFIG_USE_MAX_MTU
-	hw->max_mtu = ETH_DATA_LEN + 32; /* 32 for batman-adv */
+	hw->max_mtu = IEEE80211_MAX_DATA_LEN; //Maximum MSDU size (2304)
 #endif
 	hw->max_rates = 4;
 	hw->max_rate_tries = 11;
@@ -4807,11 +5515,13 @@ int nrc_register_hw(struct nrc *nw)
 
 	ret = ieee80211_register_hw(hw);
 	if (ret < 0) {
-		nrc_mac_dbg("ieee80211_register_hw failed (%d)", ret);
+		dev_err(nw->dev, "ieee80211_register_hw failed (%d)", ret);
 		ieee80211_free_hw(hw);
 		hw = NULL;
 		return -EINVAL;
 	}
+	
+	dev_info(nw->dev, "registered network device %s\n", wiphy_name(hw->wiphy));
 
 	return 0;
 }
@@ -4880,11 +5590,17 @@ void nrc_send_beacon_loss(struct nrc *nw)
 {
 	struct nrc_vif *i_vif;
 
-	BUG_ON(nw->associated_vif == NULL);
+	spin_lock_bh(&nw->vif_lock);
+	if (nw->associated_vif == NULL) {
+		nrc_mac_dbg("beacon loss event, but not associated");
+		goto done;
+	}
 	i_vif = to_i_vif(nw->associated_vif);
 
-	nrc_mac_dbg("beacon loss event to vif(%d)", i_vif->index);
+	dev_info(nw->dev, "beacon loss event to vif(%d)", i_vif->index);
 	ieee80211_beacon_loss(nw->associated_vif);
+done:
+	spin_unlock_bh(&nw->vif_lock);
 }
 
 void nrc_cleanup_ba_session_sta (void *data, struct ieee80211_sta *sta)

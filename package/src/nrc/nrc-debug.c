@@ -19,6 +19,7 @@
 #include <linux/math64.h>
 #include "nrc-debug.h"
 #include "nrc-hif.h"
+#include "nrc-init.h"
 #include "nrc-wim-types.h"
 #include "nrc-stats.h"
 #include "wim.h"
@@ -158,7 +159,6 @@ void nrc_dump_wim(struct sk_buff *skb)
 		hif->vifindex, wim->seqno, hif->len);
 }
 
-#define CREDIT_QUEUE_MAX 12
 extern void nrc_hif_cspi_read_credit(struct nrc_hif_device *hdev, int q, int *p_front, int *p_rear, int *p_credit); 
 
 static int nrc_debugfs_txq_read(void *data, u64 *val)
@@ -311,12 +311,36 @@ static int nrc_debugfs_reset_device_write(void *data, u64 val)
 	struct nrc_hif_device *hdev = nw->hif;
 
 	nrc_hif_reset_device(hdev);
+#if 0
+	nrc_hif_reset_tx(hdev); /* tx reset test */
+#endif
 	return 0;
 }
 
 DEFINE_SIMPLE_ATTRIBUTE(nrc_debugfs_reset_device,
 			nrc_debugfs_reset_device_read,
 			nrc_debugfs_reset_device_write,
+			"%llu\n");
+
+static int nrc_debugfs_restart_device_read(void *data, u64 *val)
+{
+	*val = 0;
+
+	return 0;
+}
+
+static int nrc_debugfs_restart_device_write(void *data, u64 val)
+{
+	struct nrc *nw = (struct nrc *)data;
+
+	nrc_nw_restart(nw);
+
+	return 0;
+}
+
+DEFINE_SIMPLE_ATTRIBUTE(nrc_debugfs_restart_device,
+			nrc_debugfs_restart_device_read,
+			nrc_debugfs_restart_device_write,
 			"%llu\n");
 
 static int nrc_debugfs_snr_read(void *data, u64 *val)
@@ -351,9 +375,57 @@ DEFINE_SIMPLE_ATTRIBUTE(nrc_debugfs_rssi,
 			nrc_debugfs_rssi_write,
 			"%lld\n");
 
+extern int nrc_get_beacon_updated(void);
+static int nrc_debugfs_beacon_updated_read(void *data, u64 *val)
+{
+	*val = nrc_get_beacon_updated();
+	return 0;
+}
+
+static int nrc_debugfs_beacon_updated_write(void *data, u64 val)
+{
+	return 0;
+}
+
+DEFINE_SIMPLE_ATTRIBUTE(nrc_debugfs_beacon_updated,
+			nrc_debugfs_beacon_updated_read,
+			nrc_debugfs_beacon_updated_write,
+			"%lld\n");
+
+static int nrc_debugfs_expected_tput_read(void *data, u64 *val)
+{
+	struct nrc *nw = (struct nrc *)data;
+	struct sk_buff *skb_resp;
+	skb_resp = nrc_xmit_wim_simple_request_wait(nw, WIM_CMD_GET_TX_STATS, (WIM_RESP_TIMEOUT * 30));
+	if(skb_resp) {
+		struct wim *wim = (struct wim *)skb_resp->data;
+		struct wim_tlv *tlv = (struct wim_tlv *)(wim + 1);
+		struct nrc_tx_stats* tx_stats = (struct nrc_tx_stats*) tlv->v;
+		nrc_common_dbg("mcs:%d bw:%d gi:%d", tx_stats->mcs, tx_stats->bw, tx_stats->gi);
+		nrc_stats_update_tx_stats(tx_stats);
+		dev_kfree_skb(skb_resp);
+	} else {
+
+	}
+	*val = nrc_stats_calc_metric();
+	return 0;
+}
+
+static int nrc_debugfs_expected_tput_write(void *data, u64 val)
+{
+	return 0;
+}
+
+DEFINE_SIMPLE_ATTRIBUTE(nrc_debugfs_expected_tput,
+			nrc_debugfs_expected_tput_read,
+			nrc_debugfs_expected_tput_write,
+			"%llu\n");
+
 #if defined(DEBUG)
 static struct dentry *hspi_debugfs_root;
 #endif
+static struct dentry *twt_debugfs_root;
+
 static struct sk_buff *g_skb;
 static u32 g_skb_len;
 static u32 bunch = 0;
@@ -417,7 +489,7 @@ static int nrc_debugfs_loopback_write(void *data, u64 val)
 
 	time_info_array = (struct lb_time_info*)kzalloc(sizeof(struct lb_time_info) * lb_count, GFP_KERNEL);
 	if (!time_info_array) {
-		pr_err("Failed to alloc buffers...");
+		dev_err(nw->dev, "Failed to alloc buffers...");
 		return 0;
 	}
 	hif = (struct hif_lb_hdr *)g_skb->data;
@@ -463,7 +535,7 @@ static int nrc_debugfs_loopback_write(void *data, u64 val)
 		queue_work(nw->workqueue, &hdev->work);
 	}
 	nrc_hif_test_status(hdev);
-	pr_err("[Loopback Test] TX Done.");
+	dev_err(nw->dev, "[Loopback Test] TX Done.");
 
 	return 0;
 }
@@ -612,12 +684,16 @@ static int nrc_debugfs_hspi_report(struct seq_file *s, void *data)
 	u8 *str_type[] = {"Round-trip", "TX only", "RX only"};
 
 	seq_printf(s, "########## SUMMARY (%s) ##########\n", str_type[lb_subtype]);
-	slots = DIV_ROUND_UP(g_skb_len, TX_SLOT_SIZE);
+	slots = DIV_ROUND_UP(g_skb->len, TX_SLOT_SIZE);
+
 	seq_printf(s, "1. Total frame counts: %d\n", lb_count);
-	seq_printf(s, "2. Frame length: %d bytes (%d slots)\n", g_skb_len, slots);
+	if (lb_subtype != LOOPBACK_MODE_RX_ONLY)
+		seq_printf(s, "2. Frame length: %d bytes (%d slots)\n", g_skb->len, slots);
+	else
+		seq_printf(s, "2. Frame length: %d bytes \n", g_skb->len);
 
 	if (lb_subtype == LOOPBACK_MODE_ROUNDTRIP || lb_subtype >= LOOPBACK_MODE_MAX) {
-		rl = (g_skb_len > RX_SLOT_SIZE) ? g_skb_len : RX_SLOT_SIZE;
+		rl = (g_skb->len > RX_SLOT_SIZE) ? g_skb->len : RX_SLOT_SIZE;
 		seq_printf(s, "   => Actual tx bytes: %d, Actual rx bytes: %d\n\n", slots * TX_SLOT_SIZE, rl);
 		seq_printf(s, "3. Total tx bytes (HOST -> TARGET): %d bytes\n", tx = lb_count * slots * TX_SLOT_SIZE);
 		seq_printf(s, "4. Total rx bytes (TARGET -> HOST): %d bytes\n", rx = lb_count * rl);
@@ -647,7 +723,7 @@ static int nrc_debugfs_hspi_report(struct seq_file *s, void *data)
 		t *= 7812; // 8(bit) / 1024(kbit) * 1000000(sec) = 7812.5
 		seq_printf(s, "   => Throughput: %llu kbps\n", div_u64(t, diff));
 	} else if (lb_subtype == LOOPBACK_MODE_RX_ONLY) {
-		rl = (g_skb_len > RX_SLOT_SIZE) ? g_skb_len : RX_SLOT_SIZE;
+		rl = (g_skb->len > RX_SLOT_SIZE) ? g_skb->len : RX_SLOT_SIZE;
 		seq_printf(s, "   => Actual rx bytes: %d\n\n", rl);
 		seq_printf(s, "3. Total rx bytes (TARGET -> HOST): %lld bytes\n\n", t = (lb_count - 1) * rl);
 		seq_printf(s, "7. First frame received time: %llu us\n", rcv_time_first);
@@ -729,8 +805,11 @@ void nrc_init_debugfs(struct nrc *nw)
 	nrc_debugfs_create_file("nrc_hif", &nrc_debugfs_hif);
 	nrc_debugfs_create_file("nrc_wakeup", &nrc_debugfs_wakeup_device);
 	nrc_debugfs_create_file("nrc_reset", &nrc_debugfs_reset_device);
+	nrc_debugfs_create_file("nrc_restart", &nrc_debugfs_restart_device);
 	nrc_debugfs_create_file("nrc_snr", &nrc_debugfs_snr);
 	nrc_debugfs_create_file("nrc_rssi", &nrc_debugfs_rssi);
+	nrc_debugfs_create_file("nrc_beacon_updated", &nrc_debugfs_beacon_updated);
+	nrc_debugfs_create_file("expected_tput", &nrc_debugfs_expected_tput);
 	//nrc_debugfs_create_file("pm", &nrc_debugfs_pm);
 
 #if defined(DEBUG)
@@ -741,6 +820,9 @@ void nrc_init_debugfs(struct nrc *nw)
 	debugfs_create_file("count", 0600, hspi_debugfs_root, nw, &nrc_debugfs_lb_count);
 	debugfs_create_file("hexdump", 0600, hspi_debugfs_root, nw, &nrc_debugfs_hexdump);
 #endif
+
+	twt_debugfs_root = debugfs_create_dir("twt", nw->debugfs);
+	nrc_mac_twt_debugfs_init(twt_debugfs_root, nw);
 }
 
 void nrc_exit_debugfs(void)

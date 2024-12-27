@@ -70,6 +70,8 @@ struct nrc_hif_device *nrc_hif_alloc (struct device *dev, void *priv, struct nrc
     INIT_WORK(&hdev->work, nrc_hif_work);
     INIT_WORK(&hdev->ps_work, nrc_hif_ps_work); 
 
+	init_completion(&hdev->wake_done);
+
     hdev->hif_ops = ops;
     hdev->priv = priv;
     hdev->dev = dev;
@@ -94,7 +96,7 @@ void nrc_hif_free_skb(struct nrc *nw, struct sk_buff *skb)
 	int credit;
 
 	if (!skb) {
-		pr_err("[%s] skb is NULL!", __func__);
+		dev_err(nw->dev, "[%s] skb is NULL!", __func__);
 		return;
 	}
 
@@ -306,6 +308,7 @@ static void nrc_hif_ps_work(struct work_struct *work)
 				try_to_del_timer_sync(&nw->bcn_mon_timer);
 			}
 			p->ps_wakeup_pin = power_save_gpio[1];
+			p->ps_wakeup_high = power_save_gpio[2];
 			p->ps_duration = (uint64_t) sleep_duration[0] * (sleep_duration[1] ? 1000 : 1);
 			ieee80211_stop_queues(nw->hw);
 #ifdef CONFIG_USE_TXQ
@@ -564,6 +567,13 @@ int nrc_xmit_wim(struct nrc *nw, struct sk_buff *skb, enum HIF_SUBTYPE stype)
 		       skb->data, skb->len, false);
 #endif
 
+	if (hif->vifindex < 0 || hif->vifindex > NR_NRC_VIF -1 || nw->drv_state == NRC_DRV_REBOOT) {
+		nrc_dbg(NRC_DBG_HIF, "Invalid VIF Index, Ignore this wim\n");
+		nrc_dump_wim(skb);
+		nrc_hif_free_skb(nw, skb);
+		return -1;
+	}
+
 	if (!nw->loopback)
 		ret = nrc_hif_enqueue_skb(nw, skb);
 	else
@@ -583,22 +593,124 @@ int nrc_xmit_wim_request(struct nrc *nw, struct sk_buff *skb)
 struct sk_buff *nrc_xmit_wim_request_wait(struct nrc *nw,
 		struct sk_buff *skb, int timeout)
 {
-	nw->last_wim_responded = NULL;
+	struct sk_buff *skb_resp;
+	struct wim *wim;
+	u16 cmd;
 
-	if (nrc_xmit_wim(nw, skb, HIF_WIM_SUB_REQUEST) < 0)
+	mutex_lock(&nw->target_mtx);
+
+	wim = (struct wim *)skb->data;
+	cmd = wim->cmd;
+	BUG_ON(cmd >= WIM_CMD_MAX);
+
+	if (!nw->wim_resp) {
+		dev_err(nw->dev, "wim response is null");
 		return NULL;
-
-	if (nw->last_wim_responded) {
-		pr_err("received already");
-		return nw->last_wim_responded;
 	}
 
-	reinit_completion(&nw->wim_responded);
-	if (wait_for_completion_timeout(&nw->wim_responded,
+	if (nw->wim_resp[cmd].skb != NULL) {
+		dev_err(nw->dev, "previous wim[%d] is not responded", cmd);
+		if (completion_done(&nw->wim_resp[cmd].work)) {
+			dev_kfree_skb_any(nw->wim_resp[cmd].skb);
+			nw->wim_resp[cmd].skb = NULL;
+		} else {
+			mutex_unlock(&nw->target_mtx);
+			return NULL;
+		}
+	}
+
+	if (nrc_xmit_wim(nw, skb, HIF_WIM_SUB_REQUEST) < 0) {
+		mutex_unlock(&nw->target_mtx);
+		return NULL;
+	}
+
+	reinit_completion(&nw->wim_resp[cmd].work);
+	mutex_unlock(&nw->target_mtx);
+	if (wait_for_completion_timeout(&nw->wim_resp[cmd].work,
 			timeout) == 0)
 		return NULL;
 
-	return nw->last_wim_responded;
+	mutex_lock(&nw->target_mtx);
+	skb_resp = nw->wim_resp[cmd].skb;
+	wim = (struct wim *)skb_resp->data;
+	BUG_ON(wim->cmd != cmd);
+	nw->wim_resp[cmd].skb = NULL;
+	mutex_unlock(&nw->target_mtx);
+
+	return skb_resp;
+}
+
+int nrc_xmit_wim_request_and_return (struct nrc *nw,
+		struct sk_buff *skb, int timeout)
+{
+	struct sk_buff *resp_skb;
+	struct wim *req_wim, *resp_wim;
+	u16 cmd;
+	int ret = -1;
+
+	mutex_lock(&nw->target_mtx);
+
+	req_wim = (struct wim *)skb->data;
+	cmd = req_wim->cmd;
+	BUG_ON(cmd >= WIM_CMD_MAX);
+
+	if (!nw->wim_resp) {
+		dev_err(nw->dev, "wim response is null");
+		goto done;
+	}
+
+	if (nw->wim_resp[cmd].skb != NULL) {
+		dev_err(nw->dev, "previous wim[%d] is not responded", cmd);
+		if (completion_done(&nw->wim_resp[cmd].work)) {
+			dev_kfree_skb_any(nw->wim_resp[cmd].skb);
+			nw->wim_resp[cmd].skb = NULL;
+		} else {
+			mutex_unlock(&nw->target_mtx);
+			goto done;
+		}
+	}
+
+	if (nrc_xmit_wim(nw, skb, HIF_WIM_SUB_REQUEST) < 0) {
+		mutex_unlock(&nw->target_mtx);
+		dev_err(nw->dev, "wim request xmit error\n");
+		goto done;
+	}
+
+	reinit_completion(&nw->wim_resp[cmd].work);
+	mutex_unlock(&nw->target_mtx);
+	
+	if (wait_for_completion_timeout(&nw->wim_resp[cmd].work,
+			timeout) == 0) {
+		dev_err(nw->dev, "wim request timeout\n");
+		goto done;
+	}
+
+	mutex_lock(&nw->target_mtx);
+	resp_skb = nw->wim_resp[cmd].skb;
+	if (resp_skb == NULL) {
+		dev_err(nw->dev, "wim response null\n");
+		goto done;
+	}
+
+	resp_wim = (struct wim *)resp_skb->data;
+	if (cmd == resp_wim->cmd) {
+		struct wim_tlv *tlv = (struct wim_tlv *)(resp_wim + 1);
+		if (tlv->t == WIM_TLV_RETURN) {
+			memcpy(&ret, &tlv->v, tlv->l);
+		}
+	}
+	else {
+		dev_err(nw->dev, "wim request/response different (%d vs %d\n", cmd, resp_wim->cmd);
+		BUG_ON(resp_wim->cmd != cmd);
+	}
+
+	nw->wim_resp[cmd].skb = NULL;
+	mutex_unlock(&nw->target_mtx);
+
+	dev_kfree_skb(resp_skb);
+
+done:
+	return ret;
 }
 
 int nrc_xmit_wim_response(struct nrc *nw, struct sk_buff *skb)
@@ -977,14 +1089,14 @@ static int hif_receive_skb(struct nrc_hif_device *dev, struct sk_buff *skb)
 		}
 		if (hif_new->index == 0) {
 			rcv_time_first = rcv_time_last;
-			pr_err("[Loopback Test] First frame received time: %llu", rcv_time_first);
+			dev_err(nw->dev, "[Loopback Test] First frame received time: %llu", rcv_time_first);
 		}
 
 		if (hif_new->subtype == LOOPBACK_MODE_TX_ONLY) {
 			d = (u32*)(skb->data);
 			arv_time_first = *d;
 			arv_time_last = *(d + 2);
-			pr_err("[Loopback Test][TX only] -- test done --\n\n\n\n\n");
+			dev_err(nw->dev, "[Loopback Test][TX only] -- test done --\n\n\n\n\n");
 		} else {
 			if (hif_new->index > hif_new->count - 4) {
 				if (lb_hexdump) {
@@ -999,11 +1111,11 @@ static int hif_receive_skb(struct nrc_hif_device *dev, struct sk_buff *skb)
 				arv_time_last = *(d + 2);
 			}
 			if (hif_new->index == hif_new->count - 1) {
-				pr_err("[Loopback Test] Last frame received time: %llu\n\n", rcv_time_last);
+				dev_err(nw->dev, "[Loopback Test] Last frame received time: %llu\n\n", rcv_time_last);
 				if (hif_new->subtype == LOOPBACK_MODE_ROUNDTRIP) {
-					pr_err("[Loopback Test][Round-trip] -- test done --\n\n\n\n\n");
+					dev_err(nw->dev, "[Loopback Test][Round-trip] -- test done --\n\n\n\n\n");
 				} else if (hif_new->subtype == LOOPBACK_MODE_RX_ONLY) {
-					pr_err("[Loopback Test][RX only] -- test done --\n\n\n\n\n");
+					dev_err(nw->dev, "[Loopback Test][RX only] -- test done --\n\n\n\n\n");
 				}
 			}
 		}
@@ -1021,18 +1133,21 @@ static int hif_receive_skb(struct nrc_hif_device *dev, struct sk_buff *skb)
 
 #define TARGET_MAX_TIME_TO_FALL_ASLEEP		550 /* ms */
 
-void nrc_hif_wake_target (struct nrc_hif_device *dev)
+int nrc_hif_wake_target (struct nrc_hif_device *dev, int timeout_ms)
 {
 	struct nrc *nw;
+	int ret = 0;
+#if defined(CONFIG_DELAY_WAKE_TARGET)
+	ktime_t cur_time, elapsed;
+	unsigned int elapsed_msecs;
+#endif
 
 	BUG_ON(dev == NULL);
 	nw = to_nw(dev);
 	BUG_ON(nw == NULL);
 
-#if defined(CONFIG_DELAY_WAKE_TARGET)
-	ktime_t cur_time, elapsed;
-	unsigned int elapsed_msecs;
 
+#if defined(CONFIG_DELAY_WAKE_TARGET)
 	cur_time = ktime_get_boottime();
 	elapsed = ktime_sub(cur_time, dev->ps_time);
 	elapsed_msecs = ktime_to_ms(elapsed);
@@ -1048,15 +1163,30 @@ void nrc_hif_wake_target (struct nrc_hif_device *dev)
 	if ((int)atomic_read(&nw->fw_state) == NRC_FW_LOADING) {
 		nrc_mac_dbg("Loading FW is in progress\n");
 	} else {
-		gpio_set_value(power_save_gpio[0], 1);
-		nrc_ps_dbg("Set GPIO high for wakeup");
+		gpio_set_value(power_save_gpio[0],power_save_gpio[2]?1:0);
+		nrc_ps_dbg("Set GPIO %s for wakeup", power_save_gpio[2]?"high":"low");
+
+		if (timeout_ms > 0 && wait_for_completion_timeout(&dev->wake_done, msecs_to_jiffies(timeout_ms)) == 0) {
+			dev_err(nw->dev, "Timeout(%dmsec) waking target\n", timeout_ms);
+			ret = -1;
+		}
+
 	}
+
+	return ret;
+}
+
+void nrc_hif_wake_target_done (struct nrc_hif_device *dev)
+{
+	nrc_ps_dbg("Target wake-up is done");
+	complete(&dev->wake_done);
 }
 
 void nrc_hif_sleep_target_prepare (struct nrc_hif_device *dev, int mode)
 {
-	nrc_ps_dbg("Set GPIO low for sleep");
-	gpio_set_value(power_save_gpio[0], 0);
+	nrc_ps_dbg("Set GPIO %s for sleep", power_save_gpio[2]?"low":"high");
+	gpio_set_value(power_save_gpio[0], power_save_gpio[2]?0:1);
+	reinit_completion(&dev->wake_done);
 }
 
 void nrc_hif_sleep_target_start (struct nrc_hif_device *dev, int mode)
@@ -1114,6 +1244,16 @@ int nrc_hif_reset_rx (struct nrc_hif_device *dev)
 {
 	if (dev->hif_ops->reset_rx) {
 		dev->hif_ops->reset_rx(dev);
+		return 0;
+	}
+
+	return -1;
+}
+
+int nrc_hif_reset_tx (struct nrc_hif_device *dev)
+{
+	if (dev->hif_ops->reset_tx) {
+		dev->hif_ops->reset_tx(dev);
 		return 0;
 	}
 

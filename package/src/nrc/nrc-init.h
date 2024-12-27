@@ -34,8 +34,9 @@ struct nrc_monitor {
 
 struct nrc *nrc_nw_alloc (struct device *dev, struct nrc_hif_device *hdev);
 void nrc_nw_free(struct nrc *nw);
-int nrc_nw_start (struct nrc *nw);
-int nrc_nw_stop (struct nrc *nw);
+int nrc_nw_start (struct nrc *nw, bool restart);
+int nrc_nw_stop (struct nrc *nw, bool restart);
+void nrc_nw_restart (struct nrc *nw);
 int nrc_nw_set_model_conf (struct nrc *nw, u16 chip_id);
 int country_match(const char *const cc[], const char *const country);
 #endif

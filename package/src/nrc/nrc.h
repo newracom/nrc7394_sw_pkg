@@ -28,6 +28,9 @@
 #include <net/cfg80211.h>
 #include <net/mac80211.h>
 #include <net/ieee80211_radiotap.h>
+#include "nrc-mac80211-twt.h"
+
+
 
 
 #define DEFAULT_INTERFACE_NAME			"nrc"
@@ -60,6 +63,9 @@ struct nrc_hif_device;
 #define TARGET_NOTI_REQUEST_FW_DOWNLOAD	(0xDC)
 #define TARGET_NOTI_FW_READY_FROM_PS	(0xEC)
 #define TARGET_NOTI_FAILED_TO_ENTER_PS  (0xED)
+#define TARGET_NOTI_TWT_SERVICE         (0xEA)
+#define TARGET_NOTI_TWT_QUIET           (0xEB)
+#define TARGET_NOTI_BEACON_UPDATED		(0xBE)
 
 enum NRC_SCAN_MODE {
 	NRC_SCAN_MODE_IDLE = 0,
@@ -92,8 +98,10 @@ enum NRC_PS_MODE {
 	NRC_PS_NONE,
 	NRC_PS_MODEMSLEEP,
 	NRC_PS_DEEPSLEEP_TIM,
-	NRC_PS_DEEPSLEEP_NONTIM
+	NRC_PS_DEEPSLEEP_NONTIM,
+	NRC_PS_MAX
 };
+
 
 #ifdef CONFIG_SUPPORT_AFTER_KERNEL_3_0_36
 #else
@@ -125,6 +133,7 @@ enum NRC_AMPDU_MODE {
 struct fwinfo_t {
 	uint32_t ready;
 	uint32_t version;
+	uint16_t chip_rev_num;
 	uint32_t tx_head_size;
 	uint32_t rx_head_size;
 	uint32_t payload_align;
@@ -139,13 +148,13 @@ struct vif_capabilities {
 struct nrc_capabilities {
 	uint64_t cap_mask;
 	uint16_t listen_interval;
-	uint16_t bss_max_idle;
-	uint8_t bss_max_idle_options;
+	uint32_t bss_max_idle;
 	uint8_t max_vif;
 	struct vif_capabilities vif_caps[NR_NRC_VIF];
 };
 
 #define BSS_MAX_ILDE_DEAUTH_LIMIT_COUNT 3 /* Keep Alive Timeout Limit Count on AP */
+#define S1G_UNSCALED_INTERVAL_MAX (0x3fff)
 struct nrc_max_idle {
 	bool enable;
 	u16 period;
@@ -187,6 +196,11 @@ struct nrc_delayed_deauth {
 	struct ieee80211_tx_queue_params tqp[NRC_QUEUE_MAX];
 };
 
+struct nrc_wim_response {
+	struct completion work;
+	struct sk_buff *skb;
+};
+
 struct nrc {
 	uint32_t chip_id;
 	struct device *dev;
@@ -218,7 +232,9 @@ struct nrc {
 	struct mutex state_mtx;
 	enum NRC_SCAN_MODE scan_mode;
 	struct workqueue_struct *workqueue;
+	struct workqueue_struct *restart_workqueue;
 	struct delayed_work check_start;
+	struct work_struct restart_work;
     struct tasklet_struct tx_tasklet;
 
 	/**
@@ -269,6 +285,7 @@ struct nrc {
 	bool block_frame;
 	bool ampdu_reject;
 	bool ampdu_started;
+	bool use_ext_lna;
 
 	/* tx */
 	int hw_queues; /* supported hw queues */
@@ -278,8 +295,8 @@ struct nrc {
 	atomic_t tx_credit[IEEE80211_NUM_ACS*3];
 	atomic_t tx_pend[IEEE80211_NUM_ACS*3];
 
-	struct completion wim_responded;
-	struct sk_buff *last_wim_responded;
+	/* wim response */
+	struct nrc_wim_response *wim_resp;
 
 	/* firmware */
 	struct nrc_fw_priv *fw_priv;
@@ -308,6 +325,7 @@ struct nrc {
 	struct timer_list bcn_mon_timer;
 	unsigned long beacon_timeout;
 	struct ieee80211_vif *associated_vif;
+	bool is_bcn_timeout;
 
 	/* for processing deauth when deepsleep */
 	struct nrc_delayed_deauth d_deauth;
@@ -317,6 +335,11 @@ struct nrc {
 
 	/* set frag threshold by mac80211 */
 	s32 frag_threshold;
+
+	bool twt_requester;
+	bool twt_responder;
+
+	struct nrc_twt_sched *twt_sched;
 };
 
 /* vif driver data structure */
@@ -336,7 +359,7 @@ struct nrc_vif {
 	struct list_head preassoc_sta_list;
 
 	/* inactivity */
-	u16 max_idle_period;
+	u32 max_idle_period;
 	struct timer_list max_idle_timer;
 
 #ifdef CONFIG_SUPPORT_AFTER_KERNEL_3_0_36
@@ -361,6 +384,20 @@ static inline int hw_vifindex(struct ieee80211_vif *vif)
 	return i_vif->index;
 }
 
+struct tx_ba_session {
+	struct nrc_sta *sta;
+	u16 tid;
+	enum ieee80211_tx_ba_state state;
+	uint32_t ba_req_last_jiffies;
+	struct work_struct ba_session_work;
+};
+
+struct rx_ba_session {
+	bool started;
+	u16 sn;
+	u16 buf_size;
+};
+
 /* sta driver data structure */
 struct nrc_sta {
 	struct nrc *nw;
@@ -379,8 +416,11 @@ struct nrc_sta {
 	struct nrc_max_idle max_idle;
 
 	/* Block Ack Session per TID */
-	enum ieee80211_tx_ba_state tx_ba_session[NRC_MAX_TID];
-	uint32_t ba_req_last_jiffies[NRC_MAX_TID];
+	struct tx_ba_session tx_ba_session[NRC_MAX_TID];
+	struct rx_ba_session rx_ba_session[NRC_MAX_TID];
+
+	/* TWT */
+	struct nrc_twt twt;
 };
 
 #define to_ieee80211_sta(s) \
@@ -487,6 +527,7 @@ struct nrc_radiotap_hdr_ndp {
 	uint8_t  rt_pad;		/* pad for IEEE80211_RADIOTAP_CHANNEL */
 	uint16_t rt_ch_frequency;	/* IEEE80211_RADIOTAP_CHANNEL */
 	uint16_t rt_ch_flags;
+	uint8_t  rt_rssi;		/* IEEE80211_RADIOTAP_DBM_ANTSIGNAL */
 	uint8_t  rt_zero_length_psdu; /* IEEE80211_RADIOTAP_0_LENGTH_PSDU */
 } __packed;
 
@@ -499,6 +540,12 @@ struct nrc_local_radiotap_hdr {
 	__le16 rt_chbitmask;
 } __packed;
 
+struct nrc_tx_stats {
+	uint32_t mcs;
+	uint32_t bw;
+	uint32_t gi;
+};
+
 /* Module parameters */
 extern char *hifport;
 extern int hifspeed;
@@ -509,8 +556,10 @@ extern int spi_polling_interval;
 extern int spi_gdma_irq;
 extern bool loopback;
 extern int disable_cqm;
+extern int disable_cqm_on_scan;
 extern int bss_max_idle_offset;
 extern int power_save;
+extern bool idle_mode;
 extern int sleep_duration[];
 extern bool wlantest;
 extern bool ndp_preq;
@@ -521,6 +570,8 @@ extern int ampdu_mode;
 extern int sw_enc;
 extern bool signal_monitor;
 extern int kr_band;
+extern int sg_band;
+extern int tw_band;
 extern bool debug_level_all;
 extern bool enable_short_bi;
 extern bool discard_deauth;
@@ -546,6 +597,12 @@ extern uint8_t ap_rc_mode;
 extern uint8_t sta_rc_mode;
 extern uint8_t ap_rc_default_mcs;
 extern uint8_t sta_rc_default_mcs;
+extern uint twt_num;
+extern u64  twt_sp;
+extern u64 twt_int;
+extern bool twt_service;
+extern bool twt_force_sleep;
+extern uint twt_num_in_group;
 
 void nrc_set_bss_max_idle_offset(int value);
 void nrc_set_auto_ba(bool toggle);

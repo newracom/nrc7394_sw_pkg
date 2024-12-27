@@ -22,6 +22,7 @@
 #include "nrc-debug.h"
 #include "nrc-hif.h"
 #include "nrc-stats.h"
+#include "nrc-ps.h"
 
 #define NRC_NETLINK_FAMILY_NAME	("NRC-NL-FAM")
 #define MAX_CAPIREQ_SIZE (32)
@@ -31,24 +32,54 @@ static struct nrc *nrc_nw;
 
 
 #ifdef CONFIG_SUPPORT_NEW_NETLINK
+#ifdef CONFIG_SUPPORT_SPLIT_OPS_NETLINK
+static int nrc_nl_pre_doit(const struct genl_split_ops *ops,
+			   struct sk_buff *skb, struct genl_info *info)
+#else
 static int nrc_nl_pre_doit(const struct genl_ops *ops,
 			   struct sk_buff *skb, struct genl_info *info)
+#endif
 #else
 static int nrc_nl_pre_doit(struct genl_ops *ops,
 			   struct sk_buff *skb, struct genl_info *info)
 #endif
 {
-	return 0;
+	struct nrc *nw = nrc_nw;
+	int ret = 0;
+
+	if (nw->drv_state == NRC_DRV_PS) {
+		dev_info(nw->dev, "Wake target for NL\n");
+		ret = nrc_ps_set_mode(nw, NRC_PS_NONE, 2000);
+		if (ret == -1) {
+			ret = -EBUSY;
+		}
+	}
+	return ret;
 }
 
 #ifdef CONFIG_SUPPORT_NEW_NETLINK
+#ifdef CONFIG_SUPPORT_SPLIT_OPS_NETLINK
+static void nrc_nl_post_doit(const struct genl_split_ops *ops,
+			     struct sk_buff *skb, struct genl_info *info)
+#else
 static void nrc_nl_post_doit(const struct genl_ops *ops,
 			     struct sk_buff *skb, struct genl_info *info)
+#endif
 #else
 static void nrc_nl_post_doit(struct genl_ops *ops,
 			     struct sk_buff *skb, struct genl_info *info)
 #endif
 {
+	struct nrc *nw = nrc_nw;
+	struct ieee80211_hw *hw = nw->hw;
+
+	if (idle_mode &&
+		nw->scan_mode == NRC_SCAN_MODE_IDLE) {
+		if (hw->conf.flags & IEEE80211_CONF_IDLE) {
+			dev_info(nw->dev, "Changing to IDLE after NL\n");
+			nrc_ps_set_mode(nw, NRC_PS_DEEPSLEEP_NONTIM, -1);
+		}
+	}
 }
 
 static bool nrc_set_stbc_rx(struct nrc *nw, u8 stream)
@@ -448,10 +479,10 @@ static int halow_set_dut(struct sk_buff *skb, struct genl_info *info)
 #else
 			struct ieee80211_conf *chanctx_conf;
 #endif
-			struct ieee80211_tx_control control = {
-				.sta = ieee80211_find_sta(vif,
-						vif->bss_conf.bssid)
-			};
+			struct ieee80211_tx_control control;
+
+			rcu_read_lock();
+			control.sta = ieee80211_find_sta(vif, vif->bss_conf.bssid);
 #if KERNEL_VERSION(4, 14, 17) <= NRC_TARGET_KERNEL_VERSION
 #if KERNEL_VERSION(6, 1, 0) <= NRC_TARGET_KERNEL_VERSION
 			b = ieee80211_nullfunc_get(nrc_nw->hw, vif, vif->bss_conf.link_id, false);
@@ -471,13 +502,17 @@ static int halow_set_dut(struct sk_buff *skb, struct genl_info *info)
 			band = chanctx_conf->def.chan->band;
 
 			if (!ieee80211_tx_prepare_skb(nrc_nw->hw,
-				   vif, b, band, NULL))
+				   vif, b, band, NULL)) {
+				rcu_read_unlock();
 				goto halow_not_supported;
+			}
 #else
 			chanctx_conf = &nrc_nw->hw->conf;
 			band = chanctx_conf->channel->band;
 #endif
 			nrc_xmit_frame(nrc_nw, hw_vifindex(vif), (!!control.sta ? control.sta->aid : 0), b);
+			rcu_read_unlock();
+
 		} else
 			goto halow_not_supported;
 
@@ -804,7 +839,7 @@ static int capi_sta_send_addba(struct sk_buff *skb, struct genl_info *info)
 	struct capi_data param = { 0 };
 
 	if (nrc_nw->drv_state != NRC_DRV_RUNNING) {
-		pr_err("[Error] the target device cannot respond while deep sleep.");
+		dev_err(nrc_nw->dev, "[Error] the target device cannot respond while deep sleep.");
 		return -EIO;
 	}
 
@@ -828,7 +863,7 @@ static int capi_sta_send_addba(struct sk_buff *skb, struct genl_info *info)
 					    &param);
 #endif
 	if (!param.done)
-		pr_err("WFA_CAPI: failed to send ADDBA");
+		dev_err(nrc_nw->dev, "WFA_CAPI: failed to send ADDBA");
 
 	return capi_sta_reply(NL_WFA_CAPI_SEND_ADDBA, info,
 			      param.done ?
@@ -882,7 +917,7 @@ static int capi_sta_send_delba(struct sk_buff *skb, struct genl_info *info)
 	struct capi_data param = { 0 };
 
 	if (nrc_nw->drv_state != NRC_DRV_RUNNING) {
-		pr_err("[Error] the target device cannot respond while deep sleep.");
+		dev_err(nrc_nw->dev, "[Error] the target device cannot respond while deep sleep.");
 		return -EIO;
 	}
 
@@ -906,7 +941,7 @@ static int capi_sta_send_delba(struct sk_buff *skb, struct genl_info *info)
 					    &param);
 #endif
 	if (!param.done)
-		pr_err("WFA_CAPI: failed to send DELBA");
+		dev_err(nrc_nw->dev, "WFA_CAPI: failed to send DELBA");
 
 	return capi_sta_reply(NL_WFA_CAPI_SEND_DELBA, info,
 			      param.done ?
@@ -927,7 +962,7 @@ static int capi_bss_max_idle_offset(struct sk_buff *skb, struct genl_info *info)
 	int32_t bss_max_idle_offset;
 
 	if (nrc_nw->drv_state != NRC_DRV_RUNNING) {
-		pr_err("[Error] the target device cannot respond while deep sleep.");
+		dev_err(nrc_nw->dev, "[Error] the target device cannot respond while deep sleep.");
 		return -EIO;
 	}
 
@@ -989,7 +1024,7 @@ static int capi_bss_max_idle(struct sk_buff *skb, struct genl_info *info)
 	struct ieee80211_vif *vif;
 
 	if (nrc_nw->drv_state != NRC_DRV_RUNNING) {
-		pr_err("[Error] the target device cannot respond while deep sleep.");
+		dev_err(nrc_nw->dev, "[Error] the target device cannot respond while deep sleep.");
 		return -EIO;
 	}
 
@@ -1013,7 +1048,7 @@ static int capi_bss_max_idle(struct sk_buff *skb, struct genl_info *info)
 		i_vif = to_i_vif(vif);
 		if (nrc_mac_is_s1g(nrc_nw->hw->priv) && max_idle) {
 			/* bss_max_idle: in unit of 1000 TUs (1024ms = 1.024 seconds) */
-			if (max_idle > 16383 * 10000 || max_idle <= 0) {
+			if (max_idle > S1G_UNSCALED_INTERVAL_MAX * 10000 || max_idle <= 0) {
 				i_vif->max_idle_period = 0;
 			} else {
 				/* (Default) Convert in USF Format (Value (14bit) * USF(2bit)) and save it */
@@ -1024,7 +1059,7 @@ static int capi_bss_max_idle(struct sk_buff *skb, struct genl_info *info)
 				}
 			}
 		} else {
-			if (max_idle > 65535 || max_idle <= 0) {
+			if (max_idle > __UINT16_MAX__ || max_idle <= 0) {
 				i_vif->max_idle_period = 0;
 			} else {
 				i_vif->max_idle_period = max_idle;
@@ -1144,7 +1179,7 @@ static int test_mmic_failure(struct sk_buff *skb, struct genl_info *info)
 #endif
 
 	if (!param.done)
-		pr_err("WFA_CAPI: failed to generate MMIC failure");
+		dev_err(nrc_nw->dev, "WFA_CAPI: failed to generate MMIC failure");
 
 	return capi_sta_reply(NL_TEST_MMIC_FAILURE, info,
 			      param.done ?
@@ -1211,7 +1246,7 @@ static int nrc_shell_run_simple(struct sk_buff *skb, struct genl_info *info)
 	struct sk_buff *wim_skb;
 
 	if (nrc_nw->drv_state != NRC_DRV_RUNNING) {
-		pr_err("[Error] the target device cannot respond while deep sleep.");
+		dev_err(nrc_nw->dev, "[Error] the target device cannot respond while deep sleep.");
 		return -EIO;
 	}
 	if (!nrc_access_vif(nrc_nw)) {
@@ -1261,7 +1296,7 @@ static int nrc_shell_run(struct sk_buff *skb, struct genl_info *info)
 	void *hdr;
 
 	if (nrc_nw->drv_state != NRC_DRV_RUNNING) {
-		pr_err("[Error] the target device cannot respond while deep sleep.");
+		dev_err(nrc_nw->dev, "[Error] the target device cannot respond while deep sleep.");
 		return -EIO;
 	}
 	if (!nrc_access_vif(nrc_nw)) {
@@ -1335,7 +1370,7 @@ static int nrc_shell_run_raw(struct sk_buff *skb, struct genl_info *info)
 	void *hdr;
 
 	if (nrc_nw->drv_state != NRC_DRV_RUNNING) {
-		pr_err("[Error] the target device cannot respond while deep sleep.");
+		dev_err(nrc_nw->dev, "[Error] the target device cannot respond while deep sleep.");
 		return -EIO;
 	}
 	if (!nrc_access_vif(nrc_nw)) {
@@ -1415,7 +1450,7 @@ static int cli_app_get_info(struct sk_buff *skb, struct genl_info *info)
 	memset(cmd_resp, 0x0, sizeof(cmd_resp));
 
 	if (nrc_nw->drv_state != NRC_DRV_RUNNING) {
-		pr_err("[Error] the target device cannot respond while deep sleep.");
+		dev_err(nrc_nw->dev, "[Error] the target device cannot respond while deep sleep.");
 		return -EIO;
 	}
 	if (!nrc_access_vif(nrc_nw)) {
@@ -1523,7 +1558,7 @@ static int cli_app_driver_cmd(struct sk_buff *skb, struct genl_info *info)
 	memset(cmd_resp, 0x0, sizeof(cmd_resp));
 
 	if (nrc_nw->drv_state != NRC_DRV_RUNNING) {
-		pr_err("[Error] the target device cannot respond while deep sleep.");
+		dev_err(nrc_nw->dev, "[Error] the target device cannot respond while deep sleep.");
 		return -EIO;
 	}
 	if (!nrc_access_vif(nrc_nw)) {
@@ -1748,7 +1783,6 @@ static int nrc_auto_ba_toggle(struct sk_buff *skb, struct genl_info *info)
 	nrc_set_auto_ba(nla_get_u8(info->attrs[NL_AUTO_BA_ON]) ? true : false);
 	return 0;
 }
-
 
 #ifdef CONFIG_SUPPORT_GENLMSG_DEFAULT
 static const struct genl_ops nl_umac_nl_ops[] = {
@@ -2002,7 +2036,7 @@ int nrc_netlink_init(struct nrc *nw)
 #endif
 
 	if (rc) {
-		pr_err("genl_register_family_with_ops_groups() is failed (%d).",
+		dev_err(nw->dev, "genl_register_family_with_ops_groups() is failed (%d).",
 				rc);
 		return -EINVAL;
 	}
@@ -2010,7 +2044,7 @@ int nrc_netlink_init(struct nrc *nw)
 	rc = netlink_register_notifier(&nl_umac_netlink_notifier);
 
 	if (rc) {
-		pr_err("netlink_register_notifier() is failed (%d).",
+		dev_err(nw->dev, "netlink_register_notifier() is failed (%d).",
 				rc);
 		genl_unregister_family(&nrc_nl_fam);
 		return -EINVAL;
@@ -2022,7 +2056,7 @@ int nrc_netlink_init(struct nrc *nw)
 
 void nrc_netlink_exit(void)
 {
-	pr_err("%s", __func__);
+	dev_err(nrc_nw->dev, "%s", __func__);
 	netlink_unregister_notifier(&nl_umac_netlink_notifier);
 	genl_unregister_family(&nrc_nl_fam);
 }

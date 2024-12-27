@@ -81,6 +81,7 @@ struct nrc_hif_ops {
 	void (*close)(struct nrc_hif_device *dev);
 	void (*reset_device)(struct nrc_hif_device *dev);
 	void (*reset_rx)(struct nrc_hif_device *dev);
+	void (*reset_tx)(struct nrc_hif_device *dev);
 	void (*wakeup)(struct nrc_hif_device *dev);
 	int (*test)(struct nrc_hif_device *dev);
 	void (*config)(struct nrc_hif_device *dev);
@@ -125,6 +126,7 @@ struct nrc_hif_device {
 #if defined(CONFIG_DELAY_WAKE_TARGET)
 	ktime_t ps_time;
 #endif
+	struct completion wake_done;
 };
 
 /* struct nrc_hif_rx_info - additional information on rx
@@ -291,6 +293,7 @@ static inline int nrc_hif_resume(struct nrc_hif_device *dev)
 	if (dev->hif_ops->resume)
 		dev->hif_ops->resume(dev);
 
+	//complete(&dev->wake_done);
 	return 0;
 }
 
@@ -403,6 +406,8 @@ int nrc_xmit_wim_request(struct nrc *nw, struct sk_buff *skb);
 int nrc_xmit_wim_powersave(struct nrc *nw, struct sk_buff *skb_src, uint16_t ps_enable, uint64_t duration);
 struct sk_buff *nrc_xmit_wim_request_wait(struct nrc *nw,
 		struct sk_buff *skb, int timeout);
+int nrc_xmit_wim_request_and_return (struct nrc *nw,
+		struct sk_buff *skb, int timeout);
 int nrc_xmit_wim_response(struct nrc *nw, struct sk_buff *skb);
 int nrc_xmit_wim_simple_request(struct nrc *nw, int cmd);
 int nrc_xmit_frame(struct nrc *nw, s8 vif_index, u16 aid, struct sk_buff *skb);
@@ -416,6 +421,8 @@ int nrc_hif_debug_rx(void);
 int nrc_hif_close(struct nrc_hif_device *dev);
 int nrc_hif_wakeup_device(struct nrc_hif_device *dev);
 int nrc_hif_reset_device(struct nrc_hif_device *dev);
+int nrc_hif_reset_rx (struct nrc_hif_device *dev);
+int nrc_hif_reset_tx (struct nrc_hif_device *dev);
 int nrc_hif_test_status(struct nrc_hif_device *dev);
 void nrc_hif_down(struct nrc *nw);
 void nrc_hif_up(struct nrc *nw);
@@ -424,7 +431,8 @@ void nrc_hif_sync_unlock(struct nrc_hif_device *dev);
 void nrc_hif_flush_wq(struct nrc_hif_device *dev);
 struct nrc_hif_device *nrc_hif_alloc (struct device *dev, void *priv, struct nrc_hif_ops *ops);
 void nrc_hif_free (struct nrc_hif_device *hdev);
-void nrc_hif_wake_target (struct nrc_hif_device *dev);
+int nrc_hif_wake_target (struct nrc_hif_device *dev, int timeout_ms);
+void nrc_hif_wake_target_done (struct nrc_hif_device *dev);
 void nrc_hif_sleep_target_prepare (struct nrc_hif_device *dev, int mode);
 void nrc_hif_sleep_target_start (struct nrc_hif_device *dev, int mode);
 void nrc_hif_sleep_target_end (struct nrc_hif_device *dev, int mode);

@@ -9,6 +9,8 @@ M_SRC = nrc
 obj-m += $(M_SRC).o
 $(M_SRC)-objs = \
 		nrc-mac80211.o \
+		nrc-mac80211-twt.o \
+		nrc-twt-sched.o \
 		nrc-trx.o \
 		nrc-init.o \
 		nrc-debug.o \
@@ -23,12 +25,14 @@ $(M_SRC)-objs = \
 		nrc-dump.o \
 		nrc-bd.o \
 		nrc-s1g.o \
+		nrc-trace.o \
+		nrc-ps.o \
 
 ccflags-y := \
+	-I$(src) \
 	-DDEBUG \
 	-DCONFIG_NRC_HIF_CSPI \
-	-DENABLE_DYNAMIC_PS \
-	-DCONFIG_MAC80211_MESH
+	-DENABLE_DYNAMIC_PS
 
 ldflags-y += -T$(M)/nrc.lds
 
@@ -40,6 +44,8 @@ endif
 
 #ccflags-y += -Wall -Werror -g
 ccflags-y += -Wall -Werror
+
+ccflags-y += -DCONFIG_NRC_TRACING
 
 all: modules
 

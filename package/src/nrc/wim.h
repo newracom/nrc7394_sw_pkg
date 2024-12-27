@@ -66,6 +66,19 @@ struct sk_buff *nrc_wim_alloc_skb(struct nrc *nw, u16 cmd, int size);
 
 struct sk_buff *nrc_wim_alloc_skb_vif(struct nrc *nw, struct ieee80211_vif *vif,
 				      u16 cmd, int size);
+
+/**
+ * nrc_wim_response_init - initialize wim response
+ * @nw: pointer to nrc hw
+ */
+int nrc_wim_response_init(struct nrc *nw);
+
+/**
+ * nrc_wim_response_deinit - deinitialize wim response
+ * @nw: pointer to nrc hw
+ */
+int nrc_wim_response_deinit(struct nrc *nw);
+
 /**
  * nrc_xmit_wim_simple_request - sends a wim request with no payload
  * @nw: pointer to nrc hw
@@ -154,6 +167,7 @@ int nrc_wim_set_p2p_addr(struct nrc *nw, struct ieee80211_vif *vif);
 
 bool nrc_wim_request_keep_alive(struct nrc *nw);
 bool nrc_wim_reset_hif_tx (struct nrc *nw);
+bool nrc_wim_reset_hif_rx (struct nrc *nw);
 void nrc_wim_handle_fw_request(struct nrc *nw);
 
 enum wim_cipher_type nrc_to_wim_cipher_type(u32 cipher);
@@ -168,6 +182,8 @@ int nrc_wim_install_key(struct nrc *nw, enum set_key_cmd cmd,
 int nrc_wim_ampdu_action(struct nrc *nw, struct ieee80211_vif *vif,
 			 enum WIM_AMPDU_ACTION action,
 			 struct ieee80211_sta *sta, u16 tid);
+
+u64 nrc_wim_get_tsf (struct nrc *nw, struct ieee80211_vif *vif);
 /**
  * nrc_wim_rx - handles a received wim message from the target
  * @nw: pointer to nrc hw.
@@ -182,5 +198,7 @@ int nrc_wim_ampdu_action(struct nrc *nw, struct ieee80211_vif *vif,
  */
 int nrc_wim_rx(struct nrc *nw, struct sk_buff *skb, u8 subtype);
 int nrc_wim_pm_req(struct nrc *nw, uint32_t cmd, uint64_t arg);
+
+int nrc_wim_set_ps (struct nrc *nw, enum NRC_PS_MODE mode, int timeout);
 
 #endif
