@@ -3686,7 +3686,11 @@ static int nrc_pre_channel_switch(struct ieee80211_hw *hw,struct ieee80211_vif *
 	return 0;
 }
 
+#if KERNEL_VERSION(6, 7, 0) <= NRC_TARGET_KERNEL_VERSION
+static int nrc_post_channel_switch(struct ieee80211_hw *hw, struct ieee80211_vif *vif, struct ieee80211_bss_conf *link_conf)
+#else
 static int nrc_post_channel_switch(struct ieee80211_hw *hw, struct ieee80211_vif *vif)
+#endif
 {
 	nrc_dbg(NRC_DBG_STATE, "[%s, %d] Channel switch complete\n", __func__, __LINE__);
 	return 0;

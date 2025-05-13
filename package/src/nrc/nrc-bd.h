@@ -53,5 +53,6 @@ extern bool g_bd_valid;
 struct wim_bd_param * nrc_read_bd_tx_pwr(struct nrc *nw, uint8_t *cc);
 int nrc_check_bd(struct nrc *nw);
 #endif /* defined(CONFIG_SUPPORT_BD) */
-
+uint16_t nrc_get_non_s1g_freq(uint8_t cc_index, uint8_t s1g_ch_index);
+bool nrc_set_supp_ch_list(struct wim_bd_param *bd);
 #endif //_NRC_BD_H_

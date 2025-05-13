@@ -36,6 +36,7 @@
 #include "nrc-mac80211.h"
 #include "nrc-hif.h"
 #include "wim.h"
+#include "nrc-pm.h"
 #include "nrc-debug.h"
 
 /**

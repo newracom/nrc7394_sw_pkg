@@ -156,4 +156,13 @@ void nrc_cleanup_ba_session_all (struct nrc *nw);
 
 int nrc_mac_restart (struct nrc *nw);
 
+unsigned int nrc_ac_credit(struct nrc *nw, int ac);
+const char *iftype_string(enum nl80211_iftype iftype);
+void scan_complete(struct ieee80211_hw *hw, bool aborted);
+void nrc_mac_set_wakeup(struct ieee80211_hw *hw, bool enabled);
+int nrc_mac_resume(struct ieee80211_hw *hw);
+int nrc_mac_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan);
+void remotecmd_callback(struct timer_list *t);
+void remotecmd_schedule_off(struct wiphy *wiphy, struct wireless_dev *wdev,
+				u8 subcmd, const u8 cntdwn, u16 beacon_int);
 #endif

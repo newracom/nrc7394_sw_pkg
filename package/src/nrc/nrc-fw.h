@@ -62,5 +62,5 @@ bool nrc_check_fw_ready(struct nrc *nw);
 void nrc_set_boot_ready(struct nrc *nw);
 void nrc_download_fw(struct nrc *nw);
 void nrc_release_fw(struct nrc *nw);
-
+void nrc_fw_update_frag(struct nrc_fw_priv *priv, struct fw_frag *frag);
 #endif
