@@ -261,6 +261,9 @@ uint32_t nrc_stats_metric(uint8_t *macaddr)
 {
 	struct stats_sta *cur, *next;
 	int rssi = 0;
+	
+	if (!macaddr)
+                return nrc_stats_calc_metric();
 
 	spin_lock(&state_lock);
 	list_for_each_entry_safe(cur, next, &state_head, list) {

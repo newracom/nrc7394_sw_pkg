@@ -1114,6 +1114,30 @@ void nrc_mac_roc_finish(struct work_struct *work)
 static void nrc_mac_scan_timeout(struct work_struct *work);
 #endif
 
+struct first_sta_ctx {
+        struct ieee80211_sta *sta;
+};
+
+static void nrc_first_sta_cb(void *data, struct ieee80211_sta *sta)
+{
+        struct first_sta_ctx *ctx = data;
+
+        if (!ctx->sta)                  /* keep the **first** one only */
+                ctx->sta = sta;
+}
+
+static struct ieee80211_sta *nrc_first_sta(struct ieee80211_hw *hw)
+{
+        struct first_sta_ctx ctx = { .sta = NULL };
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,8,0)
+        /* atomic variant available from 5.8 onward */
+        ieee80211_iterate_stations_atomic(hw, nrc_first_sta_cb, &ctx);
+#else
+        ieee80211_iterate_stations(hw, nrc_first_sta_cb, &ctx);
+#endif
+        return ctx.sta;                 /* NULL if none associated */
+}
 static void nrc_tp_refresh_worker(struct work_struct *ws)
 {
         struct nrc *nw = container_of(to_delayed_work(ws),
@@ -1133,6 +1157,15 @@ static void nrc_tp_refresh_worker(struct work_struct *ws)
 
                 tput_kbps = max(nrc_stats_metric(NULL), 200u);
                 dev_kfree_skb(skb_resp);
+        }
+        
+        {
+		struct ieee80211_sta *sta = nrc_first_sta(nw->hw);
+		
+		if (sta)
+			tput_kbps = max(nrc_stats_metric((u8 *)sta->addr), 200u);
+		else
+			tput_kbps = 200u;
         }
 
         atomic_set(&nw->cached_tp_kbps, tput_kbps);
