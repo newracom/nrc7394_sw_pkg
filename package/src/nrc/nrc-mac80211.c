@@ -1141,6 +1141,10 @@ static void nrc_tp_refresh_worker(struct work_struct *ws)
                 struct wim *wim;
                 struct wim_tlv *tlv;
 		struct nrc_tx_stats *tx;
+		
+		if (skb->len > skb_headlen(skb)) {
+			skb_trim(skb, skb_headlen(skb));
+		}
 
 		wim = (void *)skb->data;
 		tlv = (void *)(wim + 1);
