@@ -40,8 +40,10 @@ struct sk_buff *nrc_wim_alloc_skb(struct nrc *nw, u16 cmd, int size)
 {
 	struct sk_buff *skb;
 	struct wim *wim;
+	int payload = min(size, MAX_WIM_PKT_TLV_SIZE);
+        int alloc   = sizeof(struct hif) + sizeof(struct wim) + payload;
 
-	skb = dev_alloc_skb(size + sizeof(struct hif) + sizeof(struct wim));
+	skb = dev_alloc_skb(alloc);
 	if (!skb)
 		return NULL;
 

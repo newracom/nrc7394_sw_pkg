@@ -353,6 +353,9 @@ static ssize_t _c_spi_write(struct spi_device *spi, u8 *buf, ssize_t size)
 
 	if (size == 0 || buf == NULL)
 		return -EINVAL;
+	
+	if (unlikely(size > MAX_WIM_PKT_TLV_SIZE))
+		return -EINVAL;
 
 	cmd = C_SPI_WRITE | C_SPI_BURST | C_SPI_FIXED;
 	cmd |= C_SPI_ADDR(C_SPI_RXQ_WINDOW) | C_SPI_LEN(size);
