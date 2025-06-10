@@ -356,6 +356,13 @@ static ssize_t _c_spi_write(struct spi_device *spi, u8 *buf, ssize_t size)
 	
 	if (unlikely(size > WIM_MAX_SIZE))
 		return -EINVAL;
+	{
+		size_t room = skb_headlen((struct sk_buff *)buf);
+		if (unlikely(size > room)) {
+			dev_warn_once(&spi->dev, "nrc spi: trimming write len %zd → %zu\n", size, room);
+			size = room;               /* hard clip */
+		}
+	}
 	
 	cmd = C_SPI_WRITE | C_SPI_BURST | C_SPI_FIXED;
 	cmd |= C_SPI_ADDR(C_SPI_RXQ_WINDOW) | C_SPI_LEN(size);
