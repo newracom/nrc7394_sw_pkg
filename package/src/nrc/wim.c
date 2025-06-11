@@ -40,8 +40,9 @@ struct sk_buff *nrc_wim_alloc_skb(struct nrc *nw, u16 cmd, int size)
 {
 	struct sk_buff *skb;
 	struct wim *wim;
-	int payload = min(size, MAX_WIM_PKT_TLV_SIZE);
-        int alloc   = sizeof(struct hif) + sizeof(struct wim) + payload;
+	int payload  = min(size, MAX_WIM_PKT_TLV_SIZE);
+        int needed   = sizeof(struct hif) + sizeof(struct wim) + payload;;
+        int alloc    = max_t(int, needed, WIM_MAX_DATA_SIZE);   /* guarantee at least one full 0x200-byte frame */
 
 	skb = dev_alloc_skb(alloc);
 	if (!skb)

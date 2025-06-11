@@ -1134,6 +1134,22 @@ static void nrc_tp_refresh_worker(struct work_struct *ws)
 	struct sk_buff *skb;
 	struct ieee80211_sta *sta = NULL;
 	unsigned int delay = 0;
+	
+	rcu_read_lock();
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,8,0)
+        ieee80211_iterate_stations_atomic(nw->hw, nrc_first_sta_cb, &sta);
+#else
+        ieee80211_iterate_stations(nw->hw, nrc_first_sta_cb, &sta);
+#endif
+        if (sta)
+                tput = max(nrc_stats_metric(sta->addr), 200u);
+	
+	delay = sta ? 1000 : 5000;
+	
+	rcu_read_unlock();
+	
+	if(!sta)
+		goto done;
 
         /* ---- query firmware --------------------------------------- */
 	skb = nrc_xmit_wim_simple_request_wait(nw, WIM_CMD_GET_TX_STATS, WIM_RESP_TIMEOUT * 30);
@@ -1156,21 +1172,8 @@ static void nrc_tp_refresh_worker(struct work_struct *ws)
                 }
                 dev_kfree_skb(skb);
         }
-
-        /* ---- compute metric --------------------------------------- */
-	rcu_read_lock();
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,8,0)
-        ieee80211_iterate_stations_atomic(nw->hw, nrc_first_sta_cb, &sta);
-#else
-        ieee80211_iterate_stations(nw->hw, nrc_first_sta_cb, &sta);
-#endif
-        if (sta)
-                tput = max(nrc_stats_metric(sta->addr), 200u);
-	
-	delay = sta ? 1000 : 5000;
-	
-	rcu_read_unlock();
-	
+done:
+        /* ---- compute metric --------------------------------------- */	
         if (tput != atomic_read(&nw->cached_tp_kbps))
                 atomic_set(&nw->cached_tp_kbps, tput);
 
