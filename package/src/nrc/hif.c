@@ -264,13 +264,13 @@ static void nrc_hif_work(struct work_struct *work)
 			}
 			
 			/* Teledatics: credit-starved, re-queue SKB and retry when FW returns credits */
-			if (ret == -ENOSPC || ret == -EAGAIN || ret == -EBUSY) {
+			 if (ret == -ENOSPC || ret == -EAGAIN || ret == -EBUSY || ret == -EIO    || ret == -EREMOTEIO) {
 				 if (net_ratelimit())
 					dev_dbg(nw->dev, "TX credits exhausted\n");
 				
-				if (queue_work(nw->workqueue, &hdev->work) == false)
-					skb_queue_head(&hdev->queue[i], skb);
-				
+				skb_queue_head(&hdev->queue[i], skb);
+				queue_work(nw->workqueue, &hdev->work);
+
 				ret = 0;
 				break;
 			}
