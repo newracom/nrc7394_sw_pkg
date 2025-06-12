@@ -271,7 +271,7 @@ static void nrc_hif_work(struct work_struct *work)
 				skb_queue_head(&hdev->queue[i], skb);
 				queue_work(nw->workqueue, &hdev->work);
 
-				ret = 0;
+				ret = HIF_TX_QUEUED;
 				break;
 			}
 			

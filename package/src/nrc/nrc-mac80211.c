@@ -1114,72 +1114,72 @@ void nrc_mac_roc_finish(struct work_struct *work)
 static void nrc_mac_scan_timeout(struct work_struct *work);
 #endif
 
-struct first_sta_ctx {
-        struct ieee80211_sta *sta;
-};
+// struct first_sta_ctx {
+//         struct ieee80211_sta *sta;
+// };
+// 
+// static void nrc_first_sta_cb(void *data, struct ieee80211_sta *sta)
+// {
+//         struct first_sta_ctx *ctx = data;
+// 
+//         if (!ctx->sta)                  /* keep the **first** one only */
+//                 ctx->sta = sta;
+// }
 
-static void nrc_first_sta_cb(void *data, struct ieee80211_sta *sta)
-{
-        struct first_sta_ctx *ctx = data;
-
-        if (!ctx->sta)                  /* keep the **first** one only */
-                ctx->sta = sta;
-}
-
-static void nrc_tp_refresh_worker(struct work_struct *ws)
-{
-        struct nrc *nw = container_of(to_delayed_work(ws),
-                                      struct nrc, tp_refresh_work);
-        u32 tput = 200;
-	struct sk_buff *skb;
-	struct ieee80211_sta *sta = NULL;
-	unsigned int delay = 0;
-	
-	rcu_read_lock();
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,8,0)
-        ieee80211_iterate_stations_atomic(nw->hw, nrc_first_sta_cb, &sta);
-#else
-        ieee80211_iterate_stations(nw->hw, nrc_first_sta_cb, &sta);
-#endif
-        if (sta)
-                tput = max(nrc_stats_metric(sta->addr), 200u);
-	
-	delay = sta ? 1000 : 5000;
-	
-	rcu_read_unlock();
-	
-	if(!sta)
-		goto done;
-
-        /* ---- query firmware --------------------------------------- */
-	skb = nrc_xmit_wim_simple_request_wait(nw, WIM_CMD_GET_TX_STATS, WIM_RESP_TIMEOUT * 30);
-        if (skb) {
-                struct wim *wim;
-                struct wim_tlv *tlv;
-		struct nrc_tx_stats *tx;
-		
-		if (skb->len > skb_headlen(skb)) {
-			skb_trim(skb, skb_headlen(skb));
-		}
-
-		wim = (void *)skb->data;
-		tlv = (void *)(wim + 1);
-		
-                if (skb->len >= sizeof(struct wim) + sizeof(struct wim_tlv) + sizeof(struct nrc_tx_stats)) {
-                        tx = (void *)tlv->v;
-                        if (tx->bw < 3 && tx->mcs < 11)
-                                nrc_stats_update_tx_stats(tx);
-                }
-                dev_kfree_skb(skb);
-        }
-done:
-        /* ---- compute metric --------------------------------------- */	
-        if (tput != atomic_read(&nw->cached_tp_kbps))
-                atomic_set(&nw->cached_tp_kbps, tput);
-
-        /* adaptive interval */
-        schedule_delayed_work(&nw->tp_refresh_work, msecs_to_jiffies(delay));
-}
+// static void nrc_tp_refresh_worker(struct work_struct *ws)
+// {
+//         struct nrc *nw = container_of(to_delayed_work(ws),
+//                                       struct nrc, tp_refresh_work);
+//         u32 tput = 200;
+// 	struct sk_buff *skb;
+// 	struct ieee80211_sta *sta = NULL;
+// 	unsigned int delay = 0;
+// 	
+// 	rcu_read_lock();
+// #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,8,0)
+//         ieee80211_iterate_stations_atomic(nw->hw, nrc_first_sta_cb, &sta);
+// #else
+//         ieee80211_iterate_stations(nw->hw, nrc_first_sta_cb, &sta);
+// #endif
+//         if (sta)
+//                 tput = max(nrc_stats_metric(sta->addr), 200u);
+// 	
+// 	delay = sta ? 1000 : 5000;
+// 	
+// 	rcu_read_unlock();
+// 	
+// 	if(!sta)
+// 		goto done;
+// 
+//         /* ---- query firmware --------------------------------------- */
+// 	skb = nrc_xmit_wim_simple_request_wait(nw, WIM_CMD_GET_TX_STATS, WIM_RESP_TIMEOUT * 30);
+//         if (skb) {
+//                 struct wim *wim;
+//                 struct wim_tlv *tlv;
+// 		struct nrc_tx_stats *tx;
+// 		
+// 		if (skb->len > skb_headlen(skb)) {
+// 			skb_trim(skb, skb_headlen(skb));
+// 		}
+// 
+// 		wim = (void *)skb->data;
+// 		tlv = (void *)(wim + 1);
+// 		
+//                 if (skb->len >= sizeof(struct wim) + sizeof(struct wim_tlv) + sizeof(struct nrc_tx_stats)) {
+//                         tx = (void *)tlv->v;
+//                         if (tx->bw < 3 && tx->mcs < 11)
+//                                 nrc_stats_update_tx_stats(tx);
+//                 }
+//                 dev_kfree_skb(skb);
+//         }
+// done:
+//         /* ---- compute metric --------------------------------------- */	
+//         if (tput != atomic_read(&nw->cached_tp_kbps))
+//                 atomic_set(&nw->cached_tp_kbps, tput);
+// 
+//         /* adaptive interval */
+//         schedule_delayed_work(&nw->tp_refresh_work, msecs_to_jiffies(delay));
+// }
 
 
 static int nrc_mac_add_interface(struct ieee80211_hw *hw,
@@ -1304,9 +1304,9 @@ static int nrc_mac_add_interface(struct ieee80211_hw *hw,
 #endif
 	
 	/* read expected throughput asynchronously */
-	INIT_DELAYED_WORK(&nw->tp_refresh_work, nrc_tp_refresh_worker);
-	atomic_set(&nw->cached_tp_kbps, 433000);      /* sane initial value */
-	schedule_delayed_work(&nw->tp_refresh_work, 0);/* kick immediately */
+	// INIT_DELAYED_WORK(&nw->tp_refresh_work, nrc_tp_refresh_worker);
+	// atomic_set(&nw->cached_tp_kbps, 433000);      /* sane initial value */
+	// schedule_delayed_work(&nw->tp_refresh_work, 0);/* kick immediately */
 
 	if (vif->type == NL80211_IFTYPE_MESH_POINT)
 		signal_monitor = true;
@@ -3902,10 +3902,10 @@ static u32 nrc_get_expected_throughput(struct ieee80211_sta *sta)
 	i_sta = to_i_sta(sta);
 	nw = i_sta->nw;
 #endif
-	return atomic_read(&nw->cached_tp_kbps);
+	// return atomic_read(&nw->cached_tp_kbps);
 	
-// 	uint32_t tput = 0;
-// 	struct sk_buff *skb_resp;
+	uint32_t tput = 0;
+	struct sk_buff *skb_resp;
 // #if KERNEL_VERSION(4, 8, 0) <= NRC_TARGET_KERNEL_VERSION
 // 	struct nrc *nw = hw->priv;
 // #else
@@ -3914,30 +3914,30 @@ static u32 nrc_get_expected_throughput(struct ieee80211_sta *sta)
 // 	i_sta = to_i_sta(sta);
 // 	nw = i_sta->nw;
 // #endif
-// 
-// 	if (!sta)
-// 		return 0;
-// 
-// 	skb_resp = nrc_xmit_wim_simple_request_wait(nw, WIM_CMD_GET_TX_STATS, (WIM_RESP_TIMEOUT * 30));
-// 	if(skb_resp) {
-// 		struct wim *wim = (struct wim *)skb_resp->data;
-// 		struct wim_tlv *tlv = (struct wim_tlv *)(wim + 1);
-// 		struct nrc_tx_stats* tx_stats = (struct nrc_tx_stats*) tlv->v;
-// 		nrc_common_dbg("mcs:%d bw:%d gi:%d", tx_stats->mcs, tx_stats->bw, tx_stats->gi);
-// 		if (tx_stats->bw < 3 && tx_stats->mcs < 11) {
-// 			nrc_stats_update_tx_stats(tx_stats);
-// 		}
-// 		dev_kfree_skb(skb_resp);
-// 	} else {
-// 
-// 	}
-// 
-// 	tput = nrc_stats_metric(sta->addr);
-// 	/* prevent overflow in mac80211 */
-// 	if (tput < 200)
-// 		tput = 200;
-// 
-// 	return tput;
+
+	if (!sta)
+		return 0;
+
+	skb_resp = nrc_xmit_wim_simple_request_wait(nw, WIM_CMD_GET_TX_STATS, (WIM_RESP_TIMEOUT * 30));
+	if(skb_resp) {
+		struct wim *wim = (struct wim *)skb_resp->data;
+		struct wim_tlv *tlv = (struct wim_tlv *)(wim + 1);
+		struct nrc_tx_stats* tx_stats = (struct nrc_tx_stats*) tlv->v;
+		nrc_common_dbg("mcs:%d bw:%d gi:%d", tx_stats->mcs, tx_stats->bw, tx_stats->gi);
+		if (tx_stats->bw < 3 && tx_stats->mcs < 11) {
+			nrc_stats_update_tx_stats(tx_stats);
+		}
+		dev_kfree_skb(skb_resp);
+	} else {
+
+	}
+
+	tput = nrc_stats_metric(sta->addr);
+	/* prevent overflow in mac80211 */
+	if (tput < 200)
+		tput = 200;
+
+	return tput;
 }
 
 #define MPDU_LEN_THRESHOLD			511 		/* See lmac_11ah.h  */
