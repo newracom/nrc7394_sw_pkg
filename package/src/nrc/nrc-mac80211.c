@@ -1001,7 +1001,11 @@ static int nrc_mac_start(struct ieee80211_hw *hw)
 	return 0;
 }
 
+#if KERNEL_VERSION(6,11,0) <= NRC_TARGET_KERNEL_VERSION
+void nrc_mac_stop(struct ieee80211_hw *hw, bool suspend)
+#else
 void nrc_mac_stop(struct ieee80211_hw *hw)
+#endif
 {
 	struct nrc *nw = hw->priv;
 	int ret = 0;
