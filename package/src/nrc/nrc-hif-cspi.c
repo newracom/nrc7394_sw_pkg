@@ -353,7 +353,10 @@ static ssize_t _c_spi_write(struct spi_device *spi, u8 *buf, ssize_t size)
 
 	if (size == 0 || buf == NULL)
 		return -EINVAL;
-
+	
+	if (unlikely(size > WIM_MAX_SIZE))
+		return -EINVAL;
+	
 	cmd = C_SPI_WRITE | C_SPI_BURST | C_SPI_FIXED;
 	cmd |= C_SPI_ADDR(C_SPI_RXQ_WINDOW) | C_SPI_LEN(size);
 	put_unaligned_be32(cmd, (u32 *)tx);

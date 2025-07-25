@@ -731,6 +731,7 @@ struct wowlan_pattern {
 } __packed;
 
 struct wim_pm_param {
+struct_group(wim_pm_param_data,
 	uint8_t ps_mode;
 	uint8_t ps_enable;
 	uint16_t ps_wakeup_pin;
@@ -743,6 +744,7 @@ struct wim_pm_param {
 	uint8_t wowlan_enable_disconnect;
 	uint8_t wowlan_n_patterns;
 	struct wowlan_pattern wp[2];
+);
 } __packed;
 WIM_DECLARE(wim_pm);
 
@@ -801,6 +803,7 @@ struct wim_scan_preq_ies {
 } __packed;
 
 struct wim_scan_param {
+struct_group(wim_scan_param_data,	
 	uint8_t mac_addr[6];
 	uint8_t mac_addr_mask[6];
 	uint32_t rate;
@@ -813,6 +816,7 @@ struct wim_scan_param {
 	uint16_t                channel[WIM_MAX_SCAN_CHANNEL];
 	struct wim_scan_channel s1g_channel[WIM_MAX_SCAN_CHANNEL];
 	struct wim_scan_preq_ies preq_ies;
+);
 } __packed;
 
 enum wim_cipher_type {
@@ -835,6 +839,7 @@ enum wim_cipher_type {
 #define WIM_KEY_FLAG_IGROUP     BIT(2)
 
 struct wim_key_param {
+struct_group(wim_key_param_data,
 	uint8_t cipher_type;
 	uint8_t key_index;
 	uint8_t mac_addr[6];
@@ -842,6 +847,7 @@ struct wim_key_param {
 	uint32_t key_flags;
 	uint32_t key_len;
 	uint8_t key[WIM_KEY_MAX_LEN];
+);
 };
 
 enum wim_sta_cmd {
@@ -856,11 +862,13 @@ enum wim_sta_cmd {
 };
 
 struct wim_sta_param {
+struct_group(wim_sta_data,	
 	uint8_t cmd;
 	uint8_t addr[6];
 	uint8_t sleep; /*0: awake, 1: sleep*/
 	uint16_t aid;
 	uint32_t flags;
+);
 };
 
 #define INFO_ELEMENT_MAX_LENGTH	255

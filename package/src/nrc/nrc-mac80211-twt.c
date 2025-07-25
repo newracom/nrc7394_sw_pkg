@@ -115,7 +115,7 @@ done:
 	return ret;
 }
 
-void static twt_setup_dump (struct nrc *nw, struct ieee80211_twt_setup *twt)
+static void twt_setup_dump (struct nrc *nw, struct ieee80211_twt_setup *twt)
 {
 	struct nrc_twt_sched *twt_sched = nw->twt_sched;
 	struct ieee80211_twt_params *twt_agrt = (struct ieee80211_twt_params *)twt->params;
@@ -625,7 +625,7 @@ unlock:
 	mutex_unlock(&twt_sched->mutex);
 }
 
-static int nrc_mac_twt_info_read (struct file *file, char __user *user_buf,
+static ssize_t nrc_mac_twt_info_read (struct file *file, char __user *user_buf,
                  size_t count, loff_t *ppos)
 {
 	struct nrc *nw = file->private_data;
@@ -678,14 +678,14 @@ done:
 	return ret;
 }
 
-static int nrc_mac_twt_info_write(struct file *file, const char __user *buf,
+static ssize_t nrc_mac_twt_info_write(struct file *file, const char __user *buf,
                                 size_t len, loff_t *ppos)
 {
 	printk("%s:%d\n", __FUNCTION__, __LINE__);
     return len;
 }
 
-static int nrc_mac_twt_schedule_read (struct file *file, char __user *user_buf,
+static ssize_t nrc_mac_twt_schedule_read (struct file *file, char __user *user_buf,
                  size_t count, loff_t *ppos)
 {
 	struct nrc *nw = file->private_data;
@@ -744,14 +744,14 @@ done:
 	return ret;
 }
 
-static int nrc_mac_twt_schedule_write(struct file *file, const char __user *buf,
+static ssize_t nrc_mac_twt_schedule_write(struct file *file, const char __user *buf,
                                 size_t len, loff_t *ppos)
 {
 	printk("%s:%d\n", __FUNCTION__, __LINE__);
     return len;
 }
 
-static int nrc_mac_twt_dump_read (struct file *file, char __user *user_buf,
+static ssize_t nrc_mac_twt_dump_read (struct file *file, char __user *user_buf,
                  size_t count, loff_t *ppos)
 {
 	struct nrc *nw = file->private_data;
@@ -783,14 +783,14 @@ done:
 	return ret;
 }
 
-static int nrc_mac_twt_dump_write(struct file *file, const char __user *buf,
+static ssize_t nrc_mac_twt_dump_write(struct file *file, const char __user *buf,
                                 size_t len, loff_t *ppos)
 {
 	printk("%s:%d\n", __FUNCTION__, __LINE__);
     return len;
 }
 
-static int nrc_mac_twt_mon_read (struct file *file, char __user *user_buf,
+static ssize_t nrc_mac_twt_mon_read (struct file *file, char __user *user_buf,
                  size_t count, loff_t *ppos)
 {
 	struct nrc *nw = file->private_data;
@@ -822,14 +822,14 @@ done:
 	return ret;
 }
 
-static int nrc_mac_twt_mon_write(struct file *file, const char __user *buf,
+static ssize_t nrc_mac_twt_mon_write(struct file *file, const char __user *buf,
                                 size_t len, loff_t *ppos)
 {
 	printk("%s:%d\n", __FUNCTION__, __LINE__);
     return len;
 }
 
-static int nrc_mac_twt_debug_read (struct file *file, char __user *user_buf,
+static ssize_t nrc_mac_twt_debug_read (struct file *file, char __user *user_buf,
                  size_t count, loff_t *ppos)
 {
 	struct nrc *nw = file->private_data;
@@ -865,7 +865,7 @@ done:
 	return ret;
 }
 
-static int nrc_mac_twt_debug_write(struct file *file, const char __user *user_buf,
+static ssize_t nrc_mac_twt_debug_write(struct file *file, const char __user *user_buf,
                                 size_t count, loff_t *ppos)
 {
 	struct nrc *nw = file->private_data;

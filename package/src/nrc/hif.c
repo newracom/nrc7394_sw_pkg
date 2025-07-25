@@ -17,6 +17,7 @@
 #include <net/mac80211.h>
 #include <linux/gpio.h>
 #include <linux/ip.h>
+#include <linux/ratelimit.h>
 #include <linux/tcp.h>
 
 #include "nrc-hif.h"
@@ -261,6 +262,19 @@ static void nrc_hif_work(struct work_struct *work)
 				ret = nrc_hif_write(hdev, skb->data, skb->len);
 				ret = HIF_TX_COMPLETE;
 			}
+			
+			/* Teledatics: credit-starved, re-queue SKB and retry when FW returns credits */
+			 if (ret == -ENOSPC || ret == -EAGAIN || ret == -EBUSY || ret == -EIO    || ret == -EREMOTEIO) {
+				 if (net_ratelimit())
+					dev_dbg(nw->dev, "TX credits exhausted\n");
+				
+				skb_queue_head(&hdev->queue[i], skb);
+				queue_work(nw->workqueue, &hdev->work);
+
+				ret = HIF_TX_QUEUED;
+				break;
+			}
+			
 			WARN_ON(ret < 0);
 
 			if (ret != HIF_TX_QUEUED)

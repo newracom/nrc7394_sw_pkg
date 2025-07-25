@@ -20,5 +20,6 @@
 #include "nrc.h"
 
 int nrc_ps_set_mode (struct nrc *nw, enum NRC_PS_MODE mode, int timeout);
+char *nrc_ps_mode_str (enum NRC_PS_MODE mode);
 
 #endif

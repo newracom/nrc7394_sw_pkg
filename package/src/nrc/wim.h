@@ -201,4 +201,12 @@ int nrc_wim_pm_req(struct nrc *nw, uint32_t cmd, uint64_t arg);
 
 int nrc_wim_set_ps (struct nrc *nw, enum NRC_PS_MODE mode, int timeout);
 
+void nrc_wim_set_twt_responder (struct nrc *nw, struct sk_buff *skb, u8 enable);
+void nrc_wim_set_twt_requester (struct nrc *nw, struct sk_buff *skb, u8 enable);
+void nrc_wim_set_twt_grouping (struct nrc *nw, struct sk_buff *skb, u8 enable);
+void nrc_wim_set_rc_mode (struct nrc *nw, struct sk_buff *skb, u8 mode);
+void nrc_wim_set_default_mcs (struct nrc *nw, struct sk_buff *skb, u8 mcs);
+void nrc_wim_handle_fw_ready(struct nrc *nw);
+void nrc_wim_handle_fw_reload(struct nrc *nw);
+void nrc_wim_handle_req_deauth(struct nrc *nw);
 #endif

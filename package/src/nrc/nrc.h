@@ -340,6 +340,9 @@ struct nrc {
 	bool twt_responder;
 
 	struct nrc_twt_sched *twt_sched;
+	
+	atomic_t cached_tp_kbps;          /* last valid throughput */
+        struct delayed_work tp_refresh_work;
 };
 
 /* vif driver data structure */
