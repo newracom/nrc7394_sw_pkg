@@ -65,11 +65,9 @@
 #define JP_BASE_FREQ	5200
 #define TW_BASE_FREQ	5180
 #define EU_BASE_FREQ	5180
-#define CN_BASE_FREQ	5180
 #define NZ_BASE_FREQ	5180
 #define AU_BASE_FREQ	5180
-#define S8_BASE_FREQ	5180
-#define S9_BASE_FREQ	5180
+#define SG_BASE_FREQ	5180
 #endif /* defined(CONFIG_SUPPORT_BD) */
 
 typedef struct _vendor_cmd_entry{
@@ -94,7 +92,7 @@ char nrc_cc[2];
 {								\
 	.band = NL80211_BAND_2GHZ,	\
 	.center_freq = (freq),		\
-	.hw_value = (freq),			\
+	.hw_value = ((freq-2407)/5),\
 	.max_power = 20,			\
 }
 
@@ -102,7 +100,7 @@ char nrc_cc[2];
 {								\
 	.band = NL80211_BAND_5GHZ,	\
 	.center_freq = (freq),		\
-	.hw_value = (freq),			\
+	.hw_value = ((freq-5000)/5),\
 	.max_power = 20,			\
 }
 
@@ -160,7 +158,6 @@ static struct ieee80211_channel nrc_channels_2ghz[] = {
 	CHAN2G(2462), /* Channel 11 */
 	CHAN2G(2467), /* Channel 12 */
 	CHAN2G(2472), /* Channel 13 */
-	CHAN2G(2484), /* Channel 14 */
 };
 
 static struct ieee80211_channel nrc_channels_5ghz[] = {
@@ -460,7 +457,7 @@ static void nrc_flush_txq(struct nrc *nw)
 #endif
 }
 
-unsigned int nrc_ac_credit(struct nrc *nw, int ac)
+static unsigned int nrc_ac_credit(struct nrc *nw, int ac)
 {
 	int ret;
 
@@ -1079,7 +1076,7 @@ bool nrc_access_vif(struct nrc *nw)
 	return false;
 }
 
-const char *iftype_string(enum nl80211_iftype iftype)
+static const char *iftype_string(enum nl80211_iftype iftype)
 {
 	switch (iftype) {
 	case NL80211_IFTYPE_UNSPECIFIED: return "UNSPECIFIED";
@@ -1581,12 +1578,10 @@ uint16_t get_base_freq(void)
 		ret_freq = NZ_BASE_FREQ;
 	} else if (nrc_cc[0] == 'E' && nrc_cc[1] == 'U') {
 		ret_freq = EU_BASE_FREQ;
-	} else if (nrc_cc[0] == 'C' && nrc_cc[1] == 'N') {
-		ret_freq = CN_BASE_FREQ;
 	} else if (nrc_cc[0] == 'K' && nrc_cc[1] == 'R') {
 		ret_freq = (kr_band == 1) ? K1_BASE_FREQ : K2_BASE_FREQ;
 	} else if (nrc_cc[0] == 'S' && nrc_cc[1] == 'G') {
-		ret_freq = (sg_band == 8) ? S8_BASE_FREQ : S9_BASE_FREQ;
+		ret_freq = SG_BASE_FREQ;
 	} else if (country_match(eu_countries_cc, nrc_cc)) {
 		ret_freq = EU_BASE_FREQ;
 	}
@@ -2491,7 +2486,7 @@ int nrc_mac_sta_state(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 
 		/* set default max_idle_period from AP */
 		nrc_mac_dbg("%s: set default max_idle_period with AP's period: %lu", __FUNCTION__, i_vif->max_idle_period);
-		if (nrc_mac_is_s1g(nw)) {
+		if (nrc_mac_is_s1g(nw) && !no_convert_usf) {
 			/* Convert in USF Format (Value (14bit) * USF(2bit)) and save it */
 			i_sta->max_idle.period = convert_usf(i_vif->max_idle_period);
 		} else {
@@ -2820,7 +2815,7 @@ static void change_scan_mode(struct nrc *nw, enum NRC_SCAN_MODE new_mode)
 	mutex_unlock(&nw->state_mtx);
 }
 
-void scan_complete(struct ieee80211_hw *hw, bool aborted)
+static void scan_complete(struct ieee80211_hw *hw, bool aborted)
 {
 	struct nrc *nw = hw->priv;
 
@@ -3686,7 +3681,11 @@ static int nrc_pre_channel_switch(struct ieee80211_hw *hw,struct ieee80211_vif *
 	return 0;
 }
 
+#if KERNEL_VERSION(6, 7, 0) <= NRC_TARGET_KERNEL_VERSION
+static int nrc_post_channel_switch(struct ieee80211_hw *hw, struct ieee80211_vif *vif, struct ieee80211_bss_conf *bss_conf)
+#else
 static int nrc_post_channel_switch(struct ieee80211_hw *hw, struct ieee80211_vif *vif)
+#endif
 {
 	nrc_dbg(NRC_DBG_STATE, "[%s, %d] Channel switch complete\n", __func__, __LINE__);
 	return 0;
@@ -3710,7 +3709,7 @@ static struct wiphy_wowlan_support nrc_wowlan_support = {
 	.max_pkt_offset = 16,
 };
 
-void nrc_mac_set_wakeup(struct ieee80211_hw *hw, bool enabled)
+static void nrc_mac_set_wakeup(struct ieee80211_hw *hw, bool enabled)
 {
 	struct nrc *nw = hw->priv;
 	nw->wowlan_enabled = enabled;
@@ -3718,7 +3717,7 @@ void nrc_mac_set_wakeup(struct ieee80211_hw *hw, bool enabled)
 	return;
 }
 
-int nrc_mac_resume(struct ieee80211_hw *hw)
+static int nrc_mac_resume(struct ieee80211_hw *hw)
 {
 	struct nrc *nw = hw->priv;
 
@@ -3735,7 +3734,7 @@ int nrc_mac_resume(struct ieee80211_hw *hw)
 	return 0;
 }
 
-int nrc_mac_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan)
+static int nrc_mac_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan)
 {
 	struct nrc *nw = hw->priv;
 	struct sk_buff *skb;
@@ -4203,7 +4202,7 @@ void remotecmd_callback(unsigned long ptr)
 	struct wireless_dev *wdev = params->wdev;
 	u8 subcmd = params->subcmd;
 #else
-void remotecmd_callback(struct timer_list *t)
+static void remotecmd_callback(struct timer_list *t)
 {
 	struct wiphy *wiphy = remotecmd_params.wiphy;
 	struct wireless_dev *wdev = remotecmd_params.wdev;
@@ -4212,7 +4211,7 @@ void remotecmd_callback(struct timer_list *t)
 	nrc_vendor_cmd_remove(wiphy, wdev, subcmd);
 }
 
-void remotecmd_schedule_off(struct wiphy *wiphy, struct wireless_dev *wdev,
+static void remotecmd_schedule_off(struct wiphy *wiphy, struct wireless_dev *wdev,
 				u8 subcmd, const u8 cntdwn, u16 beacon_int)
 {
 	remotecmd_params.wiphy = wiphy;

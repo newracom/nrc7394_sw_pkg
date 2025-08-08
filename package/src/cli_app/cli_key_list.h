@@ -79,7 +79,7 @@ BSSID,AID,Scan Type,Scan Mode,\n[PHY Configuration]\nTx Gain,Base Rx Gain,Tx Pow
 
 /* show mac [tx|rx] */
 // show mac [tx|rx] stats st
-#define SHOW_MAC_TRX_STATS_ST_DISP	"%lu,%lu,%lu,%lu"
+#define SHOW_MAC_TRX_STATS_ST_DISP	"%lu,%lu,%3.2f,%lu,%lu,%3.2f"
 
 // show mac [tx|rx] stats ac
 #define SHOW_MAC_TRX_STATS_AC_DISP	"%s,%lu,%lu,%lu,%lu"
@@ -198,6 +198,10 @@ Tx power index for MCS 6,Tx power index for MCS 7,Tx power index for MCS 10"
 /* show xtal status */
 #define SHOW_XTAL_STATUS_DISP "%d"
 #define SHOW_XTAL_STATUS_LIST "XTAL status"
+
+/* show clock_count */
+#define SHOW_CLOCK_COUNT_DISP "%d"
+#define SHOW_CLOCK_COUNT_LIST "count"
 
 /* show rc */
 #define SHOW_RC_KEY_DISP	"%2d %2d,%2d %2d,%2d %2d,%2d %2d"

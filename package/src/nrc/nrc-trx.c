@@ -58,7 +58,7 @@ static void setup_ba_session(struct nrc *nw, struct ieee80211_vif *vif, struct s
 /* TX */
 #define USF2SF(usf)	((usf == 0) ? 1 : (usf == 1) ? 10 : (usf == 2) ? 1000 : 10000)
 
-bool nrc_is_valid_vif (struct nrc *nw, struct ieee80211_vif *vif)
+static bool nrc_is_valid_vif (struct nrc *nw, struct ieee80211_vif *vif)
 {
 	u8 i;
 	for (i = 0; i < ARRAY_SIZE(nw->vif); i++) {
@@ -526,13 +526,13 @@ static int tx_h_put_iv(struct nrc_trx_data *tx)
 TXH(tx_h_put_iv, NL80211_IFTYPE_ALL);
 
 #if defined (CONFIG_CONVERT_NON_QOSDATA)
-bool ieee80211_is_data_data(__le16 fc)
+static bool ieee80211_is_data_data(__le16 fc)
 {
 	return (fc & cpu_to_le16(IEEE80211_FCTL_FTYPE | IEEE80211_FCTL_STYPE)) ==
 	        cpu_to_le16(IEEE80211_FTYPE_DATA | IEEE80211_STYPE_DATA);
 }
 
-void insert_qos_ctrl_field_in_skb(struct sk_buff *skb, unsigned int hdr_len) {
+static void insert_qos_ctrl_field_in_skb(struct sk_buff *skb, unsigned int hdr_len) {
 
 	struct ieee80211_hdr *mh = (void *) skb->data;
 	bool is_multi = ((mh->addr1[0] & 0x01) != 0);
@@ -652,11 +652,10 @@ static void nrc_mac_rx_h_status(struct nrc *nw, struct sk_buff *skb)
 	}
 #endif
 
-	if (signal_monitor) {
-		//update snr and rssi only if signal monitor is enabled
-		nrc_stats_update(mh->addr2, fh->flags.rx.snr, fh->flags.rx.rssi);
-		//nrc_stats_print();
-	}
+	//update snr and rssi only if signal monitor is enabled
+	nrc_stats_update(mh->addr2, fh->flags.rx.snr, fh->flags.rx.rssi);
+	//nrc_stats_print();
+
 	if(ieee80211_is_probe_resp(mh->frame_control))
 		if(nrc_stats_channel_noise_update(status->freq, fh->flags.rx.rssi - fh->flags.rx.snr) < 0)
 			nrc_mac_dbg("Channel noise update fail : freq(%d)", status->freq);
@@ -1495,7 +1494,7 @@ void nrc_ampdu_mon_deinit(void )
 }
 
 
-MON_STA_T* nrc_ampdu_mon_find_sta(uint8_t* addr)
+static MON_STA_T* nrc_ampdu_mon_find_sta(uint8_t* addr)
 {
 	MON_STA_T * cur, *next;
 
@@ -1512,7 +1511,7 @@ MON_STA_T* nrc_ampdu_mon_find_sta(uint8_t* addr)
 	return NULL;
 }
 
-MON_STA_T* nrc_ampdu_mon_add_sta(uint8_t* addr)
+static MON_STA_T* nrc_ampdu_mon_add_sta(uint8_t* addr)
 {
 	MON_STA_T* m_sta = kzalloc(sizeof(MON_STA_T), GFP_KERNEL);
 	if (!m_sta){
@@ -1531,7 +1530,7 @@ static void nrc_ampdu_mon_inc_refnum(void)
 	if (m_ampdu_refnum == 0) m_ampdu_refnum = 1;
 }
 
-uint32_t nrc_ampdu_mon_get_ref_id(struct nrc *nw, struct sk_buff *skb)
+static uint32_t nrc_ampdu_mon_get_ref_id(struct nrc *nw, struct sk_buff *skb)
 {
 	struct sigS1g *sig_s1g;
 	struct rxInfo *rxi;

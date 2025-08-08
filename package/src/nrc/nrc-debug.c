@@ -375,7 +375,6 @@ DEFINE_SIMPLE_ATTRIBUTE(nrc_debugfs_rssi,
 			nrc_debugfs_rssi_write,
 			"%lld\n");
 
-extern int nrc_get_beacon_updated(void);
 static int nrc_debugfs_beacon_updated_read(void *data, u64 *val)
 {
 	*val = nrc_get_beacon_updated();

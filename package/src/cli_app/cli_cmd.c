@@ -86,6 +86,7 @@ static int cmd_show_tx_time(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_cca_thresh(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_app_version(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_xtal_status(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_show_clock_count(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_optimal_channel(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_sysconfig(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_bcn_mcs(cmd_tbl_t *t, int argc, char *argv[]);
@@ -137,6 +138,8 @@ static int cmd_set_support_ch_width(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_ampdu_mode(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_bcn_mcs(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_bcmc_mcs(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_set_dhcp_mcs(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_set_mgmt_mcs(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_bgscan_trx(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_scan_period(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_mesh_rssi_threshold(cmd_tbl_t *t, int argc, char *argv[]);
@@ -230,7 +233,7 @@ cmd_tbl_t show_sub_list[] = {
 	{ "edca", cmd_show_edca, "show EDCA parameters", "show edca",  SHOW_EDCA_KEY_LIST, 0},
 	{ "uinfo", cmd_show_umac_info, "show UMAC information", "show uinfo [vif_id]",  "", 0},
 	{ "ampdu", cmd_show_ampdu, "show/clear AMPDU count", "show ampdu | show ampdu clear",  "", 0},
-	{ "mac", cmd_show_mac, "mac command", "show mac {tx|rx|clear} {stats|clear}",  "", 1},
+	{ "mac", cmd_show_mac, "mac command", "show mac {tx|rx|clear} {stats|clear}",  "", 0},
 	{ "signal", cmd_show_signal, "show rssi/snr, {options} are only valid in cli_app prompt", "show signal {start|stop} [interval] [number]",  SHOW_SIGNAL_KEY_LIST, 0},
 	{ "maxagg", cmd_show_maxagg, "show max aggregation", "show maxagg",  "", 0},
 	{ "bcmc", cmd_show_bcmc, "show bcmc configuration", "show bcmc",  "", 0},
@@ -253,7 +256,8 @@ cmd_tbl_t show_sub_list[] = {
 	{ "rc", cmd_show_rc, "show tx's retry mcs info, maxtp/tp2/maxp/lowest","show rc [vif_id] [aid]", SHOW_RC_KEY_LIST, 0},
 	{ "rc_param", cmd_show_rc_param, "show configured rate control parameter", "show rc_param", SHOW_RC_PARAM_KEY_LIST, 0},
 	{ "xtal_status", cmd_show_xtal_status, "show xtal_status", "show xtal_status",  SHOW_XTAL_STATUS_LIST, 0},
-	{ "bcn_mcs", cmd_show_bcn_mcs, "show beacon mcs", "show bcn_mcs [vif_id]",  "", 1},
+	{ "clock_count", cmd_show_clock_count, "modem get_clock_count {xtal|lpo}", "show clock_count {xtal|lpo}",  SHOW_CLOCK_COUNT_LIST, 0},
+	{ "bcn_mcs", cmd_show_bcn_mcs, "show beacon mcs", "show bcn_mcs [vif_id]",  "", 0},
 };
 
 /* sub command list on set */
@@ -283,7 +287,9 @@ cmd_tbl_t set_sub_list[] = {
 	{ "support_ch_width", cmd_set_support_ch_width, "set supported ch width in s1g capa ie (0:1/2M, 1:1/2/4M)", "set support_ch_width [0|1]", "", 0},
 	{ "ampdu_mode", cmd_set_ampdu_mode, "set ampdu_mode ", "set ampdu_mode [disable|manual|auto]", "", 0},
 	{ "bcn_mcs", cmd_set_bcn_mcs, "set bcn_mcs ", "set bcn_mcs [vif_id] [10|0|1|2|3|4|5|6|7]", "", 0},
-	{ "bcmc_mcs", cmd_set_bcmc_mcs, "set bcmc_mcs ", "set bcn_mcs [on|off] [10|0|1|2|3|4|5|6|7]", "", 0},
+	{ "bcmc_mcs", cmd_set_bcmc_mcs, "set bcmc_mcs ", "set bcmc_mcs [on|off] [10|0|1|2|3|4|5|6|7]", "", 0},
+	{ "dhcp_mcs", cmd_set_dhcp_mcs, "set dhcp_mcs ", "set dhcp_mcs [on|off] [10|0|1|2|3|4|5|6|7]", "", 0},
+	{ "mgmt_mcs", cmd_set_mgmt_mcs, "set mgmt_mcs ", "set mgmt_mcs [on|off] [10|0|1|2|3|4|5|6|7]", "", 0},
 	{ "rc_param", cmd_set_rc_param, "set rate control parameter", "set rc_param {1|2|3|4|5} {1|2|3|4|5|6|7} {1|..|255}", SET_RC_PARAM_KEY_LIST, 0},
 	{ "bgscan_trx", cmd_set_bgscan_trx, "set bgscan_trx ", "set bgscan_trx [1:enable|0:disable] [wait time operation ch for rx: (0~100)msec]", "", 0},
 	{ "scan_period", cmd_set_scan_period, "set scan_period", "set scan_period [dwell time (min 20ms)]", "", 0},
@@ -315,8 +321,8 @@ cmd_tbl_t show_stats_sub_list[] = {
 
 /* 2rd sub command list on show mac */
 cmd_tbl_t show_mac_sub_list[] = {
-	{ "tx", cmd_show_mac_tx, "show TX Statistics", "show mac tx {stats|clear}",  "", 1},
-	{ "rx", cmd_show_mac_rx, "show RX Statistics", "show mac rx {stats|clear}",  "", 1},
+	{ "tx", cmd_show_mac_tx, "show TX Statistics", "show mac tx {stats|clear}",  "", 0},
+	{ "rx", cmd_show_mac_rx, "show RX Statistics", "show mac rx {stats|clear}",  "", 0},
 	{ "clear", cmd_show_mac_clear, "clear TX/RX Statistics", "show mac clear",  "", 0},
 };
 
@@ -1612,7 +1618,7 @@ static void cmd_show_mac_result_display(char *response, int dir, int type)
 	int i = 0, j=0;
 
 	char temp[6][16] = {0,};
-	const int mac_stats_start_get_element  = 4;
+	const int mac_stats_start_get_element  = 6;
 	const int mac_stats_get_element  = 5;
 	const int mac_stats_mcs_get_element  = 6;
 
@@ -1633,12 +1639,12 @@ static void cmd_show_mac_result_display(char *response, int dir, int type)
 					}
 					memcpy(temp[i], t1, sizeof(temp[i]));
 				}
-				printf("(OK count:%d, %s count:%d, last MCS:%d",\
-					atoi(temp[0]),(dir == DIR_TX)? "RTX":"NOK", atoi(temp[1]), atoi(temp[2]));
+				printf("(OK count:%d, %s count:%d(%3.2f%%), last MCS:%d",\
+					atoi(temp[0]),(dir == DIR_TX)? "RTX":"NOK", atoi(temp[1]), atof(temp[2]),  atoi(temp[3]));
 				if(dir == DIR_TX){
-					printf(")\n");
+					printf(", Fail count:%d(%3.2f%%))\n", atoi(temp[4]), atof(temp[5]));
 				} else {
-					printf(", FCS error:%d)\n",  atoi(temp[3]));
+					printf(", FCS error:%d(%3.2f%%))\n", atoi(temp[4]), atof(temp[5]));
 				}
 				print_line('-', print_line_len,"", 0,0);
 
@@ -1888,6 +1894,19 @@ static int cmd_show_xtal_status(cmd_tbl_t *t, int argc, char *argv[])
 	const int display_per_line= 1;
 
 	ret = run_shell_cmd(t, argc, argv, "show xtal_status", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		cmd_result_parse((char*)t->key_list, response, display_per_line);
+	}
+	return ret;
+}
+
+static int cmd_show_clock_count(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_FAILURE;
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	const int display_per_line= 1;
+
+	ret = run_shell_cmd(t, argc, argv, "modem get_clock_count", response, sizeof(response));
 	if(ret == CMD_RET_SUCCESS){
 		cmd_result_parse((char*)t->key_list, response, display_per_line);
 	}
@@ -2185,6 +2204,68 @@ static int cmd_set_bcmc_mcs(cmd_tbl_t *t, int argc, char *argv[])
 	if(ret == CMD_RET_SUCCESS) {
 		if (strcmp(argv[2], "on") == 0 ) {
 			printf("set bcmc_mcs: %s\n", argv[3]);
+		} else {
+			printf("disabled\n");
+		}
+	}
+	return ret;
+}
+
+static int cmd_set_dhcp_mcs(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_FAILURE;
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	const int display_per_line= 1;
+	int mcs = 0;
+
+	if (strcmp(argv[2], "on") != 0 && strcmp(argv[2], "off") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	if (strcmp(argv[2], "on") == 0 ) {
+		mcs = atoi(argv[3]);
+		if( mcs > 10 || mcs == 8 || mcs == 9){
+			printf("Usage : %s\n", (char*)t->usage);
+			return CMD_RET_FAILURE;
+		}
+	}
+
+	ret = run_shell_cmd(t, argc, argv, "set dhcp_mcs", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS) {
+		if (strcmp(argv[2], "on") == 0 ) {
+			printf("set dhcp_mcs: %s\n", argv[3]);
+		} else {
+			printf("disabled\n");
+		}
+	}
+	return ret;
+}
+
+static int cmd_set_mgmt_mcs(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_FAILURE;
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	const int display_per_line= 1;
+	int mcs = 0;
+
+	if (strcmp(argv[2], "on") != 0 && strcmp(argv[2], "off") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	if (strcmp(argv[2], "on") == 0 ) {
+		mcs = atoi(argv[3]);
+		if( mcs > 10 || mcs == 8 || mcs == 9){
+			printf("Usage : %s\n", (char*)t->usage);
+			return CMD_RET_FAILURE;
+		}
+	}
+
+	ret = run_shell_cmd(t, argc, argv, "set mgmt_mcs", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS) {
+		if (strcmp(argv[2], "on") == 0 ) {
+			printf("set mgmt_mcs: %s\n", argv[3]);
 		} else {
 			printf("disabled\n");
 		}

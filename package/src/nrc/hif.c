@@ -347,7 +347,8 @@ static void nrc_hif_ps_work(struct work_struct *work)
 * Parameters : skb(socket buffer)
 * Returns : T/F (bool) T:TCP ACK, F:not TCP ACK
 *******************************************************************************/
-bool is_tcp_ack(struct sk_buff *skb)
+#if 0
+static bool is_tcp_ack(struct sk_buff *skb)
 {
 	struct hif *hif;
 	struct ieee80211_hdr *mhdr;
@@ -378,14 +379,14 @@ bool is_tcp_ack(struct sk_buff *skb)
 
 	return false;
 }
-
+#endif
 /*******************************************************************************
 * FunctionName : is_mgmt
 * Description : Check if the skb is a management frame 
 * Parameters : skb(socket buffer)
 * Returns : T/F (bool) T:management frame, F:not management frame
 *******************************************************************************/
-bool is_mgmt(struct sk_buff *skb)
+static bool is_mgmt(struct sk_buff *skb)
 {
 	struct hif *hif;
 	struct ieee80211_hdr *mhdr;
@@ -411,7 +412,7 @@ bool is_mgmt(struct sk_buff *skb)
 * Parameters : skb(socket buffer)
 * Returns : T/F (bool)
 *******************************************************************************/
-bool is_urgent_frame(struct sk_buff *skb)
+static bool is_urgent_frame(struct sk_buff *skb)
 {
 	bool ret = false;
 	if (is_mgmt(skb))
@@ -524,7 +525,7 @@ static int nrc_hif_enqueue_skb(struct nrc *nw, struct sk_buff *skb)
 /**
  * nrc_hif_tx_wim - trasmit a wim message to target
  */
-int nrc_xmit_wim(struct nrc *nw, struct sk_buff *skb, enum HIF_SUBTYPE stype)
+static int nrc_xmit_wim(struct nrc *nw, struct sk_buff *skb, enum HIF_SUBTYPE stype)
 {
 	struct hif *hif;
 	struct ieee80211_tx_info *txi = IEEE80211_SKB_CB(skb);

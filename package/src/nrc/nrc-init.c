@@ -128,7 +128,7 @@ MODULE_PARM_DESC(bss_max_idle, "BSS Max Idle");
 /**
  * enable/disable the s1g short beacon
  */
-bool enable_short_bi = 1;
+bool enable_short_bi = 0;
 module_param(enable_short_bi, bool, 0600);
 MODULE_PARM_DESC(enable_short_bi, "Enable Short Beacon Interval");
 
@@ -260,20 +260,6 @@ module_param(kr_band, int, 0600);
 MODULE_PARM_DESC(kr_band, "Specify KR band (KR USN1(1) or KR USN5(2))");
 
 /**
- * Set configuration of SG Band
- */
-int sg_band = -1;
-module_param(sg_band, int, 0600);
-MODULE_PARM_DESC(sg_band, "Specify SG band (866-869 MHz(8) or 920-925 MHz(9))");
-
-/**
- * Set configuration of TW Band
- */
-int tw_band = -1;
-module_param(tw_band, int, 0600);
-MODULE_PARM_DESC(tw_band, "Specify TW band (8xxMHz(8) or 9xxMHz(9))");
-
-/**
  * Debug Level All
  */
 bool debug_level_all = false;
@@ -363,6 +349,9 @@ uint8_t ap_rc_default_mcs = 0xff;
 uint8_t sta_rc_default_mcs = 0xff;
 //module_param(sta_rc_default_mcs, byte, 0600);
 //MODULE_PARM_DESC(sta_rc_default_mcs, "STA Default MCS");
+
+/* not convert bss_max_idle value using usf */
+bool no_convert_usf = false;
 
 /**
  * Power save pretend value for no response STA
@@ -591,7 +580,7 @@ static void nrc_on_fw_ready(struct sk_buff *skb, struct nrc *nw)
 	dev_kfree_skb(skb);
 }
 
-int nrc_fw_start(struct nrc *nw)
+static int nrc_fw_start(struct nrc *nw)
 {
 	struct sk_buff *skb_req, *skb_resp;
 	struct wim_drv_info_param *p;

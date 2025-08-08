@@ -4,7 +4,7 @@ import sys, os, time, subprocess, re
 import threading
 from mesh import *
 script_path = "/home/pi/nrc_pkg/script/"
-s1g_ch_support_country_list = ["US", "CN", "JP", "T8", "AU", "NZ", "K1", "K2", "S8", "S9", "T9"]
+s1g_ch_support_country_list = ["US", "JP", "TW", "AU", "NZ", "K1", "K2", "SG"]
 eu_ch_support_country_list = ["AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK", "GB", "SA"]
 
 # Default Configuration (you can change value you want here)
@@ -13,7 +13,7 @@ eu_ch_support_country_list = ["AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "E
 max_cpuclock      = 1         # Set Max CPU Clock : 0(off) or 1(on)
 ##################################################################################
 # Firmware Conf.
-model             = 7394      # 7292/7393/7394
+model             = 7394      # 7292/7394
 fw_download       = 1         # 0(FW Download off) or 1(FW Download on)
 fw_name           = 'uni_s1g.bin'
 ##################################################################################
@@ -185,9 +185,6 @@ use_eeprom_config  = 0         # 0 (Flash Memory) or 1 (EEPROM)
 ##################################################################################
 
 def check(interface):
-    if int(use_bridge_setup) > 0 and int(bridge_ip_mode) == 1:
-        os.system('sudo dhclient ' + interface +' -nw -v')
-
     ifconfig_cmd = "ifconfig " + interface
     ifconfig_process = subprocess.Popen(ifconfig_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     ifconfig_lines = ifconfig_process.communicate()[0]
@@ -209,8 +206,7 @@ def usage_print():
     print("Argument:    \n\tsta_type      [0:STA   |  1:AP  |  2:SNIFFER  | 3:RELAY |  4:MESH] \
             \n\tsecurity_mode [0:Open  |  1:WPA2-PSK  |  2:WPA3-OWE  |  3:WPA3-SAE | 4:WPS-PBC] \
                          \n\tcountry       [US:USA  |  JP:Japan  |  TW:Taiwan  |  AU:Australia  |  NZ:New Zealand  | \
-                         \n\t               K1:Korea-USN  |  K2:Korea-MIC  |  CN:China | \
-                         \n\t               S8:Singapore(866-869 MHz)  |  S9:Singapore(920-925 MHz) | \
+                         \n\t               K1:Korea-USN  |  K2:Korea-MIC  |  SG:Singapore | \
                          \n\t               and EU channel support countries(EU countries, GB and SA)] \
                          \n\t----------------------------------------------------------- \
                          \n\tchannel       [S1G Channel Number]   * Only for Sniffer & AP \
@@ -346,10 +342,6 @@ def strMeshMode():
 def strOriCountry():
     if str(sys.argv[3]) == 'K1' or str(sys.argv[3]) == 'K2':
         return 'KR'
-    elif str(sys.argv[3]) == 'S8' or str(sys.argv[3]) == 'S9':
-        return 'SG'
-    elif str(sys.argv[3]) == 'T8' or str(sys.argv[3]) == 'T9':
-        return 'TW'
     else:
         return str(sys.argv[3])
 
@@ -377,6 +369,16 @@ def strBDName():
         return str(bd_name)
     else:
         return 'nrc' + str(model) + '_bd.dat'
+
+def configure_power_save_gpio(use_eeprom_config):
+    if int(use_eeprom_config) == 1:
+        #7394 STA using EEPROM B/D (host_gpio_out(15) --> target_gpio_in(12))
+        ps_gpio_arg = " power_save_gpio=15,12,1"
+    else:
+        #7394 STA (host_gpio_out(17) --> target_gpio_in(14))
+        ps_gpio_arg = " power_save_gpio=17,14,1"
+
+    return ps_gpio_arg
 
 def argv_print():
     print("------------------------------")
@@ -564,8 +566,8 @@ def setModuleParam():
     sw_enc_arg =  cqm_arg = listen_int_arg = drv_dbg_arg = \
     sbi_arg = discard_deauth_arg = dbg_fc_arg = kr_band_arg = legacy_ack_arg = \
     be_arg = rs_arg = beacon_bypass_arg = ps_gpio_arg = bd_name_arg = \
-    support_ch_width_arg = ps_pretend_arg = sg_band_arg = duty_cycle_arg = \
-    cca_thresh_arg = twt_arg = auth_control_arg = tw_band_arg = ""
+    support_ch_width_arg = ps_pretend_arg = duty_cycle_arg = cca_thresh_arg = \
+    twt_arg = auth_control_arg = ""
 
     # Check ft232h_usb_spi
     if int(ft232h_usb_spi) > 0:
@@ -604,9 +606,8 @@ def setModuleParam():
     # module param for power_save
     # default: power_save(0: active mode) sleep_duration(0,0)
     if strSTA() == 'STA' and int(power_save) > 0:
-        #7393/7394 STA (host_gpio_out(17) --> target_gpio_in(14))
-        if str(model) == "7393" or str(model) == "7394":
-            ps_gpio_arg = " power_save_gpio=17,14,1"
+        if str(model) == "7394":
+            ps_gpio_arg = configure_power_save_gpio(use_eeprom_config)
         power_save_arg = " power_save=" + str(power_save)
         if int(power_save) == 3:
             sleep_duration_arg = " sleep_duration=" + re.sub(r'[^0-9]','',sleep_duration)
@@ -620,9 +621,8 @@ def setModuleParam():
     # default: idle_mode(0: disabled)
     if strSTA() == 'STA' and int(idle_mode) == 1:
         idle_mode_arg = " idle_mode=1"
-        #7393/7394 STA (host_gpio_out(17) --> target_gpio_in(14))
-        if str(model) == "7393" or str(model) == "7394":
-            ps_gpio_arg = " power_save_gpio=17,14,1"
+        if str(model) == "7394":
+            ps_gpio_arg = configure_power_save_gpio(use_eeprom_config)
 
     if int(duty_cycle_enable) == 1:
         duty_cycle_arg = " set_duty_cycle="+str(duty_cycle_enable)+","+str(duty_cycle_window)+","+str(duty_cycle_duration)
@@ -662,7 +662,9 @@ def setModuleParam():
 
     # module param for short beacon
     # default: enable_short_bi(1: Short Beacon enabled)
-    if int(short_bcn_enable) == 0:
+    if int(short_bcn_enable) == 1:
+        sbi_arg = " enable_short_bi=1"
+    elif int(short_bcn_enable) == 0:
         sbi_arg = " enable_short_bi=0"
 
     # module param for legacy ack mode
@@ -692,20 +694,6 @@ def setModuleParam():
         kr_band_arg = " kr_band=1"
     elif str(sys.argv[3]) == 'K2':
         kr_band_arg = " kr_band=2"
-
-    # module param for SG Band (SG only)
-    # default: not defined(-1) (8:S8(SG 866-869 MHz), 9:S9(SG 920-925 MHz))
-    if str(sys.argv[3]) == 'S8':
-        sg_band_arg = " sg_band=8"
-    elif str(sys.argv[3]) == 'S9':
-        sg_band_arg = " sg_band=9"
-
-    # module param for TW Band (TW only)
-    # default: not defined(-1) (8:T8(TW 8xxMHz), 9:T9(TW 9xxMHz))
-    if str(sys.argv[3]) == 'T8':
-        tw_band_arg = " tw_band=8"
-    elif str(sys.argv[3]) == 'T9':
-        tw_band_arg = " tw_band=9"
 
     # module param for deauth-discard on STA (test only)
     # default: discard_deauth(0: disabled)
@@ -763,8 +751,7 @@ def setModuleParam():
                  cqm_arg + listen_int_arg + drv_dbg_arg + \
                  sbi_arg + discard_deauth_arg + dbg_fc_arg + kr_band_arg + legacy_ack_arg + \
                  be_arg + rs_arg + beacon_bypass_arg + ps_gpio_arg + bd_name_arg + support_ch_width_arg + \
-                 ps_pretend_arg + sg_band_arg + duty_cycle_arg + cca_thresh_arg + twt_arg + auth_control_arg + \
-                 tw_band_arg
+                 ps_pretend_arg + duty_cycle_arg + cca_thresh_arg + twt_arg + auth_control_arg
 
     return module_param
 
@@ -824,9 +811,10 @@ def run_common():
     print("[5] Set guard interval: " + guard_int)
     os.system('/home/pi/nrc_pkg/script/cli_app set gi ' + guard_int)
 
-    print("[*] Start DHCPCD and DNSMASQ")
-    startDHCPCD()
-    startDNSMASQ()
+    if strSTA() != 'STA' and strSTA() != 'AP':
+        print("[*] Start DHCPCD and DNSMASQ")
+        startDHCPCD()
+        startDNSMASQ()
 
 def run_sta(interface):
     country = str(sys.argv[3])
@@ -878,12 +866,17 @@ def run_sta(interface):
             os.system("sudo wpa_cli wps_pbc")
     time.sleep(3)
 
+    if strSTA() == 'STA':
+        print("[*] Start DHCPCD and DNSMASQ")
+        startDHCPCD()
+        startDNSMASQ()
+
     print("[7] Connect and DHCP")
     if int(use_bridge_setup) > 0:
         interface = 'br0'
     ret = check(interface)
     while ret == '':
-        print("Waiting for IP")
+
         time.sleep(5)
         ret = check(interface)
 
@@ -910,6 +903,11 @@ def launch_hostapd(interface, orig_hostapd_conf_file, country, debug, channel):
 
 
 def run_ap(interface):
+    if strSTA() == 'AP':
+        print("[*] Start DHCPCD and DNSMASQ")
+        startDHCPCD()
+        startDNSMASQ()
+
     country = str(sys.argv[3])
     if checkEUCountry():
         country="EU"

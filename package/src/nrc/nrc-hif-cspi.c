@@ -30,6 +30,7 @@
 #include <linux/kthread.h>
 #endif
 
+#include "nrc-hif-cspi.h"
 #include "nrc-init.h"
 #include "nrc-fw.h"
 #include "nrc-hif.h"
@@ -304,9 +305,23 @@ static ssize_t _c_spi_read(struct spi_device *spi, u8 *buf, ssize_t size)
 	u8 rx[8];
 #endif
 	ssize_t status;
+	u8 *aligned_buf = NULL;
+	u8 *original_buf = buf;
+	u8 *aligned_buf_start = NULL;
 
 	if (size == 0 || buf == NULL)
 		return -EINVAL;
+
+	if ((uintptr_t)buf % 4 != 0) {
+		aligned_buf = (u8 *)kmalloc(size + 4, GFP_KERNEL);  // Allocate memory in kernel space
+		if (!aligned_buf) {
+			return -ENOMEM;
+		}
+
+		// Align the buffer to 4-byte boundary
+		aligned_buf_start = (u8 *)(((uintptr_t)aligned_buf + 3) & ~3);  // Align to 4-byte boundary
+		buf = aligned_buf_start;  // Use the aligned buffer for SPI transfer
+	}
 
 	cmd = C_SPI_READ | C_SPI_BURST | C_SPI_FIXED;
 	cmd |= C_SPI_ADDR(C_SPI_TXQ_WINDOW) | C_SPI_LEN(size);
@@ -327,15 +342,28 @@ static ssize_t _c_spi_read(struct spi_device *spi, u8 *buf, ssize_t size)
 	status = spi_sync_transfer(spi, xfer, ARRAY_SIZE(xfer));
 	if (status < 0) {
 		dev_err(nw->dev, "[%s] reading spi failed(%zd).", __func__, status);
+		if (aligned_buf) {
+			kfree(aligned_buf);  // Free the allocated buffer if it was used
+		}
+		buf = original_buf;
 		return status;
 	}
 
 #ifndef CONFIG_SPI_HALF_DUPLEX
 	if (WARN_ON_ONCE(rx[7] != C_SPI_ACK)) {
 		nrc_common_dbg("[%s] try to read register but SPI ACK is invalid\n", __func__);
+		if (aligned_buf) {
+			kfree(aligned_buf);  // Free the allocated buffer if it was used
+		}
+		buf = original_buf;
 		return -EIO;
 	}
 #endif
+
+	if (aligned_buf) {
+		kfree(aligned_buf);
+	}
+	buf = original_buf;
 
 	return size;
 }
@@ -350,9 +378,24 @@ static ssize_t _c_spi_write(struct spi_device *spi, u8 *buf, ssize_t size)
 	u8 rx[8];
 #endif
 	ssize_t status;
+	u8 *aligned_buf = NULL;  // Declare aligned buffer pointer
+	u8 *original_buf = buf;
+	u8 *aligned_buf_start = NULL;
 
 	if (size == 0 || buf == NULL)
 		return -EINVAL;
+
+	if ((uintptr_t)buf % 4 != 0) {
+		aligned_buf = (u8 *)kmalloc(size + 4, GFP_KERNEL);  // Allocate memory in kernel space
+		if (!aligned_buf) {
+			return -ENOMEM;
+		}
+
+		// Align the buffer to 4-byte boundary
+		aligned_buf_start = (u8 *)(((uintptr_t)aligned_buf + 3) & ~3);  // Align to 4-byte boundary
+		memcpy(aligned_buf_start, buf, size);
+		buf = aligned_buf_start;  // Use the aligned buffer for SPI transfer
+	}
 
 	cmd = C_SPI_WRITE | C_SPI_BURST | C_SPI_FIXED;
 	cmd |= C_SPI_ADDR(C_SPI_RXQ_WINDOW) | C_SPI_LEN(size);
@@ -371,19 +414,31 @@ static ssize_t _c_spi_write(struct spi_device *spi, u8 *buf, ssize_t size)
 	spi_set_transfer(&xfer[3], &dummy, NULL, sizeof(dummy));
 
 	status = spi_sync_transfer(spi, xfer, ARRAY_SIZE(xfer));
-	if (status < 0)
-	{
+	if (status < 0) {
 		dev_err(nw->dev, "[%s] writing spi failed(%zd).", __func__, status);
+		if (aligned_buf) {
+			kfree(aligned_buf);  // Free the allocated buffer on error
+		}
+		buf = original_buf;
 		return status;
 	}
 
 #ifndef CONFIG_SPI_HALF_DUPLEX
-	if (WARN_ON_ONCE(rx[7] != C_SPI_ACK))
-	{
+	if (WARN_ON_ONCE(rx[7] != C_SPI_ACK)) {
 		// nrc_common_dbg("[%s] try to read register but SPI ACK is invalid\n", __func__);
+		if (aligned_buf) {
+			kfree(aligned_buf);  // Free the allocated buffer on error
+		}
+		buf = original_buf;
 		return -EIO;
 	}
 #endif
+
+	// Free the aligned buffer if it was allocated
+	if (aligned_buf) {
+		kfree(aligned_buf);
+	}
+	buf = original_buf;
 
 	return size;
 }
@@ -471,7 +526,7 @@ static struct sk_buff *spi_rx_skb(struct spi_device *spi,
 		spi_update_status(priv->spi);
 
 	if (c_spi_num_slots(priv, RX_SLOT) < priv->max_slot_num) {
-		trace_nrc_hif_tx_slot(priv, RX_SLOT, "enable irq");
+		trace_nrc_hif_rx_slot(priv, RX_SLOT, "enable irq");
 		c_spi_enable_irq(spi, true, CSPI_EIRQ_S_ENABLE);
 	}
 
@@ -1322,7 +1377,7 @@ update:
 	if (c_spi_num_slots(priv, RX_SLOT) >= (priv->max_slot_num + EXTRA_SLOT)
 			 && c_spi_num_slots(priv, TX_SLOT) >= priv->max_slot_num) {
 		trace_nrc_hif_tx_slot(priv, TX_SLOT, "disable irq");
-		trace_nrc_hif_tx_slot(priv, RX_SLOT, "disable irq");
+		trace_nrc_hif_rx_slot(priv, RX_SLOT, "disable irq");
 		c_spi_enable_irq(spi, false, CSPI_EIRQ_S_ENABLE);
 	}
 
@@ -1954,7 +2009,7 @@ int spi_test(struct nrc_hif_device *hdev)
 	return 0;
 }
 
-void spi_wakeup(struct nrc_hif_device *hdev)
+static void spi_wakeup(struct nrc_hif_device *hdev)
 {
 	struct nrc_spi_priv *priv = hdev->priv;
 	struct spi_device *spi = priv->spi;
@@ -2187,12 +2242,16 @@ static struct nrc_hif_ops spi_ops = {
 #define MAX_ENABLE_IRQ_RETRY	3
 #define MAX_ENABLE_IRQ_DELAY	5
 
+static DEFINE_MUTEX(irq_mutex);
+
 static void c_spi_enable_irq(struct spi_device *spi, bool enable, u8 mask)
 {
 	int ret = 0, retry = 0;
 	u8 m, e = 0x00;
 	static u8 shadow = 0;
 	u8 tmp;
+
+	mutex_lock(&irq_mutex);
 
 	if (mask == CSPI_EIRQ_A_ENABLE) {
 		//printk("EIRQ ENABLE\n");
@@ -2242,7 +2301,7 @@ static void c_spi_enable_irq(struct spi_device *spi, bool enable, u8 mask)
 
 	shadow = e;
 skip:
-	;;
+	mutex_unlock(&irq_mutex);
 }
 
 static void c_spi_config(struct nrc_spi_priv *priv)
@@ -2282,10 +2341,10 @@ static void c_spi_config(struct nrc_spi_priv *priv)
 		nrc_dbg(NRC_DBG_HIF, "Firmware");
 
 	c_spi_enable_irq(priv->spi, false, CSPI_EIRQ_A_ENABLE); /* cleanup shadow reg */
-	c_spi_enable_irq(priv->spi, priv->spi->irq >= 0 ? true : false, CSPI_EIRQ_A_ENABLE);
+	c_spi_enable_irq(priv->spi, spi_gpio_irq >= 0 ? true : false, CSPI_EIRQ_A_ENABLE);
 }
 
-int nrc_cspi_gpio_alloc(struct spi_device *spi)
+static int nrc_cspi_gpio_alloc(struct spi_device *spi)
 {
 #if defined(SPI_DBG)
 	/* Claim gpio used for debugging */
@@ -2313,13 +2372,13 @@ int nrc_cspi_gpio_alloc(struct spi_device *spi)
 	}
 
 #ifndef CONFIG_SPI_USE_DT /* spi->irq is real irq number, not gpio number by setting in dts */
-	if (spi->irq >= 0) {
+	if (spi_gpio_irq >= 0) {
 		/* Claim gpio used for irq */
 		if (gpio_request(spi_gpio_irq, "nrc-spi-irq") < 0) {
-			dev_err(&spi->dev, "[Error] gpio_reqeust() is failed (%d)", spi->irq);
+			dev_err(&spi->dev, "[Error] gpio_reqeust() is failed (%d)", spi_gpio_irq);
 			goto err_free_all;
 		}
-		gpio_direction_input(spi->irq);
+		gpio_direction_input(spi_gpio_irq);
 	}
 #endif
 
@@ -2344,7 +2403,7 @@ err:
 	return -EINVAL;
 }
 
-void nrc_cspi_gpio_free(struct spi_device *spi)
+static void nrc_cspi_gpio_free(struct spi_device *spi)
 {
 
 #if defined(SPI_DBG)
@@ -2363,7 +2422,7 @@ void nrc_cspi_gpio_free(struct spi_device *spi)
 	}
 
 #ifndef CONFIG_SPI_USE_DT /* spi->irq is real irq number, not gpio number by setting in dts */
-	if (spi->irq >= 0) {
+	if (spi_gpio_irq >= 0) {
 		gpio_free(spi_gpio_irq);
 	}
 #endif
@@ -2602,7 +2661,7 @@ static struct spi_device *nrc_create_spi_device (void)
 	/* Apply module parameters */
 	bi.bus_num = spi_bus_num;
 	bi.chip_select = spi_cs_num;
-	bi.irq = spi_gpio_irq >= 0 ? gpio_to_irq(spi_gpio_irq) : -1;
+	bi.irq = (spi_gpio_irq >= 0 && spi_polling_interval <= 0) ? gpio_to_irq(spi_gpio_irq) : -1;
 	bi.max_speed_hz = hifspeed;
 
 	/* Find the spi master that our device is attached to */
@@ -2619,10 +2678,19 @@ static struct spi_device *nrc_create_spi_device (void)
 		dev_err(&master->dev, "Failed to instantiate a new spi device.");
 		return NULL;
 	}
-
+	/*
+	 * In kernel version 6.8 or higher, multiple cs is supporting.
+	 * Since we do not support multiple cs, we can use chip_select index 0.
+	 * However, it appears that the function below may need to be used in the future.
+	 * example) int cs = spi_get_chipselect(spi, 0);
+	 */
 	dev_info(&spi->dev, "SPI Device Created (bus_num:%d, cs_num:%d, irq_num:%d, max_speed:%d\n",
 			spi->master->bus_num,
+#if KERNEL_VERSION(6, 8, 0) <= NRC_TARGET_KERNEL_VERSION
+			spi->chip_select[0],
+#else
 			spi->chip_select,
+#endif
 			spi->irq,
 			spi->max_speed_hz);
 	return spi;
