@@ -53,12 +53,6 @@ static int cmd_gpio(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_exit(cmd_tbl_t *t, int argc, char *argv[]);
 
 /*******************************************************************************
-* system commands
-*******************************************************************************/
-static int cmd_start_ap(cmd_tbl_t *t, int argc, char *argv[]);
-static int cmd_stop_ap(cmd_tbl_t *t, int argc, char *argv[]);
-
-/*******************************************************************************
 * sub commands on show
 *******************************************************************************/
 /* 1st sub commands on show */
@@ -71,7 +65,6 @@ static int cmd_show_ampdu(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_mac(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_signal(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_maxagg(cmd_tbl_t *t, int argc, char *argv[]);
-static int cmd_show_bcmc(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_duty(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_autotxgain(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_cal_use(cmd_tbl_t *t, int argc, char *argv[]);
@@ -92,7 +85,6 @@ static int cmd_show_sysconfig(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_bcn_mcs(cmd_tbl_t *t, int argc, char *argv[]);
 
 static int cmd_show_rc(cmd_tbl_t *t, int argc, char *argv[]);
-static int cmd_show_rc_pf(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_rc_param(cmd_tbl_t *t, int argc, char *argv[]);
 
 /* 2nd sub commands on show */
@@ -114,7 +106,6 @@ static void cmd_show_mac_result_display(char *response, int dir, int type);
 /* 1st sub commands on set */
 static int cmd_set_guard_interval(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_max_aggregation(cmd_tbl_t *t, int argc, char *argv[]);
-static int cmd_set_bcmc(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_ackmode(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_rate_control(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_duty(cmd_tbl_t *t, int argc, char *argv[]);
@@ -129,7 +120,6 @@ static int cmd_set_cts(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_tx_time(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_drop_frame(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_temp_sensor(cmd_tbl_t *t, int argc, char *argv[]);
-static int cmd_set_s1g_freq(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_cca_thresh(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_color(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_deepsleep_gpio(cmd_tbl_t *t, int argc, char *argv[]);
@@ -233,10 +223,9 @@ cmd_tbl_t show_sub_list[] = {
 	{ "edca", cmd_show_edca, "show EDCA parameters", "show edca",  SHOW_EDCA_KEY_LIST, 0},
 	{ "uinfo", cmd_show_umac_info, "show UMAC information", "show uinfo [vif_id]",  "", 0},
 	{ "ampdu", cmd_show_ampdu, "show/clear AMPDU count", "show ampdu | show ampdu clear",  "", 0},
-	{ "mac", cmd_show_mac, "mac command", "show mac {tx|rx|clear} {stats|clear}",  "", 0},
+	{ "mac", cmd_show_mac, "mac command", "show mac {tx|rx|clear} {stats|clear}",  "", 1},
 	{ "signal", cmd_show_signal, "show rssi/snr, {options} are only valid in cli_app prompt", "show signal {start|stop} [interval] [number]",  SHOW_SIGNAL_KEY_LIST, 0},
 	{ "maxagg", cmd_show_maxagg, "show max aggregation", "show maxagg",  "", 0},
-	{ "bcmc", cmd_show_bcmc, "show bcmc configuration", "show bcmc",  "", 0},
 	{ "duty", cmd_show_duty, "show duty cycle", "show duty",  SHOW_DUTY_KEY_LIST, 0},
 	{ "autotxgain", cmd_show_autotxgain, "show autotxgain", "show autotxgain",  SHOW_AUTOTXGAIN_KEY_LIST, 0},
 	{ "cal_use", cmd_show_cal_use, "show cal_use", "show cal_use",  SHOW_CAL_USE_KEY_LIST, 0},
@@ -264,7 +253,6 @@ cmd_tbl_t show_sub_list[] = {
 cmd_tbl_t set_sub_list[] = {
 	{ "gi", cmd_set_guard_interval, "set guard interval", "set gi {auto|short|long} {vif_id(0|1)}", "", 0},
 	{ "maxagg", cmd_set_max_aggregation, "set aggregation", "set maxagg {AC(0-3)} {Max(0-8(1Mhz),0-16(2,4Mhz),0:off)} {size:default=0}", SET_MAXAGG_KEY_LIST, 0},
-	{ "bcmc", cmd_set_bcmc, "set bcmc filter", "set bcmc [type|mac|clear] value", "", 0},
 	{ "ack_mode", cmd_set_ackmode, "set ack mode", "set ack_mode {no|ndp|normal|show}", SET_ACK_MODE_LIST, 0},
 	{ "rc", cmd_set_rate_control, "set rate control", "set rc {on|off} [vif_id] [mode]", SET_RC_KEY_LIST, 0},
 	{ "duty", cmd_set_duty, "set duty cycle", "set duty {on|off} {duty window} {tx duration}", SET_DUTY_KEY_LIST, 0},
@@ -321,8 +309,8 @@ cmd_tbl_t show_stats_sub_list[] = {
 
 /* 2rd sub command list on show mac */
 cmd_tbl_t show_mac_sub_list[] = {
-	{ "tx", cmd_show_mac_tx, "show TX Statistics", "show mac tx {stats|clear}",  "", 0},
-	{ "rx", cmd_show_mac_rx, "show RX Statistics", "show mac rx {stats|clear}",  "", 0},
+	{ "tx", cmd_show_mac_tx, "show/clear TX Statistics", "show mac tx {stats|clear}",  "", 1},
+	{ "rx", cmd_show_mac_rx, "show/clear RX Statistics", "show mac rx {stats|clear}",  "", 1},
 	{ "clear", cmd_show_mac_clear, "clear TX/RX Statistics", "show mac clear",  "", 0},
 };
 
@@ -338,12 +326,6 @@ cmd_tbl_t show_mac_rx_sub_list[] = {
 	{ "clear", cmd_show_mac_clear, "clear RX Statistics", "show mac rx clear",  "", 0},
 };
 
-/* system command list*/
-cmd_tbl_t sys_cmd_list[] = {
-	{ "start-ap", cmd_start_ap,	"", "  ",  "", 0},
-	{ "stop-ap", cmd_stop_ap,	"", " ",  "", 0},
-};
-
 /*******************************************************************************
 * function for getting command list
 *******************************************************************************/
@@ -354,11 +336,6 @@ cmd_tbl_t * get_cmd_list(enum cmd_list_type type, int *list_size, int *list_dept
 		case MAIN_CMD:
 			ret = cli_list;
 			*list_size = sizeof(cli_list)/sizeof(cmd_tbl_t);
-			*list_depth = 0;
-			break;
-		case SYS_CMD:
-			ret= sys_cmd_list;
-			*list_size = sizeof(sys_cmd_list)/sizeof(cmd_tbl_t);
 			*list_depth = 0;
 			break;
 		case SHOW_SUB_CMD:
@@ -534,27 +511,6 @@ int run_shell_direct_cmd(const char *param_str, ...)
 		ret = CMD_RET_FAILURE;
 	}
 	return ret;
-}
-
-/*******************************************************************************
-* system command
-*******************************************************************************/
-static int cmd_start_ap(cmd_tbl_t *t, int argc, char *argv[])
-{
-	char cli_str[NRC_MAX_CMDLINE_SIZE];
-	sprintf(cli_str, "start-ap");
-	system(cli_str);
-	printf("%s : %s [Not Implemented]\n", __func__, t->name);
-	return CMD_RET_SUCCESS;
-}
-
-static int cmd_stop_ap(cmd_tbl_t *t, int argc, char *argv[])
-{
-	char cli_str[NRC_MAX_CMDLINE_SIZE];
-	sprintf(cli_str, "stop-ap");
-	system(cli_str);
-	printf("%s : %s [Not Implemented]\n", __func__, t->name);
-	return CMD_RET_SUCCESS;
 }
 
 /*******************************************************************************
@@ -838,19 +794,6 @@ static int cmd_show_ampdu(cmd_tbl_t *t, int argc, char *argv[])
 			printf("%s",response);
 			print_line('-', print_line_len,"", 0,0);
 		}
-	}
-	return ret;
-}
-
-static int cmd_show_bcmc (cmd_tbl_t *t, int argc, char *argv[])
-{
-	int ret = CMD_RET_FAILURE;
-	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int print_line_len = 20;
-
-	ret = run_shell_cmd(t, argc, argv, "show bcmc", response, sizeof(response));
-	if(ret == CMD_RET_SUCCESS){
-		printf("%s",response);
 	}
 	return ret;
 }
@@ -2051,22 +1994,6 @@ static int cmd_set_max_aggregation(cmd_tbl_t *t, int argc, char *argv[])
 	return ret;
 }
 
-static int cmd_set_bcmc(cmd_tbl_t *t, int argc, char *argv[])
-{
-	int ret = CMD_RET_FAILURE;
-	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	const int display_per_line= 4;
-
-	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
-
-	ret = run_shell_cmd(t, argc, argv, "set bcmc", response, sizeof(response));
-	if(ret == CMD_RET_SUCCESS){
-		cmd_result_parse((char*)t->key_list, response, display_per_line);
-	}
-
-	return ret;
-}
-
 static int cmd_set_ackmode(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
@@ -2460,15 +2387,6 @@ static int cmd_set_temp_sensor(cmd_tbl_t *t, int argc, char *argv[])
 		printf("%s\n", response);
 	}
 	return ret;
-}
-
-static int cmd_set_s1g_freq(cmd_tbl_t *t, int argc, char *argv[])
-{
-	if(argc != 4){
-		printf("usage : %s\n", (char*)t->usage);
-		return CMD_RET_FAILURE;
-	}
-	return run_shell_cmd(t, argc, argv, "set s1g_freq", NULL, 0);
 }
 
 static int cmd_set_cca_thresh(cmd_tbl_t *t, int argc, char *argv[])
