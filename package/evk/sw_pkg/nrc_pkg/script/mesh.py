@@ -2,7 +2,7 @@ import os
 import time
 import subprocess
 from start import check
-from mesh_add_peer import addPeer, checkPeer
+from mesh_add_peer import addPeer, checkPeer, checkMeshJoin
 
 def isInterface(interface):
     if os.path.isdir("/sys/class/net/" + interface):
@@ -93,7 +93,7 @@ def run_mp(interface, country, security, debug, peermac, ip, batman):
         else:
             os.system("sed -i " + '"s/ no_auto_peer=1/ #no_auto_peer=1/g"  /home/pi/nrc_pkg/script/conf/' + country + '/mp_halow_sae.conf ')
         os.system("sudo wpa_supplicant -i" + interface + " -c /home/pi/nrc_pkg/script/conf/" + country + "/mp_halow_sae.conf " + debug + " &")
-    time.sleep(1)
+    checkMeshJoin(interface)
 
     if batman != 0:
         os.system("sudo iw dev " + interface + " set mesh_param mesh_fwding 0")
@@ -166,7 +166,7 @@ def run_mpp(interface, country, security, debug, peermac, ip, batman):
         else:
             os.system("sed -i " + '"s/ no_auto_peer=1/ #no_auto_peer=1/g"  /home/pi/nrc_pkg/script/conf/' + country + '/mp_halow_sae.conf ')
         os.system("sudo wpa_supplicant -i" + interface + " -c /home/pi/nrc_pkg/script/conf/" + country + "/mp_halow_sae.conf " + debug + " &")
-    time.sleep(1)
+    checkMeshJoin(interface)
 
     if ip != 'nodhcp':
         print("[8] Start NAT")
@@ -255,7 +255,7 @@ def run_map(wlan, mesh, country, security, debug, peermac, ip, batman):
         else:
             os.system("sed -i " + '"s/ no_auto_peer=1/ #no_auto_peer=1/g"  /home/pi/nrc_pkg/script/conf/' + country + '/mp_halow_sae.conf ')
         os.system("sudo wpa_supplicant -i" + mesh + " -c /home/pi/nrc_pkg/script/conf/" + country + "/mp_halow_sae.conf " + debug + " &")
-    time.sleep(1)
+    checkMeshJoin(mesh)
 
     if batman != 0:
         os.system("sudo iw dev " + mesh + " set mesh_param mesh_fwding 0")

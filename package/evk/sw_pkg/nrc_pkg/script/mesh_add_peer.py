@@ -22,6 +22,22 @@ def execute(cmd):
     else:
         return subprocess.check_output(cmd, shell=True)
 
+def checkMeshJoin(interface):
+    found = 0
+    print("Waiting for Mesh Join: " + interface)
+    while found == 0:
+        cmd = "sudo iw dev " + interface + " info"
+        line = execute(cmd).strip().split('\n')
+        for i in line:
+            string = i.split(' ')
+            if string[0] == '\ttype':
+                if string[1] == 'mesh':
+                    print("OK")
+                    found = 1
+                else:
+                    os.system("sudo wpa_cli -i " + interface + " scan > /dev/null 2>&1")
+        time.sleep(1)
+
 def addPeer(interface, mac, routing):
     found = 0
     print("Waiting for Peer: " + mac)

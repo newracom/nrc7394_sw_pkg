@@ -56,6 +56,9 @@ void nrc_mac_free_hw (struct ieee80211_hw *hw);
 int nrc_register_hw(struct nrc *nw);
 void nrc_unregister_hw(struct nrc *nw);
 
+void nrc_ampdu_mon_init(void );
+void nrc_ampdu_mon_deinit(void );
+
 void nrc_kick_txq(struct nrc *hw);
 int nrc_handle_frame(struct nrc *nw, struct sk_buff *skb);
 void nrc_mac_cancel_hw_scan(struct ieee80211_hw *hw, struct ieee80211_vif *vif);
@@ -99,7 +102,11 @@ void nrc_mac_add_tlv_channel(struct sk_buff *skb,
 #endif
 int nrc_mac_sta_remove(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 		       struct ieee80211_sta *sta);
+#if KERNEL_VERSION(6,11,0) <= NRC_TARGET_KERNEL_VERSION
+void nrc_mac_stop(struct ieee80211_hw *hw, bool suspend);
+#else
 void nrc_mac_stop(struct ieee80211_hw *hw);
+#endif
 
 int nrc_mac_rx(struct nrc *nw, struct sk_buff *skb);
 void nrc_mac_trx_init(struct nrc *nw);
@@ -126,6 +133,8 @@ void nrc_send_beacon_loss(struct nrc *nw);
 
 void nrc_mac_roc_finish(struct work_struct *work);
 void nrc_rm_vendor_ie_wowlan_pattern(struct work_struct *work);
+void nrc_vcmd_backup_set_wdt_flag(u8 vif_id);
+
 #if KERNEL_VERSION(4, 15, 0) > LINUX_VERSION_CODE
 void nrc_probe_timer(unsigned long data);
 void nrc_bcn_mon_timer(unsigned long data);
@@ -149,4 +158,15 @@ void nrc_cleanup_ba_session_sta (void *data, struct ieee80211_sta *sta);
 void nrc_cleanup_ba_session_vif (struct nrc *nw, struct ieee80211_vif *vif);
 void nrc_cleanup_ba_session_all (struct nrc *nw);
 
+int nrc_mac_restart (struct nrc *nw);
+
+unsigned int nrc_ac_credit(struct nrc *nw, int ac);
+const char *iftype_string(enum nl80211_iftype iftype);
+void scan_complete(struct ieee80211_hw *hw, bool aborted);
+void nrc_mac_set_wakeup(struct ieee80211_hw *hw, bool enabled);
+int nrc_mac_resume(struct ieee80211_hw *hw);
+int nrc_mac_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan);
+void remotecmd_callback(struct timer_list *t);
+void remotecmd_schedule_off(struct wiphy *wiphy, struct wireless_dev *wdev,
+				u8 subcmd, const u8 cntdwn, u16 beacon_int);
 #endif

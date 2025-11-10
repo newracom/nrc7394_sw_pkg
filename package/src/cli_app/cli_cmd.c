@@ -53,12 +53,6 @@ static int cmd_gpio(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_exit(cmd_tbl_t *t, int argc, char *argv[]);
 
 /*******************************************************************************
-* system commands
-*******************************************************************************/
-static int cmd_start_ap(cmd_tbl_t *t, int argc, char *argv[]);
-static int cmd_stop_ap(cmd_tbl_t *t, int argc, char *argv[]);
-
-/*******************************************************************************
 * sub commands on show
 *******************************************************************************/
 /* 1st sub commands on show */
@@ -85,12 +79,12 @@ static int cmd_show_tx_time(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_cca_thresh(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_app_version(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_xtal_status(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_show_clock_count(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_optimal_channel(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_sysconfig(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_bcn_mcs(cmd_tbl_t *t, int argc, char *argv[]);
 
 static int cmd_show_rc(cmd_tbl_t *t, int argc, char *argv[]);
-static int cmd_show_rc_pf(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_rc_param(cmd_tbl_t *t, int argc, char *argv[]);
 
 /* 2nd sub commands on show */
@@ -126,7 +120,6 @@ static int cmd_set_cts(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_tx_time(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_drop_frame(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_temp_sensor(cmd_tbl_t *t, int argc, char *argv[]);
-static int cmd_set_s1g_freq(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_cca_thresh(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_color(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_deepsleep_gpio(cmd_tbl_t *t, int argc, char *argv[]);
@@ -134,9 +127,13 @@ static int cmd_set_report(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_support_ch_width(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_ampdu_mode(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_bcn_mcs(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_set_bcmc_mcs(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_set_dhcp_mcs(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_set_mgmt_mcs(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_bgscan_trx(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_scan_period(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_mesh_rssi_threshold(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_set_1m_prim_loc(cmd_tbl_t *t, int argc, char *argv[]);
 
 
 /*******************************************************************************
@@ -152,6 +149,7 @@ static int cmd_set_rc_param(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_test_mcs(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_test_country(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_test_cont_tx(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_test_sine_tx(cmd_tbl_t *t, int argc, char *argv[]);
 
 /*******************************************************************************
 * sub commands on gpio
@@ -199,6 +197,8 @@ const char not_matched_cc_str[] = "not_matched_country";
 const char not_matched_cc_msg[] = "is not the currently set country";
 const char not_supported_cc_str[] = "not_supported_country";
 const char not_supported_cc_msg[] = "is not supported country";
+const char no_channel_cc_str[] = "no_channels_available";
+const char no_channel_msg[] = "There are no channels available";
 
 /*******************************************************************************
 * command list
@@ -245,7 +245,8 @@ cmd_tbl_t show_sub_list[] = {
 	{ "rc", cmd_show_rc, "show tx's retry mcs info, maxtp/tp2/maxp/lowest","show rc [vif_id] [aid]", SHOW_RC_KEY_LIST, 0},
 	{ "rc_param", cmd_show_rc_param, "show configured rate control parameter", "show rc_param", SHOW_RC_PARAM_KEY_LIST, 0},
 	{ "xtal_status", cmd_show_xtal_status, "show xtal_status", "show xtal_status",  SHOW_XTAL_STATUS_LIST, 0},
-	{ "bcn_mcs", cmd_show_bcn_mcs, "show beacon mcs", "show bcn_mcs [vif_id]",  "", 1},
+	{ "clock_count", cmd_show_clock_count, "modem get_clock_count {xtal|lpo}", "show clock_count {xtal|lpo}",  SHOW_CLOCK_COUNT_LIST, 0},
+	{ "bcn_mcs", cmd_show_bcn_mcs, "show beacon mcs", "show bcn_mcs [vif_id]",  "", 0},
 };
 
 /* sub command list on set */
@@ -273,18 +274,24 @@ cmd_tbl_t set_sub_list[] = {
 	{ "report", cmd_set_report, "set lmac periodic report", "set report {on/off}", "", 0},
 	{ "support_ch_width", cmd_set_support_ch_width, "set supported ch width in s1g capa ie (0:1/2M, 1:1/2/4M)", "set support_ch_width [0|1]", "", 0},
 	{ "ampdu_mode", cmd_set_ampdu_mode, "set ampdu_mode ", "set ampdu_mode [disable|manual|auto]", "", 0},
-	{ "bcn_mcs", cmd_set_bcn_mcs, "set bcn_mcs ", "set bcn_mcs [vif_id] [10|0|1|2|3|4|5|6|7]\n", "", 0},
+	{ "bcn_mcs", cmd_set_bcn_mcs, "set bcn_mcs ", "set bcn_mcs [vif_id] [10|0|1|2|3|4|5|6|7]", "", 0},
+	{ "bcmc_mcs", cmd_set_bcmc_mcs, "set bcmc_mcs ", "set bcmc_mcs [on|off] [10|0|1|2|3|4|5|6|7]", "", 0},
+	{ "dhcp_mcs", cmd_set_dhcp_mcs, "set dhcp_mcs ", "set dhcp_mcs [on|off] [10|0|1|2|3|4|5|6|7]", "", 0},
+	{ "mgmt_mcs", cmd_set_mgmt_mcs, "set mgmt_mcs ", "set mgmt_mcs [on|off] [10|0|1|2|3|4|5|6|7]", "", 0},
 	{ "rc_param", cmd_set_rc_param, "set rate control parameter", "set rc_param {1|2|3|4|5} {1|2|3|4|5|6|7} {1|..|255}", SET_RC_PARAM_KEY_LIST, 0},
 	{ "bgscan_trx", cmd_set_bgscan_trx, "set bgscan_trx ", "set bgscan_trx [1:enable|0:disable] [wait time operation ch for rx: (0~100)msec]", "", 0},
 	{ "scan_period", cmd_set_scan_period, "set scan_period", "set scan_period [dwell time (min 20ms)]", "", 0},
 	{ "mesh_rssi_threshold", cmd_set_mesh_rssi_threshold, "set mesh_rssi_threshold ", "set mesh_rssi_threshold {-120~-10dBm}", "", 0},
+	{ "prim_loc", cmd_set_1m_prim_loc, "set 1M primary location for sniffer ", "set prim_loc [0|1|2|3]", "", 0},
+
 };
 
 /* sub command list on test */
 cmd_tbl_t test_sub_list[] = {
 	{ "mcs", cmd_test_mcs, "test mcs", "test mcs [mcs index]", "", 0},
 	{ "country", cmd_test_country, "test country", "test country [country code]", "", 0},
-	{ "cont_tx", cmd_test_cont_tx, "test continuous tx", "test cont_tx {stop} | {freq(in MHz)} {bw(1m|2m|4m)} {mcs} {txpwr}", "", 0},
+	{ "cont_tx", cmd_test_cont_tx, "test continuous tx", "test cont_tx {stop} | {freq(in MHz)} {bw(1m|2m|4m)} {mcs} {txpwr} {wave type: 0(cont)|1(duty 99%)}", "", 0},
+	{ "sine_tx", cmd_test_sine_tx, "test sine wave tx", "test sine_tx {stop} | {freq(MHz)} {bw(1m|2m|4m)} {txpwr}", "", 0},
 };
 
 /* sub command list on gpio */
@@ -302,8 +309,8 @@ cmd_tbl_t show_stats_sub_list[] = {
 
 /* 2rd sub command list on show mac */
 cmd_tbl_t show_mac_sub_list[] = {
-	{ "tx", cmd_show_mac_tx, "show TX Statistics", "show mac tx {stats|clear}",  "", 1},
-	{ "rx", cmd_show_mac_rx, "show RX Statistics", "show mac rx {stats|clear}",  "", 1},
+	{ "tx", cmd_show_mac_tx, "show/clear TX Statistics", "show mac tx {stats|clear}",  "", 1},
+	{ "rx", cmd_show_mac_rx, "show/clear RX Statistics", "show mac rx {stats|clear}",  "", 1},
 	{ "clear", cmd_show_mac_clear, "clear TX/RX Statistics", "show mac clear",  "", 0},
 };
 
@@ -319,12 +326,6 @@ cmd_tbl_t show_mac_rx_sub_list[] = {
 	{ "clear", cmd_show_mac_clear, "clear RX Statistics", "show mac rx clear",  "", 0},
 };
 
-/* system command list*/
-cmd_tbl_t sys_cmd_list[] = {
-	{ "start-ap", cmd_start_ap,	"", "  ",  "", 0},
-	{ "stop-ap", cmd_stop_ap,	"", " ",  "", 0},
-};
-
 /*******************************************************************************
 * function for getting command list
 *******************************************************************************/
@@ -337,11 +338,6 @@ cmd_tbl_t * get_cmd_list(enum cmd_list_type type, int *list_size, int *list_dept
 			*list_size = sizeof(cli_list)/sizeof(cmd_tbl_t);
 			*list_depth = 0;
 			break;
-		case SYS_CMD:
-			ret= sys_cmd_list;
-			*list_size = sizeof(sys_cmd_list)/sizeof(cmd_tbl_t);
-			*list_depth = 0;
-			break;
 		case SHOW_SUB_CMD:
 			ret = show_sub_list;
 			*list_size = sizeof(show_sub_list)/sizeof(cmd_tbl_t);
@@ -352,7 +348,7 @@ cmd_tbl_t * get_cmd_list(enum cmd_list_type type, int *list_size, int *list_dept
 			*list_size = sizeof(show_stats_sub_list)/sizeof(cmd_tbl_t);
 			*list_depth = 2;
 			break;
-		case SHWO_MAC_SUB_CMD:
+		case SHOW_MAC_SUB_CMD:
 			ret = show_mac_sub_list;
 			*list_size = sizeof(show_mac_sub_list)/sizeof(cmd_tbl_t);
 			*list_depth = 2;
@@ -518,27 +514,6 @@ int run_shell_direct_cmd(const char *param_str, ...)
 }
 
 /*******************************************************************************
-* system command
-*******************************************************************************/
-static int cmd_start_ap(cmd_tbl_t *t, int argc, char *argv[])
-{
-	char cli_str[NRC_MAX_CMDLINE_SIZE];
-	sprintf(cli_str, "start-ap");
-	system(cli_str);
-	printf("%s : %s [Not Implemented]\n", __func__, t->name);
-	return CMD_RET_SUCCESS;
-}
-
-static int cmd_stop_ap(cmd_tbl_t *t, int argc, char *argv[])
-{
-	char cli_str[NRC_MAX_CMDLINE_SIZE];
-	sprintf(cli_str, "stop-ap");
-	system(cli_str);
-	printf("%s : %s [Not Implemented]\n", __func__, t->name);
-	return CMD_RET_SUCCESS;
-}
-
-/*******************************************************************************
 * help command
 *******************************************************************************/
 static int cmd_help(cmd_tbl_t *t, int argc, char *argv[])
@@ -550,7 +525,7 @@ static int cmd_help(cmd_tbl_t *t, int argc, char *argv[])
 	cmd_list_display(MAIN_CMD);
 	cmd_list_display(SHOW_SUB_CMD);
 	cmd_list_display(SHOW_STATS_SUB_CMD);
-	cmd_list_display(SHWO_MAC_SUB_CMD);
+	cmd_list_display(SHOW_MAC_SUB_CMD);
 	cmd_list_display(SHOW_MAC_TX_SUB_CMD);
 	cmd_list_display(SHOW_MAC_RX_SUB_CMD);
 	cmd_list_display(SET_SUB_CMD);
@@ -827,7 +802,7 @@ static int cmd_show_mac(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
 	int sub_cmd_list_size, sub_cmd_list_depth;
-	cmd_tbl_t * sub_cmd_list = get_cmd_list(SHWO_MAC_SUB_CMD, &sub_cmd_list_size, &sub_cmd_list_depth);
+	cmd_tbl_t * sub_cmd_list = get_cmd_list(SHOW_MAC_SUB_CMD, &sub_cmd_list_size, &sub_cmd_list_depth);
 
 	if(argc == sub_cmd_list_depth){
 		printf("There is no sub command. Please see the help.\n");
@@ -1586,7 +1561,7 @@ static void cmd_show_mac_result_display(char *response, int dir, int type)
 	int i = 0, j=0;
 
 	char temp[6][16] = {0,};
-	const int mac_stats_start_get_element  = 4;
+	const int mac_stats_start_get_element  = 6;
 	const int mac_stats_get_element  = 5;
 	const int mac_stats_mcs_get_element  = 6;
 
@@ -1607,12 +1582,12 @@ static void cmd_show_mac_result_display(char *response, int dir, int type)
 					}
 					memcpy(temp[i], t1, sizeof(temp[i]));
 				}
-				printf("(OK count:%d, %s count:%d, last MCS:%d",\
-					atoi(temp[0]),(dir == DIR_TX)? "RTX":"NOK", atoi(temp[1]), atoi(temp[2]));
+				printf("(OK count:%d, %s count:%d(%3.2f%%), last MCS:%d",\
+					atoi(temp[0]),(dir == DIR_TX)? "RTX":"NOK", atoi(temp[1]), atof(temp[2]),  atoi(temp[3]));
 				if(dir == DIR_TX){
-					printf(")\n");
+					printf(", Fail count:%d(%3.2f%%))\n", atoi(temp[4]), atof(temp[5]));
 				} else {
-					printf(", FCS error:%d)\n",  atoi(temp[3]));
+					printf(", FCS error:%d(%3.2f%%))\n", atoi(temp[4]), atof(temp[5]));
 				}
 				print_line('-', print_line_len,"", 0,0);
 
@@ -1700,9 +1675,15 @@ static int cmd_self_configuration(cmd_tbl_t *t, int argc, char *argv[])
 	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
 	memset(param, 0x0, sizeof(param));
 
-	if(argc == 5)
-		sprintf(param, "show self_config %s %s %s -sr", argv[2], argv[3], argv[4]);
-	else
+	if(argc == 5) {
+		if (atoi(argv[3]) && atoi(argv[3]) != 1 &&
+			atoi(argv[3]) != 2 && atoi(argv[3]) != 4) {
+			printf("BW should be one of 0, 1, 2 or 4.\n");
+			return CMD_RET_FAILURE;
+		} else {
+			sprintf(param, "show self_config %s %s %s -sr", argv[2], argv[3], argv[4]);
+		}
+	} else
 		return CMD_RET_FAILURE;
 
 	netlink_ret = netlink_send_data(NL_SHELL_RUN_RAW, param, response);
@@ -1715,6 +1696,9 @@ static int cmd_self_configuration(cmd_tbl_t *t, int argc, char *argv[])
 			ret = CMD_RET_FAILURE;
 		} else if (strcmp(response, not_matched_cc_str) == 0) {
 			printf("[%s] %s\n", argv[2], not_matched_cc_msg);
+			ret = CMD_RET_FAILURE;
+		} else if (strcmp(response, no_channel_cc_str) == 0) {
+			printf("%s\n", no_channel_msg);
 			ret = CMD_RET_FAILURE;
 		} else {
 			printf("\tFrequency\tCCA\tbandwidth\n");
@@ -1760,7 +1744,8 @@ static int cmd_self_configuration(cmd_tbl_t *t, int argc, char *argv[])
 			}
 
 			printf("[Optimal freq.]\t%4.1f MHz (CCA:%3.1f%%, BW:%dM)\n", \
-				best_freq/10.0, best_cca/10.0, (best_bw == 0)?1:(best_bw == 1)?2:4);
+				best_freq/10.0, best_cca/10.0,
+				(best_bw == 0) ? 1 : (best_bw == 1) ? 2 : 4);
 			printf("[*]ch_num:%d\n",best_nons1g_freq_idx );
 
 			ret = CMD_RET_SUCCESS;
@@ -1787,11 +1772,8 @@ static int cmd_optimal_channel(cmd_tbl_t *t, int argc, char *argv[])
 	memset(param, 0x0, sizeof(param));
 
 	if (argc == 5) {
-		if (!strcmp(argv[2], "K1") ||
-			!strcmp(argv[2], "K2") ||
-			!strcmp(argv[2], "JP") ||
-			!strcmp(argv[2], "EU")) {
-			printf("K1/K2/JP/EU is not supported.\n");
+		if (!strcmp(argv[2], "CN")) {
+			printf("CN is not supported.\n");
 			return CMD_RET_FAILURE;
 		} else if (atoi(argv[3]) != 1 &&
 			atoi(argv[3]) != 2 &&
@@ -1817,6 +1799,9 @@ static int cmd_optimal_channel(cmd_tbl_t *t, int argc, char *argv[])
 			ret = CMD_RET_FAILURE;
 		} else if (strcmp(response, not_supported_cc_str) == 0) {
 			printf("[%s] %s\n", argv[2], not_supported_cc_msg);
+			ret = CMD_RET_FAILURE;
+		} else if (strcmp(response, no_channel_cc_str) == 0) {
+			printf("%s\n", no_channel_msg);
 			ret = CMD_RET_FAILURE;
 		} else {
 			memcpy(&best_freq, &response[result_idx_ptr], sizeof(best_freq));
@@ -1852,6 +1837,19 @@ static int cmd_show_xtal_status(cmd_tbl_t *t, int argc, char *argv[])
 	const int display_per_line= 1;
 
 	ret = run_shell_cmd(t, argc, argv, "show xtal_status", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		cmd_result_parse((char*)t->key_list, response, display_per_line);
+	}
+	return ret;
+}
+
+static int cmd_show_clock_count(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_FAILURE;
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	const int display_per_line= 1;
+
+	ret = run_shell_cmd(t, argc, argv, "modem get_clock_count", response, sizeof(response));
 	if(ret == CMD_RET_SUCCESS){
 		cmd_result_parse((char*)t->key_list, response, display_per_line);
 	}
@@ -2109,6 +2107,99 @@ static int cmd_set_bcn_mcs(cmd_tbl_t *t, int argc, char *argv[])
 	return ret;
 }
 
+static int cmd_set_bcmc_mcs(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_FAILURE;
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	const int display_per_line= 1;
+	int mcs = 0;
+
+	if (strcmp(argv[2], "on") != 0 && strcmp(argv[2], "off") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	if (strcmp(argv[2], "on") == 0 ) {
+		mcs = atoi(argv[3]);
+		if( mcs > 10 || mcs == 8 || mcs == 9){
+			printf("Usage : %s\n", (char*)t->usage);
+			return CMD_RET_FAILURE;
+		}
+	}
+
+	ret = run_shell_cmd(t, argc, argv, "set bcmc_mcs", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS) {
+		if (strcmp(argv[2], "on") == 0 ) {
+			printf("set bcmc_mcs: %s\n", argv[3]);
+		} else {
+			printf("disabled\n");
+		}
+	}
+	return ret;
+}
+
+static int cmd_set_dhcp_mcs(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_FAILURE;
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	const int display_per_line= 1;
+	int mcs = 0;
+
+	if (strcmp(argv[2], "on") != 0 && strcmp(argv[2], "off") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	if (strcmp(argv[2], "on") == 0 ) {
+		mcs = atoi(argv[3]);
+		if( mcs > 10 || mcs == 8 || mcs == 9){
+			printf("Usage : %s\n", (char*)t->usage);
+			return CMD_RET_FAILURE;
+		}
+	}
+
+	ret = run_shell_cmd(t, argc, argv, "set dhcp_mcs", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS) {
+		if (strcmp(argv[2], "on") == 0 ) {
+			printf("set dhcp_mcs: %s\n", argv[3]);
+		} else {
+			printf("disabled\n");
+		}
+	}
+	return ret;
+}
+
+static int cmd_set_mgmt_mcs(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_FAILURE;
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	const int display_per_line= 1;
+	int mcs = 0;
+
+	if (strcmp(argv[2], "on") != 0 && strcmp(argv[2], "off") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	if (strcmp(argv[2], "on") == 0 ) {
+		mcs = atoi(argv[3]);
+		if( mcs > 10 || mcs == 8 || mcs == 9){
+			printf("Usage : %s\n", (char*)t->usage);
+			return CMD_RET_FAILURE;
+		}
+	}
+
+	ret = run_shell_cmd(t, argc, argv, "set mgmt_mcs", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS) {
+		if (strcmp(argv[2], "on") == 0 ) {
+			printf("set mgmt_mcs: %s\n", argv[3]);
+		} else {
+			printf("disabled\n");
+		}
+	}
+	return ret;
+}
+
 static int cmd_set_duty(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_SUCCESS;
@@ -2298,15 +2389,6 @@ static int cmd_set_temp_sensor(cmd_tbl_t *t, int argc, char *argv[])
 	return ret;
 }
 
-static int cmd_set_s1g_freq(cmd_tbl_t *t, int argc, char *argv[])
-{
-	if(argc != 4){
-		printf("usage : %s\n", (char*)t->usage);
-		return CMD_RET_FAILURE;
-	}
-	return run_shell_cmd(t, argc, argv, "set s1g_freq", NULL, 0);
-}
-
 static int cmd_set_cca_thresh(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
@@ -2412,8 +2494,6 @@ static int cmd_set_scan_period(cmd_tbl_t *t, int argc, char *argv[])
 
 static int cmd_set_mesh_rssi_threshold(cmd_tbl_t *t, int argc, char *argv[])
 {
-	int ret = CMD_RET_SUCCESS;
-
 	if (atoi(argv[2]) > -10 || atoi(argv[2]) < -120) {
 		printf("usage : %s\n", (char*)t->usage);
 		return CMD_RET_FAILURE;
@@ -2421,6 +2501,17 @@ static int cmd_set_mesh_rssi_threshold(cmd_tbl_t *t, int argc, char *argv[])
 
 	return run_driver_cmd(t, argc, argv, "set mesh_rssi_threshold", NULL, 0);
 }
+
+static int cmd_set_1m_prim_loc(cmd_tbl_t *t, int argc, char *argv[])
+{
+	if (atoi(argv[2]) > 3 || atoi(argv[2]) < 0) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	return run_shell_cmd(t, argc, argv, "set prim_loc", NULL, 0);
+}
+
 
 
 /*******************************************************************************
@@ -2438,11 +2529,13 @@ static int cmd_test_country(cmd_tbl_t *t, int argc, char *argv[])
 
 static int cmd_test_cont_tx(cmd_tbl_t *t, int argc, char *argv[])
 {
+	int wave_type = 0; // 0:cont_tx, 1:duty99
+
 	if (strcmp(argv[2], "stop") == 0) {
 		return run_shell_direct_cmd("test cont_tx stop");
 	}
 
-	if(argc != 6) {
+	if(argc < 6) {
 		printf("usage : %s\n", (char*)t->usage);
 		return CMD_RET_FAILURE;
 	}
@@ -2452,9 +2545,37 @@ static int cmd_test_cont_tx(cmd_tbl_t *t, int argc, char *argv[])
 		return CMD_RET_FAILURE;
 	}
 
-	return run_shell_direct_cmd("test cont_tx %s %s %s %s", argv[2], argv[3], argv[4], argv[5]);
+	if(argc == 7){
+		if (strcmp(argv[6], "0") == 0 || strcmp(argv[6], "1") == 0) {
+			wave_type = atoi(argv[6]);
+		} else {
+			printf("usage : %s\n", (char*)t->usage);
+			return CMD_RET_FAILURE;
+		}
+	}
 
+	return run_shell_direct_cmd("test cont_tx %s %s %s %s %d", argv[2], argv[3], argv[4], argv[5], wave_type);
 }
+
+static int cmd_test_sine_tx(cmd_tbl_t *t, int argc, char *argv[])
+{
+	if (strcmp(argv[2], "stop") == 0) {
+		return run_shell_direct_cmd("test sine_tx stop");
+	}
+
+	if(argc != 5) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	if (strcmp(argv[3], "1m") != 0 && strcmp(argv[3], "2m") != 0  && strcmp(argv[3], "4m") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	return run_shell_direct_cmd("test sine_tx %s %s %s", argv[2], argv[3], argv[4]);
+}
+
 
 /*******************************************************************************
 * sub commands on gpio

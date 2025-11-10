@@ -51,7 +51,7 @@ static unsigned int checksum(unsigned char *buf, int size)
  * but checksum will not include padding bytes
  */
 
-void nrc_fw_update_frag(struct nrc_fw_priv *priv, struct fw_frag *frag)
+static void nrc_fw_update_frag(struct nrc_fw_priv *priv, struct fw_frag *frag)
 {
 	struct fw_frag_hdr *frag_hdr = &priv->frag_hdr;
 
@@ -179,11 +179,13 @@ void nrc_download_fw(struct nrc *nw)
 
 	nrc_hif_disable_irq(hdev);
 
-	pr_err("start FW %d", priv->num_chunks);
+	dev_info(nw->dev, "start FW %d", priv->num_chunks);
+
 	do {
 		nrc_fw_send_frag(nw, priv);
 	} while (nrc_fw_check_next_frag(nw, priv));
-	pr_err("end FW");
+
+	dev_info(nw->dev, "end FW");
 
 	priv->fw_requested = false;
 }

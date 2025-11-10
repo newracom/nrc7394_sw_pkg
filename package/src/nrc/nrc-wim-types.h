@@ -36,7 +36,7 @@
 #define WIM_MAX_DATA_SIZE           (512)
 #define WIM_MAX_TLV_SIZE            (1024)
 #define WIM_MAX_SIZE                (WIM_HEAD_SIZE \
-					+ WIM_MAX_DATA_SIZE + WIM_MAX_TLV_SIZE)
+					+ WIM_MAX_DATA_SIZE + WIM_MAX_TLV_SIZE + 22)
 #define WIM_MAX_TLV_SCAN_IE         (512)
 
 #ifndef __packed
@@ -124,6 +124,9 @@ enum WIM_CMD_ID {
 	WIM_CMD_SET_SAE,
 	WIM_CMD_SHELL_RAW,
 	WIM_CMD_RESET_HIF_TX,
+	WIM_CMD_RESET_HIF_RX,
+	WIM_CMD_GET,
+	WIM_CMD_GET_TX_STATS,
 	WIM_CMD_MAX,
 };
 
@@ -220,12 +223,19 @@ enum WIM_TLV_ID {
 	WIM_TLV_SET_TXPOWER,
 	WIM_TLV_LEGACY_ACK,
 	WIM_TLV_BEACON_BYPASS,
-	WIM_TLV_HIDDEN_SSID,	//75
+	WIM_TLV_AUTH_CONTROL,	//75
+	WIM_TLV_HIDDEN_SSID,
 	WIM_TLV_PROBE_REQ_VENDOR_IE,
 	WIM_TLV_PROBE_RSP_VENDOR_IE,
 	WIM_TLV_ASSOC_REQ_VENDOR_IE,
 	WIM_TLV_RC_MODE,
 	WIM_TLV_DEFAULT_MCS, //80
+	WIM_TLV_TSF,
+	WIM_TLV_TWT_REQUESTER,
+	WIM_TLV_TWT_RESPONDER,
+	WIM_TLV_TWT_GROUPING,
+	WIM_TLV_TX_STATS_RESP,
+	WIM_TLV_RETURN,
 	WIM_TLV_MAX,
 };
 
@@ -563,7 +573,7 @@ struct wim_bd_param {
 	uint8_t value[WIM_MAX_BD_DATA_LEN];
 } __packed;
 
-#define WIM_MAX_SCAN_SSID       (2)
+#define WIM_MAX_SCAN_SSID       (5)
 #define WIM_MAX_SCAN_BSSID      (2)
 #define WIM_MAX_SCAN_CHANNEL    (55)
 #ifndef IEEE80211_MAX_SSID_LEN
@@ -613,7 +623,8 @@ struct wim_cap_param {
 } __packed;
 
 struct wim_ready_param {
-	uint32_t version;
+	uint16_t version;
+	uint16_t chip_rev_num;
 	uint32_t tx_head_size;
 	uint32_t rx_head_size;
 	uint32_t payload_align;
@@ -622,7 +633,7 @@ struct wim_ready_param {
 	bool has_macaddr[NR_NRC_VIF];
 	uint16_t hw_version;
 	struct wim_cap_param cap;
-	uint8_t xtal_status;
+	int8_t lna_offset;
 } __packed;
 WIM_DECLARE(wim_ready);
 
@@ -720,9 +731,11 @@ struct wowlan_pattern {
 } __packed;
 
 struct wim_pm_param {
+struct_group(wim_pm_param_data,
 	uint8_t ps_mode;
 	uint8_t ps_enable;
 	uint16_t ps_wakeup_pin;
+	bool ps_wakeup_high;
 	uint64_t ps_duration;
 	uint32_t ps_timeout;
 	uint8_t wowlan_wakeup_host_pin;
@@ -731,6 +744,7 @@ struct wim_pm_param {
 	uint8_t wowlan_enable_disconnect;
 	uint8_t wowlan_n_patterns;
 	struct wowlan_pattern wp[2];
+);
 } __packed;
 WIM_DECLARE(wim_pm);
 
@@ -748,6 +762,15 @@ struct wim_drv_info_param {
 	uint32_t deepsleep_gpio_dir;
 	uint32_t deepsleep_gpio_out;
 	uint32_t deepsleep_gpio_pullup;
+	bool	 duty_cycle_enable;
+	uint32_t duty_cycle_window;
+	uint32_t duty_cycle_duration;
+	int8_t  cca_threshold;
+	uint64_t twt_wake_interval;
+	bool	 auth_control_enable;
+	uint8_t auth_control_slot;
+	uint8_t auth_control_ti_min;
+	uint8_t auth_control_ti_max;
 } __packed;
 WIM_DECLARE(wim_drv_info);
 
@@ -780,6 +803,7 @@ struct wim_scan_preq_ies {
 } __packed;
 
 struct wim_scan_param {
+struct_group(wim_scan_param_data,	
 	uint8_t mac_addr[6];
 	uint8_t mac_addr_mask[6];
 	uint32_t rate;
@@ -792,6 +816,7 @@ struct wim_scan_param {
 	uint16_t                channel[WIM_MAX_SCAN_CHANNEL];
 	struct wim_scan_channel s1g_channel[WIM_MAX_SCAN_CHANNEL];
 	struct wim_scan_preq_ies preq_ies;
+);
 } __packed;
 
 enum wim_cipher_type {
@@ -814,6 +839,7 @@ enum wim_cipher_type {
 #define WIM_KEY_FLAG_IGROUP     BIT(2)
 
 struct wim_key_param {
+struct_group(wim_key_param_data,
 	uint8_t cipher_type;
 	uint8_t key_index;
 	uint8_t mac_addr[6];
@@ -821,6 +847,7 @@ struct wim_key_param {
 	uint32_t key_flags;
 	uint32_t key_len;
 	uint8_t key[WIM_KEY_MAX_LEN];
+);
 };
 
 enum wim_sta_cmd {
@@ -835,11 +862,13 @@ enum wim_sta_cmd {
 };
 
 struct wim_sta_param {
+struct_group(wim_sta_data,	
 	uint8_t cmd;
 	uint8_t addr[6];
 	uint8_t sleep; /*0: awake, 1: sleep*/
 	uint16_t aid;
 	uint32_t flags;
+);
 };
 
 #define INFO_ELEMENT_MAX_LENGTH	255

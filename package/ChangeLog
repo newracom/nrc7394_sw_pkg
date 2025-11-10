@@ -4,6 +4,90 @@
 *
 *******************************************************************
 
+[2025-08-07]
+Change summary for version 1.3.1:
+
+Bugfix
+  * Issue where key configuration intermittently failed after connection
+  * Issue where auth control parameters could not be retrieved from beacon frames
+  * Issue where scans triggered by NDP Probe Requests did not work on relay's STA
+  * Issue where the guard interval was not restored after exiting power save mode
+
+Changes
+  * Support for Linux kernel 6.8
+  * Add GPIO-based band selection feature for W8 and W9
+  * Update the RSSI compensation pipeline and modified the internal LNA RSSI compensation table
+  * Bound the inputs for LPF (Low-Pass Filter) gain compensation and temperature-based power offset estimation
+  * Add support for GP17 ALT4 TX-ON monitoring function based on sysconfig
+  * Change GP17 init state (cold boot / wake-up) from output/high to input
+  * Update LBT pause time range to ensure compliance with ETSI EN 300 220 standard
+  * Improve performance through enhanced rate control
+  * Enhance TCP throughput under medium and weak signal conditions
+  * Implement TX power compensation based on temperature
+  * Increase buffer size to support the maximum length of vendor-specific IEs
+  * Update EU channels
+    o Add 868.5MHz/1MHz S1G channel #11 (Experimental)
+    o Add 869.5MHz/1MHz S1G channel #13 (Experimental)
+    o Add 864.0MHz/2MHz S1G channel #2 (Experimental)
+    o Add 866.0MHz/2MHz S1G channel #6
+    o Add 868.0MHz/2MHz S1G channel #10 (Experimental)
+    o Add 865.0MHz/4MHz S1G channel #4 (Experimental)
+    o Add 867.0MHz/4MHz S1G channel #8 (Experimental)
+  * Remove CN channels
+  * Integrate 800/900MHz channel support for TW/SG
+  * Add cli_app command to set MCS index for management frames
+    o cli_app set mgmt_mcs [on|off] [mcs]
+  * Add support for W25Q32JV/XT25F32F/ZD25WQ32C flash memories
+
+[2024-12-27]
+Change summary for version 1.3:
+
+  New features
+    * Support Distributed Auth Control (Experimental)
+
+  Bugfix
+    * Passive scan connection error issue (only for kernel version 5.10 or higher)
+    * High MCS index of fragmented frame in weak RF fields
+    * Rarely intermittent invalid RSSI readings in weak RF fields
+    * Remove the assert and add some exception handling to check the AID consistency
+    * STA kernel panic due to corrupted STA information when the BSS max idle timer expires during deauthentication processing
+    * STA kernel panic triggered by a race condition caused by consecutive cli_app commands
+    * Duplicate BSSIDs in scan results
+    * Packet drop issue due to SN miss-match after reassociation
+    * AP kernel panic triggered by a race conition involving STA info occurred during the disassociation process
+    * Remove the unnecessary modem recovery detection, which is designed solely for NRC7292
+    * Incorrect encryption/decryption key handling during modem recovery
+    * RX SN variable corruption due to overwriting by TX SN in shared struct
+    * 5th vendor IE failure in SAE mode
+    * Modify the short guard interval to apply only in 4M bandwidth and high modulation states
+    * Issue where EAPOL fails during WPA2/WPA3 setup, resulting in failure to generate PTK/GTK (non-periodic)
+    * CCA threshold being set to -60 upon waking up from deep sleep
+    * Intermittent dropping of management frames by the AP for duplicated sequence number (non-periodic)
+    * Intermittent RX stoppage in the system (non-periodic)
+    * System freezing during scanning (non-periodic)
+    * Issue where the TX Power is coming out weaker than the TX Power set in the actual BD (non-periodic)
+    * Issue where a watchdog reset occurs during EAPOL operation when RELAY and duty cycle are enabled (non-periodic)
+
+  Changes
+    * Reduce the frequency of interrupts to enhance performance on the low-end system
+    * Eliminate 'DCONFIG_MAC80211_MESH' from the Makefile to ensure compliance with the kernel configuration
+    * Introduce module parameters for configuring duty cycle and CCA threshold settings
+    * Improve the calculation of RSSI moving average in nrc driver
+    * Eliminate the assert and implement additional exception handling to verify the consistency of the AID
+    * Update the maximum listen interval value from 65535 to 65530 to ensure compliance with the USF scheme
+    * Worldwide calibration support
+    * Support EU-compliant country codes
+    * Support Singapore channel (S8/S9)
+    * Support for EEPROM-based system configuration and RF calibration data
+      o To enable this feature, set "use_eeprom_config = 1" in the start.py
+      o By default, use_eeprom_config is set to 0
+    * Extended STA support (up to 600)
+    * RTS is disabled by default
+    * S1G Short Beacon is disabled by default
+      o To enable this feature, set "short_bcn_enable=1" in the start.py
+    * Apply the additional duty cycle condition which is defined in ARIB Standard, chapter 3.4.1
+    * Optimizing the wake-up time after deep sleep
+
 [2024-04-03]
 Change summary for version 1.2.1:
 

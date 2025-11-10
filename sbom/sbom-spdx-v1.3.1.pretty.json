@@ -1,0 +1,2154 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "creationInfo": {
+    "created": "2025-08-08T17:26:34Z",
+    "creators": [
+      "Organization: Anchore, Inc",
+      "Tool: syft-1.23.1"
+    ],
+    "licenseListVersion": "3.25"
+  },
+  "dataLicense": "CC0-1.0",
+  "documentNamespace": "https://anchore.com/syft/dir/73084ce3-b204-4516-a958-ec2b767ea1d8",
+  "files": [
+    {
+      "SPDXID": "SPDXRef-File-package-evk-binary-cli-app-74fe1c1ce366a152",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "0000000000000000000000000000000000000000"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/binary/cli_app",
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...evk-sw-pkg-nrc-pkg-script-cli-app-520d63f890cf8b74",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "0000000000000000000000000000000000000000"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/cli_app",
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...newrapeek-0-1.4-armhf.deb-fadfd1cb601342e1",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "2fd9c1d436b5ac2376a5384a1e25bb524f620c1c"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "d8167c64f27d467a42cd93bf1a8f0537ede6c0682e3056b6d60afc502ae4ce67"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.4/newrapeek_0-1.4_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...script-sniffer-NewraPeek-v0-1.4-rpcapd-0afcbdc0324f787f",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "0000000000000000000000000000000000000000"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.4/rpcapd",
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-libwireshark-data-2.6.2-all.deb-103bb7abc3583baa",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "b8c725a5d8ef1e769782ed7b5f83afe1d15f73f8"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "aec8806e598c7f40d5510d05097d1113fc60b86b6f470580c9db72e48649d481"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/libwireshark-data_2.6.2_all.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-libwireshark-dev-2.6.2-armhf.deb-e06b7373b0ceddea",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "306a8f9f81c9671ae962cbaff70c809d7b1a9ab5"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "0a4a7e76fb5525f1a45817e18f81f2dc4041adf2846779bb3578ce26e50e30ac"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/libwireshark-dev_2.6.2_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-libwireshark11-2.6.2-armhf.deb-961e00d7a023c0ef",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "ad37e7c287ab616333e73a83ff226d612fa84cd0"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "6fab2fa244fc325efde6554d42947d58377bd87ff3d81ba8ba6dd35db00b1d14"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/libwireshark11_2.6.2_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-libwiretap-dev-2.6.2-armhf.deb-8021213e47cec2a2",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "f6d5a5393cc005a80fe8052bd895a69d665057f4"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "c10ec7f0be33858e7c3979372634903a9cf98d2d22b711766f276c63b97714b6"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/libwiretap-dev_2.6.2_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-libwiretap8-2.6.2-armhf.deb-65526cf15a946d95",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "ac539bf427c3b398182d965a585cfbe1ef2207b4"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "531d5bcd7a68866d5e887976aa478ff72e5287e19d27fcaa49dae8863f2ce470"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/libwiretap8_2.6.2_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-libwscodecs2-2.6.2-armhf.deb-46f59b72ff38d003",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "462fe341acfa07d629cdf33d1dc919a7e8afe7d6"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e10f584594ab12f37c4f33ac3acf83095113829988e8bb989086c8e801466714"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/libwscodecs2_2.6.2_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-libwsutil-dev-2.6.2-armhf.deb-30adcb4648cde429",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "f8e6e9b247c2c5d398ca9594e05505c2625e3aa9"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "0c72a0b72ba9950c51321d4d6488cd53281c15225138e43057b4ce4e0a3a308d"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/libwsutil-dev_2.6.2_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-libwsutil9-2.6.2-armhf.deb-9988c016b5682c9b",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "21c05a0aa1590369b233634fd8b5058191597015"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "c3b1fa0bd04d0ef80379cb51857bbd423317186cebe46a50c67e48cfa03e65fd"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/libwsutil9_2.6.2_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-tshark-2.6.2-armhf.deb-b0efab1e6df30c94",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "c8ac3a4fd65a40daf544dce12611c42d4f74a19b"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "6cef684b4d9835615fdf2747df1a703d5955e4a4dff18fd78b300aee803fae62"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/tshark_2.6.2_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-wireshark-common-2.6.2-armhf.deb-c7f1ca8a6fb63d4d",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "f72be666c9d549370c9eba5ac23104da2eac9cb0"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "f82f8f61efa23112b5e133c0bf2ce638fd9eab7fb7e6e960a35431b81ecadf73"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/wireshark-common_2.6.2_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-wireshark-gtk-2.6.2-armhf.deb-f56e9dd886cc41ce",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "32ab3920de6d96f43ac606daabb000df8a534d17"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "34bcf5ff82764353e5a0ab97aa472a4235b13a1c8dcda218711af08d83315c3d"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/wireshark-gtk_2.6.2_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-wireshark-qt-2.6.2-armhf.deb-0fcc89b0c23c7536",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "7ece9990f30cd421705f1c9e4813ac041db267d1"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "67248b4e7b9ebe6253ced991386f90408d158b2ad185fb9184e95df8b8bed732"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/wireshark-qt_2.6.2_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-wireshark-2.6.2-armhf.deb-76cda062130a083f",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "49990fbaae5b3698a76de66394dffc76b9815151"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "8d1616795023732f6c5ab50524eb63727bc8823d03a7e58906c96878b3e463ac"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/wireshark_2.6.2_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...script-sniffer-NewraPeek-v0-1.5-rpcapd-9d0508652e4d22d2",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "0000000000000000000000000000000000000000"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/rpcapd",
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-libwireshark-data-4.0.5-all.deb-edd0a39f31c47680",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "d153345967d4b7ccb9435cea23e388353cdd565f"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "3b00cede0f1042ee22c105497026707c160b5af05277fa5965a5923c0c6f0f5f"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/libwireshark-data_4.0.5_all.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-libwireshark-dev-4.0.5-armhf.deb-35fb34a1c2e2ea7b",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "b66ac5876113fb48490db88aa43c6603ee0d681a"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "aba26f831e5a7ea795ee2983609a4167856c2e8f904a4f24874859af8049685e"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/libwireshark-dev_4.0.5_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-libwireshark16-4.0.5-armhf.deb-75bfb267f7ca6084",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "55ffabcc5e92a89cc8e4774d358ecec46c2a4e14"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "0b8e56ad59a82c081e56ddd33eabdcd74090c10baab5086dc0471ad13bdc7519"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/libwireshark16_4.0.5_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-libwiretap-dev-4.0.5-armhf.deb-685a3955480f995e",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "e6002744e74cb1168aec69f926e5b48a8f1a4c7f"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "c5479b344158a6feb6d9552cc3d2f744cfd0150c783034fe91c0736e8fff82d9"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/libwiretap-dev_4.0.5_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-libwiretap13-4.0.5-armhf.deb-4aac1e64e2eb13cd",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "41c34824aa875b07131c7b966eb47eb0291ef4b4"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "b9bc06dee7adffb8bb91b32c99857d8716b342e9a4e9e8ec6adc6a5076a9028a"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/libwiretap13_4.0.5_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-libwsutil-dev-4.0.5-armhf.deb-6107b1e30d4f534e",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "337b0d91195fc69b353209d5219d1b75811baec5"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "670c2605a93ed2b8971a561bb77418c78a263275acaeac909fc92e3033b7907a"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/libwsutil-dev_4.0.5_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-libwsutil14-4.0.5-armhf.deb-582e8d2a98b70938",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "99222a405c77db00a8b617ba87fe3859cea2d1f4"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "171f3b9c821b7b211bebfd3fbd533f0bcca8a347b85507bbaa2050e80c7c7d20"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/libwsutil14_4.0.5_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-tshark-4.0.5-armhf.deb-eddb3f9d1716687d",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "45c436d42efc3e62d29c6f3d8aa39b3193ac4b1e"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "cd401366c72e5b2b40e1da8c4d24728492f842985239b7c627620e9198d8001f"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/tshark_4.0.5_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-wireshark-common-4.0.5-armhf.deb-88f06c378aa2ad77",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "7e4a10e2c828e952192c023871eb1739715d7699"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "c0aa8e8118fab35e11de6b3f42e68d7618e4dbcf3e9ea2533575b2e1f98fc16e"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/wireshark-common_4.0.5_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-wireshark-dbg-4.0.5-armhf.deb-9810c770039147ae",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "cb6f40ba1e491322df0c8b0cf763715e6b622291"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "f59a04477c5a5148acdd38a3a6576fb6dc90fea17186d559d7cc6b761a820ede"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/wireshark-dbg_4.0.5_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-wireshark-dev-4.0.5-armhf.deb-446627b27ee3db39",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "d0373904b05334a8f1e10a12f8905621dfbc6f2e"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "f104136c25e8a4a5d4a4b75ec709e87ea0322126705a7768814d141a87f5edf0"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/wireshark-dev_4.0.5_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-wireshark-doc-4.0.5-all.deb-d2d74ae3c887ec41",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "1d34d8b51cb73cb4df7d26aa4af8b3f530df55d9"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "8173b37bb3d9d5c370a8740a1ea63c9237e1c66ab04da826450fae772562e646"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/wireshark-doc_4.0.5_all.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-wireshark-qt-4.0.5-armhf.deb-72fd0b9bd8f47072",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "fa114e04df4bc3fae95648bbd37d338ac1c0c1c3"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "284a740a1d509e3b6c2ab93e05f43403452ebf653d240b5c153a17fad4d926f2"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/wireshark-qt_4.0.5_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...deb-wireshark-4.0.5-armhf.deb-cf04d894443ca645",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "15fd4d5989fa3256ec75d6ce540762c173006f17"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "52cafea3f6303477ad488d6537ab42140dd82c62fc5efc32c0f7f8ed7f8cfe74"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/wireshark_4.0.5_armhf.deb",
+      "fileTypes": [
+        "APPLICATION"
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-...src-nrc-fw-updater-nrc-fw-updater-d5860291f6425cf0",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "0000000000000000000000000000000000000000"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "package/src/nrc_fw_updater/nrc_fw_updater",
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    }
+  ],
+  "hasExtractedLicensingInfos": [
+    {
+      "extractedText": "BSD-2-clause-no-conditions",
+      "licenseId": "LicenseRef-BSD-2-clause-no-conditions"
+    },
+    {
+      "extractedText": "BSD-3-clause-Endance",
+      "licenseId": "LicenseRef-BSD-3-clause-Endance"
+    },
+    {
+      "extractedText": "FSL-Kaz",
+      "licenseId": "LicenseRef-FSL-Kaz"
+    },
+    {
+      "extractedText": "public-domain",
+      "licenseId": "LicenseRef-public-domain"
+    }
+  ],
+  "name": ".",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-Package-deb-libwireshark-data-930c8507d0abb776",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark-data:libwireshark-data:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark-data:libwireshark_data:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark_data:libwireshark-data:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark_data:libwireshark_data:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark:libwireshark-data:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark:libwireshark_data:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/libwireshark-data@2.6.2?arch=all&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "libwireshark-data",
+      "originator": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/libwireshark-data_2.6.2_all.deb",
+      "supplier": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "versionInfo": "2.6.2"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-libwireshark-data-2a7eaa3b64d25e86",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark-data:libwireshark-data:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark-data:libwireshark_data:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark_data:libwireshark-data:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark_data:libwireshark_data:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark:libwireshark-data:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark:libwireshark_data:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/libwireshark-data@4.0.5?arch=all&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "libwireshark-data",
+      "originator": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/libwireshark-data_4.0.5_all.deb",
+      "supplier": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "versionInfo": "4.0.5"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-libwireshark-dev-4eb433d18efd2fab",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark-dev:libwireshark-dev:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark-dev:libwireshark_dev:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark_dev:libwireshark-dev:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark_dev:libwireshark_dev:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark:libwireshark-dev:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark:libwireshark_dev:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/libwireshark-dev@2.6.2?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "libwireshark-dev",
+      "originator": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/libwireshark-dev_2.6.2_armhf.deb",
+      "supplier": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "versionInfo": "2.6.2"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-libwireshark-dev-2ae4742f5abe5534",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark-dev:libwireshark-dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark-dev:libwireshark_dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark_dev:libwireshark-dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark_dev:libwireshark_dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark:libwireshark-dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark:libwireshark_dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/libwireshark-dev@4.0.5?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "libwireshark-dev",
+      "originator": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/libwireshark-dev_4.0.5_armhf.deb",
+      "supplier": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "versionInfo": "4.0.5"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-libwireshark11-683793203dadef5f",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark11:libwireshark11:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/libwireshark11@2.6.2?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "libwireshark11",
+      "originator": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/libwireshark11_2.6.2_armhf.deb",
+      "supplier": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "versionInfo": "2.6.2"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-libwireshark16-8a746ad21b0d6483",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwireshark16:libwireshark16:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/libwireshark16@4.0.5?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "libwireshark16",
+      "originator": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/libwireshark16_4.0.5_armhf.deb",
+      "supplier": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "versionInfo": "4.0.5"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-libwiretap-dev-0b7f999ea72f5eaa",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwiretap-dev:libwiretap-dev:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwiretap-dev:libwiretap_dev:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwiretap_dev:libwiretap-dev:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwiretap_dev:libwiretap_dev:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwiretap:libwiretap-dev:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwiretap:libwiretap_dev:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/libwiretap-dev@2.6.2?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "libwiretap-dev",
+      "originator": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/libwiretap-dev_2.6.2_armhf.deb",
+      "supplier": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "versionInfo": "2.6.2"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-libwiretap-dev-48b5f86bfa5e4170",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwiretap-dev:libwiretap-dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwiretap-dev:libwiretap_dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwiretap_dev:libwiretap-dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwiretap_dev:libwiretap_dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwiretap:libwiretap-dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwiretap:libwiretap_dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/libwiretap-dev@4.0.5?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "libwiretap-dev",
+      "originator": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/libwiretap-dev_4.0.5_armhf.deb",
+      "supplier": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "versionInfo": "4.0.5"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-libwiretap13-bc5ac91c55ad50e0",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwiretap13:libwiretap13:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/libwiretap13@4.0.5?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "libwiretap13",
+      "originator": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/libwiretap13_4.0.5_armhf.deb",
+      "supplier": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "versionInfo": "4.0.5"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-libwiretap8-4286533a0229dddf",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwiretap8:libwiretap8:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/libwiretap8@2.6.2?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "libwiretap8",
+      "originator": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/libwiretap8_2.6.2_armhf.deb",
+      "supplier": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "versionInfo": "2.6.2"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-libwscodecs2-aef4249d2c8092ae",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwscodecs2:libwscodecs2:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/libwscodecs2@2.6.2?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "libwscodecs2",
+      "originator": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/libwscodecs2_2.6.2_armhf.deb",
+      "supplier": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "versionInfo": "2.6.2"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-libwsutil-dev-7d66e26418aacf3b",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwsutil-dev:libwsutil-dev:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwsutil-dev:libwsutil_dev:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwsutil_dev:libwsutil-dev:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwsutil_dev:libwsutil_dev:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwsutil:libwsutil-dev:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwsutil:libwsutil_dev:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/libwsutil-dev@2.6.2?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "libwsutil-dev",
+      "originator": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/libwsutil-dev_2.6.2_armhf.deb",
+      "supplier": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "versionInfo": "2.6.2"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-libwsutil-dev-3dd7acf969cbf819",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwsutil-dev:libwsutil-dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwsutil-dev:libwsutil_dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwsutil_dev:libwsutil-dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwsutil_dev:libwsutil_dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwsutil:libwsutil-dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwsutil:libwsutil_dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/libwsutil-dev@4.0.5?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "libwsutil-dev",
+      "originator": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/libwsutil-dev_4.0.5_armhf.deb",
+      "supplier": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "versionInfo": "4.0.5"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-libwsutil14-4f6d8701a682f77e",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwsutil14:libwsutil14:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/libwsutil14@4.0.5?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "libwsutil14",
+      "originator": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/libwsutil14_4.0.5_armhf.deb",
+      "supplier": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "versionInfo": "4.0.5"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-libwsutil9-98c0f4f1a0a6c68a",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:libwsutil9:libwsutil9:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/libwsutil9@2.6.2?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "libwsutil9",
+      "originator": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/libwsutil9_2.6.2_armhf.deb",
+      "supplier": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "versionInfo": "2.6.2"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-newrapeek-020e5f9122002b26",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:newrapeek:newrapeek:0-1.4:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/newrapeek@0-1.4?arch=armhf",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "name": "newrapeek",
+      "originator": "Person: Aaron J. Lee",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.4/newrapeek_0-1.4_armhf.deb",
+      "supplier": "Person: Aaron J. Lee",
+      "versionInfo": "0-1.4"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-tshark-e1a4571939ff4c9a",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:tshark:tshark:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/tshark@2.6.2?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "tshark",
+      "originator": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/tshark_2.6.2_armhf.deb",
+      "supplier": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "versionInfo": "2.6.2"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-tshark-14b4fc21a51316d8",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:tshark:tshark:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/tshark@4.0.5?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "tshark",
+      "originator": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/tshark_4.0.5_armhf.deb",
+      "supplier": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "versionInfo": "4.0.5"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-wireshark-cbc3f55920f8eee4",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark:wireshark:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/wireshark@2.6.2?arch=armhf",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "wireshark",
+      "originator": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/wireshark_2.6.2_armhf.deb",
+      "supplier": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "versionInfo": "2.6.2"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-wireshark-31379c1dbb9d6860",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark:wireshark:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/wireshark@4.0.5?arch=armhf",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "wireshark",
+      "originator": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/wireshark_4.0.5_armhf.deb",
+      "supplier": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "versionInfo": "4.0.5"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-wireshark-common-7ea685af7cc28585",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark-common:wireshark-common:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark-common:wireshark_common:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark_common:wireshark-common:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark_common:wireshark_common:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark:wireshark-common:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark:wireshark_common:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/wireshark-common@2.6.2?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "wireshark-common",
+      "originator": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/wireshark-common_2.6.2_armhf.deb",
+      "supplier": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "versionInfo": "2.6.2"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-wireshark-common-83198ec5bbc77ed6",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark-common:wireshark-common:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark-common:wireshark_common:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark_common:wireshark-common:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark_common:wireshark_common:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark:wireshark-common:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark:wireshark_common:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/wireshark-common@4.0.5?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "wireshark-common",
+      "originator": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/wireshark-common_4.0.5_armhf.deb",
+      "supplier": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "versionInfo": "4.0.5"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-wireshark-dbg-f46dc20fee45faad",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark-dbg:wireshark-dbg:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark-dbg:wireshark_dbg:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark_dbg:wireshark-dbg:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark_dbg:wireshark_dbg:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark:wireshark-dbg:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark:wireshark_dbg:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/wireshark-dbg@4.0.5?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "wireshark-dbg",
+      "originator": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/wireshark-dbg_4.0.5_armhf.deb",
+      "supplier": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "versionInfo": "4.0.5"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-wireshark-dev-6f00da223ea00553",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark-dev:wireshark-dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark-dev:wireshark_dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark_dev:wireshark-dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark_dev:wireshark_dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark:wireshark-dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark:wireshark_dev:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/wireshark-dev@4.0.5?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "wireshark-dev",
+      "originator": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/wireshark-dev_4.0.5_armhf.deb",
+      "supplier": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "versionInfo": "4.0.5"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-wireshark-doc-8d65e830c3de5b6a",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark-doc:wireshark-doc:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark-doc:wireshark_doc:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark_doc:wireshark-doc:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark_doc:wireshark_doc:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark:wireshark-doc:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark:wireshark_doc:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/wireshark-doc@4.0.5?arch=all&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "wireshark-doc",
+      "originator": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/wireshark-doc_4.0.5_all.deb",
+      "supplier": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "versionInfo": "4.0.5"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-wireshark-gtk-4144dc158b90404f",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark-gtk:wireshark-gtk:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark-gtk:wireshark_gtk:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark_gtk:wireshark-gtk:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark_gtk:wireshark_gtk:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark:wireshark-gtk:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark:wireshark_gtk:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/wireshark-gtk@2.6.2?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "wireshark-gtk",
+      "originator": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/wireshark-gtk_2.6.2_armhf.deb",
+      "supplier": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "versionInfo": "2.6.2"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-wireshark-qt-cc1401645b591d8f",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark-qt:wireshark-qt:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark-qt:wireshark_qt:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark_qt:wireshark-qt:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark_qt:wireshark_qt:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark:wireshark-qt:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark:wireshark_qt:2.6.2:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/wireshark-qt@2.6.2?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "wireshark-qt",
+      "originator": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/NewraPeek_v0-1.5/deb/wireshark-qt_2.6.2_armhf.deb",
+      "supplier": "Person: Balint Reczey (balint@balintreczey.hu)",
+      "versionInfo": "2.6.2"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-wireshark-qt-d0fe1a9d63dbca78",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark-qt:wireshark-qt:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark-qt:wireshark_qt:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark_qt:wireshark-qt:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark_qt:wireshark_qt:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark:wireshark-qt:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark:wireshark_qt:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/wireshark-qt@4.0.5?arch=armhf&upstream=wireshark",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND LicenseRef-BSD-2-clause-no-conditions AND BSD-3-Clause AND LicenseRef-BSD-3-clause-Endance AND LicenseRef-FSL-Kaz AND GPL-2.0-only AND GPL-2.0-or-later AND GPL-3.0-only AND GPL-3.0-or-later AND ISC AND LGPL-2.0-or-later AND LicenseRef-public-domain",
+      "name": "wireshark-qt",
+      "originator": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "sourceInfo": "acquired package info from DPKG DB: /package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/wireshark-qt_4.0.5_armhf.deb",
+      "supplier": "Person: Balint Reczey (rbalint@ubuntu.com)",
+      "versionInfo": "4.0.5"
+    },
+    {
+      "SPDXID": "SPDXRef-DocumentRoot-Directory-.",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "name": ".",
+      "primaryPackagePurpose": "FILE",
+      "supplier": "NOASSERTION"
+    }
+  ],
+  "relationships": [
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...newrapeek-0-1.4-armhf.deb-fadfd1cb601342e1",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-newrapeek-020e5f9122002b26"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-libwiretap-dev-2.6.2-armhf.deb-8021213e47cec2a2",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-libwiretap-dev-0b7f999ea72f5eaa"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-tshark-4.0.5-armhf.deb-eddb3f9d1716687d",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-tshark-14b4fc21a51316d8"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-libwireshark-data-4.0.5-all.deb-edd0a39f31c47680",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-libwireshark-data-2a7eaa3b64d25e86"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-libwireshark-dev-4.0.5-armhf.deb-35fb34a1c2e2ea7b",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-libwireshark-dev-2ae4742f5abe5534"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-wireshark-4.0.5-armhf.deb-cf04d894443ca645",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-wireshark-31379c1dbb9d6860"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-libwsutil-dev-4.0.5-armhf.deb-6107b1e30d4f534e",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-libwsutil-dev-3dd7acf969cbf819"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-wireshark-gtk-2.6.2-armhf.deb-f56e9dd886cc41ce",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-wireshark-gtk-4144dc158b90404f"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-libwiretap8-2.6.2-armhf.deb-65526cf15a946d95",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-libwiretap8-4286533a0229dddf"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-libwiretap-dev-4.0.5-armhf.deb-685a3955480f995e",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-libwiretap-dev-48b5f86bfa5e4170"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-libwireshark-dev-2.6.2-armhf.deb-e06b7373b0ceddea",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-libwireshark-dev-4eb433d18efd2fab"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-libwsutil14-4.0.5-armhf.deb-582e8d2a98b70938",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-libwsutil14-4f6d8701a682f77e"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-libwireshark11-2.6.2-armhf.deb-961e00d7a023c0ef",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-libwireshark11-683793203dadef5f"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-wireshark-dev-4.0.5-armhf.deb-446627b27ee3db39",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-wireshark-dev-6f00da223ea00553"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-libwsutil-dev-2.6.2-armhf.deb-30adcb4648cde429",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-libwsutil-dev-7d66e26418aacf3b"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-wireshark-common-2.6.2-armhf.deb-c7f1ca8a6fb63d4d",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-wireshark-common-7ea685af7cc28585"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-wireshark-common-4.0.5-armhf.deb-88f06c378aa2ad77",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-wireshark-common-83198ec5bbc77ed6"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-libwireshark16-4.0.5-armhf.deb-75bfb267f7ca6084",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-libwireshark16-8a746ad21b0d6483"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-wireshark-doc-4.0.5-all.deb-d2d74ae3c887ec41",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-wireshark-doc-8d65e830c3de5b6a"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-libwireshark-data-2.6.2-all.deb-103bb7abc3583baa",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-libwireshark-data-930c8507d0abb776"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-libwsutil9-2.6.2-armhf.deb-9988c016b5682c9b",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-libwsutil9-98c0f4f1a0a6c68a"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-libwscodecs2-2.6.2-armhf.deb-46f59b72ff38d003",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-libwscodecs2-aef4249d2c8092ae"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-libwiretap13-4.0.5-armhf.deb-4aac1e64e2eb13cd",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-libwiretap13-bc5ac91c55ad50e0"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-wireshark-2.6.2-armhf.deb-76cda062130a083f",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-wireshark-cbc3f55920f8eee4"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-wireshark-qt-2.6.2-armhf.deb-0fcc89b0c23c7536",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-wireshark-qt-cc1401645b591d8f"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-wireshark-qt-4.0.5-armhf.deb-72fd0b9bd8f47072",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-wireshark-qt-d0fe1a9d63dbca78"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-tshark-2.6.2-armhf.deb-b0efab1e6df30c94",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-tshark-e1a4571939ff4c9a"
+    },
+    {
+      "comment": "evident-by: indicates the package's existence is evident by the given file",
+      "relatedSpdxElement": "SPDXRef-File-...deb-wireshark-dbg-4.0.5-armhf.deb-9810c770039147ae",
+      "relationshipType": "OTHER",
+      "spdxElementId": "SPDXRef-Package-deb-wireshark-dbg-f46dc20fee45faad"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-libwireshark-data-930c8507d0abb776",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-libwireshark-data-2a7eaa3b64d25e86",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-libwireshark-dev-4eb433d18efd2fab",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-libwireshark-dev-2ae4742f5abe5534",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-libwireshark11-683793203dadef5f",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-libwireshark16-8a746ad21b0d6483",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-libwiretap-dev-0b7f999ea72f5eaa",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-libwiretap-dev-48b5f86bfa5e4170",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-libwiretap13-bc5ac91c55ad50e0",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-libwiretap8-4286533a0229dddf",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-libwscodecs2-aef4249d2c8092ae",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-libwsutil-dev-7d66e26418aacf3b",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-libwsutil-dev-3dd7acf969cbf819",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-libwsutil14-4f6d8701a682f77e",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-libwsutil9-98c0f4f1a0a6c68a",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-newrapeek-020e5f9122002b26",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-tshark-e1a4571939ff4c9a",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-tshark-14b4fc21a51316d8",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-wireshark-cbc3f55920f8eee4",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-wireshark-31379c1dbb9d6860",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-wireshark-common-7ea685af7cc28585",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-wireshark-common-83198ec5bbc77ed6",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-wireshark-dbg-f46dc20fee45faad",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-wireshark-dev-6f00da223ea00553",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-wireshark-doc-8d65e830c3de5b6a",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-wireshark-gtk-4144dc158b90404f",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-wireshark-qt-cc1401645b591d8f",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-wireshark-qt-d0fe1a9d63dbca78",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Directory-."
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-DocumentRoot-Directory-.",
+      "relationshipType": "DESCRIBES",
+      "spdxElementId": "SPDXRef-DOCUMENT"
+    }
+  ],
+  "spdxVersion": "SPDX-2.3"
+}

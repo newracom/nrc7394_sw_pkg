@@ -168,6 +168,7 @@
 #define CONFIG_SUPPORT_BD
 #define CONFIG_SUPPORT_LEGACY_ACK
 #define CONFIG_SUPPORT_BEACON_BYPASS
+#define CONFIG_SUPPORT_AUTH_CONTROL
 #endif
 #if KERNEL_VERSION(3, 0, 0) <= NRC_TARGET_KERNEL_VERSION
 #define CONFIG_SUPPORT_TX_FRAMES_PENDING
@@ -190,7 +191,7 @@
 #undef CONFIG_USE_CHANNEL_CONTEXT
 #endif
 
-#define CONFIG_SUPPORT_IBSS
+//#define CONFIG_SUPPORT_IBSS
 
 /* for backports */
 /*
@@ -209,6 +210,14 @@
 #if KERNEL_VERSION(5, 16, 0) <= NRC_TARGET_KERNEL_VERSION
 #define CONFIG_SPI_USE_DT
 #endif
+
+/* For kernels 5.16 and above, the removed 'spi_busnum_to_master' function
+   is implemented as a static in this driver.
+   Enabling this definition still allows the use of the driver without DT. */
+#if !defined(CONFIG_SPI_USE_DT) && KERNEL_VERSION(5, 16, 0) <= NRC_TARGET_KERNEL_VERSION
+#define CONFIG_SPI_USE_FUNC
+#endif
+
 /* You can enable forcely in current version */
 //#define CONFIG_SPI_USE_DT
 
@@ -220,11 +229,23 @@
 #define CONFIG_NEW_TASKLET_API
 #endif
 
+#if KERNEL_VERSION(6, 2, 0) <= NRC_TARGET_KERNEL_VERSION
+#define CONFIG_SUPPORT_SPLIT_OPS_NETLINK
+#endif
+
+/*
+this feature is disabled 
+#if KERNEL_VERSION(5, 15, 56) <= NRC_TARGET_KERNEL_VERSION
+#define CONFIG_USE_KERNEL_S1G_TWT
+// To use this feature, some S1G capabilities patch is needed,
+#endif
+*/
+
 #define CONFIG_QOS_NULL_OFFLOAD
 
 /* If this configuration is enabled, 
    the function to wake up the target will be delayed 
    from the start of sleep up to TARGET_MAX_TIME_TO_FALL_ASLEEP. */
-//#define CONFIG_DELAY_WAKE_TARGET  
+#define CONFIG_DELAY_WAKE_TARGET  
 
 #endif

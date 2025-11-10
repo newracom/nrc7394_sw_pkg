@@ -1,0 +1,242 @@
+{
+  "descriptor": {
+    "configuration": {
+      "add-cpes-if-none": false,
+      "by-cve": false,
+      "check-for-app-update": true,
+      "db": {
+        "auto-update": true,
+        "ca-cert": "",
+        "cache-dir": "/home/wlan/.cache/grype/db",
+        "max-allowed-built-age": 432000000000000,
+        "max-update-check-frequency": 7200000000000,
+        "require-update-check": false,
+        "update-available-timeout": 30000000000,
+        "update-download-timeout": 300000000000,
+        "update-url": "https://grype.anchore.io/databases",
+        "validate-age": true,
+        "validate-by-hash-on-start": true
+      },
+      "default-image-pull-source": "",
+      "dev": {
+        "db": {
+          "debug": false
+        }
+      },
+      "distro": "",
+      "exclude": [],
+      "exp": {},
+      "externalSources": {
+        "enable": false,
+        "maven": {
+          "baseUrl": "https://search.maven.org/solrsearch/select",
+          "rateLimit": 300000000,
+          "searchUpstreamBySha1": true
+        }
+      },
+      "fail-on-severity": "",
+      "file": "",
+      "ignore": [
+        {
+          "fix-state": "",
+          "match-type": "exact-indirect-match",
+          "namespace": "",
+          "package": {
+            "language": "",
+            "location": "",
+            "name": "kernel-headers",
+            "type": "rpm",
+            "upstream-name": "kernel",
+            "version": ""
+          },
+          "reason": "",
+          "vex-justification": "",
+          "vex-status": "",
+          "vulnerability": ""
+        },
+        {
+          "fix-state": "",
+          "match-type": "exact-indirect-match",
+          "namespace": "",
+          "package": {
+            "language": "",
+            "location": "",
+            "name": "linux(-.*)?-headers-.*",
+            "type": "deb",
+            "upstream-name": "linux.*",
+            "version": ""
+          },
+          "reason": "",
+          "vex-justification": "",
+          "vex-status": "",
+          "vulnerability": ""
+        },
+        {
+          "fix-state": "",
+          "match-type": "exact-indirect-match",
+          "namespace": "",
+          "package": {
+            "language": "",
+            "location": "",
+            "name": "linux-libc-dev",
+            "type": "deb",
+            "upstream-name": "linux",
+            "version": ""
+          },
+          "reason": "",
+          "vex-justification": "",
+          "vex-status": "",
+          "vulnerability": ""
+        }
+      ],
+      "ignore-wontfix": "",
+      "match": {
+        "dotnet": {
+          "using-cpes": false
+        },
+        "golang": {
+          "allow-main-module-pseudo-version-comparison": false,
+          "always-use-cpe-for-stdlib": true,
+          "using-cpes": false
+        },
+        "java": {
+          "using-cpes": false
+        },
+        "javascript": {
+          "using-cpes": false
+        },
+        "jvm": {
+          "using-cpes": true
+        },
+        "python": {
+          "using-cpes": false
+        },
+        "ruby": {
+          "using-cpes": false
+        },
+        "rust": {
+          "using-cpes": false
+        },
+        "stock": {
+          "using-cpes": true
+        }
+      },
+      "match-upstream-kernel-headers": false,
+      "name": "",
+      "only-fixed": false,
+      "only-notfixed": false,
+      "output": [
+        "json"
+      ],
+      "output-template-file": "",
+      "platform": "",
+      "pretty": false,
+      "registry": {
+        "auth": null,
+        "ca-cert": "",
+        "insecure-skip-tls-verify": false,
+        "insecure-use-http": false
+      },
+      "search": {
+        "indexed-archives": true,
+        "scope": "squashed",
+        "unindexed-archives": false
+      },
+      "show-suppressed": false,
+      "vex-add": [],
+      "vex-documents": []
+    },
+    "db": {
+      "providers": {
+        "alpine": {
+          "captured": "2025-08-08T01:32:54Z",
+          "input": "xxh64:7e1b8332097a3302"
+        },
+        "amazon": {
+          "captured": "2025-08-08T01:32:57Z",
+          "input": "xxh64:a063c924c45651b2"
+        },
+        "bitnami": {
+          "captured": "2025-08-08T01:32:52Z",
+          "input": "xxh64:f010f1d0488c799c"
+        },
+        "chainguard": {
+          "captured": "2025-08-08T01:33:00Z",
+          "input": "xxh64:f35536ad77d11143"
+        },
+        "debian": {
+          "captured": "2025-08-08T01:33:05Z",
+          "input": "xxh64:d56c2f4d294bf7f4"
+        },
+        "echo": {
+          "captured": "2025-08-08T01:33:00Z",
+          "input": "xxh64:4cdaeaa94a9cf126"
+        },
+        "epss": {
+          "captured": "2025-08-08T01:33:32Z",
+          "input": "xxh64:b2e1870ad05f2dbb"
+        },
+        "github": {
+          "captured": "2025-08-08T01:33:15Z",
+          "input": "xxh64:3f59c5551c1a2d6d"
+        },
+        "kev": {
+          "captured": "2025-08-08T01:32:53Z",
+          "input": "xxh64:a8b2dda1dbc6e559"
+        },
+        "mariner": {
+          "captured": "2025-08-08T01:32:54Z",
+          "input": "xxh64:4b12c174896be813"
+        },
+        "minimos": {
+          "captured": "2025-08-08T01:33:18Z",
+          "input": "xxh64:a37725319a75398b"
+        },
+        "nvd": {
+          "captured": "2025-08-08T01:33:30Z",
+          "input": "xxh64:ace83151eb68868c"
+        },
+        "oracle": {
+          "captured": "2025-08-08T01:33:02Z",
+          "input": "xxh64:f888d77a28593d76"
+        },
+        "rhel": {
+          "captured": "2025-08-08T01:33:47Z",
+          "input": "xxh64:f256c20cfac67ef8"
+        },
+        "sles": {
+          "captured": "2025-08-08T01:33:13Z",
+          "input": "xxh64:c9a123511dbeef3e"
+        },
+        "ubuntu": {
+          "captured": "2025-08-08T01:34:05Z",
+          "input": "xxh64:044bb2d292ae0b86"
+        },
+        "wolfi": {
+          "captured": "2025-08-08T01:32:53Z",
+          "input": "xxh64:319f37e49f6c6f20"
+        }
+      },
+      "status": {
+        "built": "2025-08-08T04:27:58Z",
+        "from": "https://grype.anchore.io/databases/v6/vulnerability-db_v6.0.3_2025-08-08T01:32:52Z_1754627278.tar.zst?checksum=sha256%3Abf5f5d2772ed5f865c7d9c9e3101f7d92a44086a26a5f8ee023ad8393a42acda",
+        "path": "/home/wlan/.cache/grype/db/6/vulnerability.db",
+        "schemaVersion": "v6.0.3",
+        "valid": true
+      }
+    },
+    "name": "grype",
+    "timestamp": "2025-08-08T10:31:55.622182331-07:00",
+    "version": "0.91.2"
+  },
+  "distro": {
+    "idLike": null,
+    "name": "",
+    "version": ""
+  },
+  "matches": [],
+  "source": {
+    "target": ".",
+    "type": "directory"
+  }
+}

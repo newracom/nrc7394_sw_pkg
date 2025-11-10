@@ -19,6 +19,7 @@
 
 #include <net/mac80211.h>
 #include "nrc.h"
+#include "wim.h"
 #include "nrc-debug.h"
 
 /*#define CONFIG_NRC_HIF_DEBUG_READ*/
@@ -81,6 +82,7 @@ struct nrc_hif_ops {
 	void (*close)(struct nrc_hif_device *dev);
 	void (*reset_device)(struct nrc_hif_device *dev);
 	void (*reset_rx)(struct nrc_hif_device *dev);
+	void (*reset_tx)(struct nrc_hif_device *dev);
 	void (*wakeup)(struct nrc_hif_device *dev);
 	int (*test)(struct nrc_hif_device *dev);
 	void (*config)(struct nrc_hif_device *dev);
@@ -125,6 +127,7 @@ struct nrc_hif_device {
 #if defined(CONFIG_DELAY_WAKE_TARGET)
 	ktime_t ps_time;
 #endif
+	struct completion wake_done;
 };
 
 /* struct nrc_hif_rx_info - additional information on rx
@@ -291,6 +294,7 @@ static inline int nrc_hif_resume(struct nrc_hif_device *dev)
 	if (dev->hif_ops->resume)
 		dev->hif_ops->resume(dev);
 
+	//complete(&dev->wake_done);
 	return 0;
 }
 
@@ -403,6 +407,8 @@ int nrc_xmit_wim_request(struct nrc *nw, struct sk_buff *skb);
 int nrc_xmit_wim_powersave(struct nrc *nw, struct sk_buff *skb_src, uint16_t ps_enable, uint64_t duration);
 struct sk_buff *nrc_xmit_wim_request_wait(struct nrc *nw,
 		struct sk_buff *skb, int timeout);
+int nrc_xmit_wim_request_and_return (struct nrc *nw,
+		struct sk_buff *skb, int timeout);
 int nrc_xmit_wim_response(struct nrc *nw, struct sk_buff *skb);
 int nrc_xmit_wim_simple_request(struct nrc *nw, int cmd);
 int nrc_xmit_frame(struct nrc *nw, s8 vif_index, u16 aid, struct sk_buff *skb);
@@ -416,6 +422,8 @@ int nrc_hif_debug_rx(void);
 int nrc_hif_close(struct nrc_hif_device *dev);
 int nrc_hif_wakeup_device(struct nrc_hif_device *dev);
 int nrc_hif_reset_device(struct nrc_hif_device *dev);
+int nrc_hif_reset_rx (struct nrc_hif_device *dev);
+int nrc_hif_reset_tx (struct nrc_hif_device *dev);
 int nrc_hif_test_status(struct nrc_hif_device *dev);
 void nrc_hif_down(struct nrc *nw);
 void nrc_hif_up(struct nrc *nw);
@@ -424,8 +432,31 @@ void nrc_hif_sync_unlock(struct nrc_hif_device *dev);
 void nrc_hif_flush_wq(struct nrc_hif_device *dev);
 struct nrc_hif_device *nrc_hif_alloc (struct device *dev, void *priv, struct nrc_hif_ops *ops);
 void nrc_hif_free (struct nrc_hif_device *hdev);
-void nrc_hif_wake_target (struct nrc_hif_device *dev);
+int nrc_hif_wake_target (struct nrc_hif_device *dev, int timeout_ms);
+void nrc_hif_wake_target_done (struct nrc_hif_device *dev);
 void nrc_hif_sleep_target_prepare (struct nrc_hif_device *dev, int mode);
 void nrc_hif_sleep_target_start (struct nrc_hif_device *dev, int mode);
 void nrc_hif_sleep_target_end (struct nrc_hif_device *dev, int mode);
+
+bool nrc_is_valid_vif (struct nrc *nw, struct ieee80211_vif *vif);
+bool ieee80211_is_data_data(__le16 fc);
+void insert_qos_ctrl_field_in_skb(struct sk_buff *skb, unsigned int hdr_len);
+#define MON_STA_LIST_NUM 32
+
+typedef struct _mon_sta_t{
+	struct list_head list;
+	uint8_t  addr[6];
+	uint16_t scrambler;
+	uint8_t  rcpi;
+	uint32_t first_ts;
+	uint32_t last_ts;
+} MON_STA_T;
+
+MON_STA_T* nrc_ampdu_mon_find_sta(uint8_t* addr);
+MON_STA_T* nrc_ampdu_mon_add_sta(uint8_t* addr);
+uint32_t nrc_ampdu_mon_get_ref_id(struct nrc *nw, struct sk_buff *skb);
+bool is_tcp_ack(struct sk_buff *skb);
+bool is_mgmt(struct sk_buff *skb);
+bool is_urgent_frame(struct sk_buff *skb);
+int nrc_xmit_wim(struct nrc *nw, struct sk_buff *skb, enum HIF_SUBTYPE stype);
 #endif

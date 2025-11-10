@@ -88,7 +88,7 @@ struct sk_buff *ieee80211_deauth_get(struct ieee80211_hw *hw,
 	struct sk_buff *skb;
 	struct ieee80211_mgmt *deauth;
 	struct ieee80211_rx_status *status;
-	struct nrc_sta *i_sta;
+	struct nrc_sta *i_sta = NULL;
 	struct ieee80211_tx_info *txi;
 
 	__le16 fc;
@@ -99,8 +99,11 @@ struct sk_buff *ieee80211_deauth_get(struct ieee80211_hw *hw,
 	if (nw == NULL || (tosta && sta == NULL))
 		return NULL;
 
+	if (sta) {
+		i_sta = to_i_sta(sta);
+	}
 	nrc_mac_dbg("%s: cipher_pairwise:%d", __func__, nw->cipher_pairwise);
-	if (nw->cipher_pairwise == WLAN_CIPHER_SUITE_AES_CMAC) {
+	if (nw->cipher_pairwise == WLAN_CIPHER_SUITE_AES_CMAC && i_sta && i_sta->state == IEEE80211_STA_AUTHORIZED) {
 		/* PMF Handling */
 		if(tosta) ccmp_mic_len = 8; /* only need CCMP hdr. MIC will appended on Target */
 		else ccmp_mic_len = 16; /* need CCMP + MIC hdr */
@@ -139,7 +142,6 @@ struct sk_buff *ieee80211_deauth_get(struct ieee80211_hw *hw,
 		*reason_code = reason;
 
 		if (tosta) {
-			i_sta = to_i_sta(sta);
 			txi = IEEE80211_SKB_CB(skb);
 			if (txi) {
 				txi->control.hw_key = i_sta->ptk;

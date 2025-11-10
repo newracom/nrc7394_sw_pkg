@@ -44,7 +44,9 @@ void nrc_stats_rssi_deinit(void);
 void nrc_stats_rssi_update(int8_t rssi);
 int nrc_stats_rssi(void);
 
-uint32_t nrc_stats_calc_metric(int rssi);
+void nrc_stats_update_tx_stats(struct nrc_tx_stats* tx_stats);
+uint32_t nrc_stats_calc_metric(void);
+//uint32_t nrc_stats_calc_metric(int rssi);
 uint32_t nrc_stats_metric(uint8_t *macaddr);
 int nrc_stats_set_mesh_rssi_threshold(int rssi);
 int nrc_stats_get_mesh_rssi_threshold(void);

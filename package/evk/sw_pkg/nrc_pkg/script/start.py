@@ -4,6 +4,8 @@ import sys, os, time, subprocess, re
 import threading
 from mesh import *
 script_path = "/home/pi/nrc_pkg/script/"
+s1g_ch_support_country_list = ["US", "JP", "TW", "AU", "NZ", "K1", "K2", "SG"]
+eu_ch_support_country_list = ["AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK", "GB", "SA"]
 
 # Default Configuration (you can change value you want here)
 ##################################################################################
@@ -11,7 +13,7 @@ script_path = "/home/pi/nrc_pkg/script/"
 max_cpuclock      = 1         # Set Max CPU Clock : 0(off) or 1(on)
 ##################################################################################
 # Firmware Conf.
-model             = 7394      # 7292/7393/7394
+model             = 7394      # 7292/7394
 fw_download       = 1         # 0(FW Download off) or 1(FW Download on)
 fw_name           = 'uni_s1g.bin'
 ##################################################################################
@@ -59,12 +61,20 @@ guard_int         = 'auto'   # Guard Interval ('auto' (adaptive) or 'long'(LGI) 
 # S1G Short Beacon (AP & MESH Only)
 #  If disabled, AP sends only S1G long beacon every BI
 #  Recommend using S1G short beacon for network efficiency (Default: enabled)
-short_bcn_enable  = 1        # 0 (disable) or 1 (enable)
+short_bcn_enable  = 0        # 0 (disable) or 1 (enable)
 #--------------------------------------------------------------------------------#
 # Legacy ACK enable (AP & STA)
 #  If disabled, AP/STA sends only NDP ack frame
 #  Recommend using NDP ack mode  (Default: disable)
 legacy_ack_enable  = 0        # 0 (NDP ack mode) or 1 (legacy ack mode)
+#--------------------------------------------------------------------------------#
+# DAC (Distributed Authentication Control) (AP only)
+#  If enabled, AP sends beaon/probe response frame including authentication control IE
+auth_control_enable   = 0	# 0 (disable) or 1 (enable)
+auth_control_slot     = 100	# slot duration (in TU) (1~127)
+auth_control_scale    = 10	# scale (1 or 10)
+auth_control_ti_min   = 8	# mininum time interval (in scale * BI) (1~127)
+auth_control_ti_max   = 64 	# maximum time interval (in scale * BI) (1~255)
 #--------------------------------------------------------------------------------#
 # Beacon Bypass enable (STA only)
 #  If enabled, STA receives beacon frame from other APs even connected
@@ -104,8 +114,12 @@ relay_nat         = 1        # 0 (not use NAT) 1 (use NAT - no need to add routi
 power_save        = 0        # STA (power save type 0~3)
 ps_timeout        = '3s'     # STA (timeout before going to sleep) (min:1000ms)
 sleep_duration    = '3s'     # STA (sleep duration only for nonTIM deepsleep) (min:1000ms)
-listen_interval   = 1000     # STA (listen interval in BI unit) (max:65535)
+listen_interval   = 1000     # STA (listen interval in BI unit) (max:65530)
                              # Listen Interval time should be less than bss_max_idle time to avoid association reject
+#--------------------------------------------------------------------------------#
+# Idle Mode (STA Only)
+#  When The device is running, but idle, The device enters Deep_Sleep(nonTIM)
+idle_mode = 0      # 0 (disable) or 1 (enable)
 #--------------------------------------------------------------------------------#
 # BSS MAX IDLE PERIOD (aka. keep alive) (AP Only)
 #  STA should follow (i.e STA should send any frame before period),if enabled on AP
@@ -141,18 +155,36 @@ reverse_scrambler = 1         # 0 (disable) or 1 (enable)
 # Use bridge setup in br0 interface
 use_bridge_setup  = 0         # AP & STA : 0 (not use bridge setup) or n (use bridge setup with eth(n-1))
                               # RELAY : 0 (not use bridge setup) or 1 (use bridge setup with wlan0,wlan1)
+bridge_ip_mode = 1            # 0i (static ip) 1 (dhcp client) 2 (dhcp server)
 #--------------------------------------------------------------------------------#
 # Supported CH Width (STA Only)
 support_ch_width  = 1         # 0 (1/2MHz Support) or 1 (1/2/4MHz Support)
 #--------------------------------------------------------------------------------#
 # Use Power save pretend operation for no response STA
 power_save_pretend  = 0      # 0 (disable) or 1 (enable)
+#--------------------------------------------------------------------------------#
+# Duty cycle configuration
+duty_cycle_enable = 0      # 0 (disable) or 1 (enable)
+duty_cycle_window = 0
+duty_cycle_duration = 0
+#--------------------------------------------------------------------------------#
+# CCA Threshold
+cca_threshold = -75
+#--------------------------------------------------------------------------------#
+# TWT Wake Interval, Service Number, Service Period
+# Two out of three values should be set, and the remaining value will be automatically calculated.
+twt_int = 0					# 0 (disable) or Wake Interval (usec)
+twt_num = 0					# 0 (disable) or Service Number
+twt_sp = 0					# 0 (disable) or Service Period (usec)
+twt_force_sleep = 0         # force sleep at the end of service
+twt_num_in_group = 1        # Max STA Number in one Slot (default 1)
+twt_algo = 0                # 0 (Balanced) or 1 (FCFS)
+#--------------------------------------------------------------------------------#
+# Use EEPROM for sysconfig & RFCAL
+use_eeprom_config  = 0         # 0 (Flash Memory) or 1 (EEPROM)
 ##################################################################################
 
 def check(interface):
-    if int(use_bridge_setup) > 0:
-        os.system('sudo dhclient ' + interface +' -nw -v')
-
     ifconfig_cmd = "ifconfig " + interface
     ifconfig_process = subprocess.Popen(ifconfig_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     ifconfig_lines = ifconfig_process.communicate()[0]
@@ -171,27 +203,24 @@ def check(interface):
 def usage_print():
     print("Usage: \n\tstart.py [sta_type] [security_mode] [country] [channel] [sniffer_mode] \
             \n\tstart.py [sta_type] [security_mode] [country] [mesh_mode] [mesh_peering] [mesh_ip]")
-    print("Argument:    \n\tsta_type      [0:STA   |  1:AP  |  2:SNIFFER  | 3:RELAY |  4:MESH | 5:IBSS] \
+    print("Argument:    \n\tsta_type      [0:STA   |  1:AP  |  2:SNIFFER  | 3:RELAY |  4:MESH] \
             \n\tsecurity_mode [0:Open  |  1:WPA2-PSK  |  2:WPA3-OWE  |  3:WPA3-SAE | 4:WPS-PBC] \
-                         \n\tcountry       [US:USA  |  JP:Japan  |  TW:Taiwan  | EU:EURO | CN:China | \
-                         \n\t               AU:Australia  |  NZ:New Zealand  | K1:Korea-USN  | K2:Korea-MIC] \
+                         \n\tcountry       [US:USA  |  JP:Japan  |  TW:Taiwan  |  AU:Australia  |  NZ:New Zealand  | \
+                         \n\t               K1:Korea-USN  |  K2:Korea-MIC  |  SG:Singapore | \
+                         \n\t               and EU channel support countries(EU countries, GB and SA)] \
                          \n\t----------------------------------------------------------- \
                          \n\tchannel       [S1G Channel Number]   * Only for Sniffer & AP \
                          \n\tsniffer_mode  [0:Local | 1:Remote]   * Only for Sniffer \
                          \n\tmesh_mode     [0:MPP | 1:MP | 2:MAP] * Only for Mesh \
                          \n\tmesh_peering  [Peer MAC address]     * Only for Mesh \
-                         \n\tmesh_ip       [Static IP address]    * Only for Mesh \
-                         \n\tibss_ip       [0:DHCPC or static IP | 1:DHCPS]    * Only for IBSS")
+                         \n\tmesh_ip       [Static IP address]    * Only for Mesh")
     print("Example:  \n\tOPEN mode STA for US                : ./start.py 0 0 US \
                       \n\tSecurity mode AP for US                : ./start.py 1 1 US \
                       \n\tLocal Sniffer mode on CH 40 for Japan  : ./start.py 2 0 JP 40 0 \
                       \n\tSAE mode Mesh AP for US                : ./start.py 4 3 US 2 \
                       \n\tMesh Point with static ip              : ./start.py 4 3 US 1 192.168.222.1 \
                       \n\tMesh Point with manual peering         : ./start.py 4 3 US 1 8c:0f:fa:00:29:46 \
-                      \n\tMesh Point with manual peering & ip    : ./start.py 4 3 US 1 8c:0f:fa:00:29:46 192.168.222.1 \
-                      \n\tOPEN mode IBSS for US with DHCP server      : ./start.py 5 0 US 1 \
-                      \n\tSecurity mode IBSS for US with DHCPC client : ./start.py 5 1 US 0 \
-                      \n\tSecurity mode IBSS for US with static IP    : ./start.py 5 1 US 0 192.168.200.17")
+                      \n\tMesh Point with manual peering & ip    : ./start.py 4 3 US 1 8c:0f:fa:00:29:46 192.168.222.1")
     print("Note: \n\tsniffer_mode should be set as '1' when running sniffer on remote terminal \
                   \n\tMPP, MP mode support only Open, WPA3-SAE security mode")
     exit()
@@ -207,19 +236,15 @@ def strSTA():
         return 'RELAY'
     elif int(sys.argv[1]) == 4:
         return 'MESH'
-    elif int(sys.argv[1]) == 5:
-        if int(sys.argv[4]) == 1:
-            return 'IBSS_DHCPS'
-        elif int(sys.argv[4]) == 0:
-            return 'IBSS'
-        else:
-            usage_print()
     else:
         usage_print()
 
+def checkEUCountry():
+    if str(sys.argv[3]) in eu_ch_support_country_list:
+        return True
+
 def checkCountry():
-    country_list = ["US", "CN", "JP", "EU", "TW", "AU", "NZ", "K1", "K2"]
-    if str(sys.argv[3]) in country_list:
+    if checkEUCountry() or str(sys.argv[3]) in s1g_ch_support_country_list:
         return
     else:
         usage_print()
@@ -253,15 +278,6 @@ def checkMeshUsage():
             usage_print()
     argv_print()
 
-def checkIBSSUsage():
-    global sw_enc, ampdu_enable, static_ip
-    if len(sys.argv) < 5:
-        usage_print()
-    ampdu_enable = 0
-    if len(sys.argv) == 6:
-        if isIP(sys.argv[5]):
-            static_ip = sys.argv[5]
-
 def checkParamValidity():
     if strSTA() == 'STA' and int(power_save) > 0 and int(listen_interval) > 65535:
         print("Max listen_interval is 65535!")
@@ -284,8 +300,6 @@ def strSecurity():
 def strPSType():
     if int(power_save) == 0:
         return 'Always On'
-    elif int(power_save) == 1:
-        return 'Modem Sleep (TIM)'
     elif int(power_save) == 2:
         return 'Deep Sleep (TIM)'
     elif int(power_save) == 3:
@@ -326,9 +340,7 @@ def strMeshMode():
         usage_print()
 
 def strOriCountry():
-    if str(sys.argv[3]) == 'EU':
-        return 'DE'
-    elif str(sys.argv[3]) == 'K1' or str(sys.argv[3]) == 'K2':
+    if str(sys.argv[3]) == 'K1' or str(sys.argv[3]) == 'K2':
         return 'KR'
     else:
         return str(sys.argv[3])
@@ -358,20 +370,15 @@ def strBDName():
     else:
         return 'nrc' + str(model) + '_bd.dat'
 
-def get_linux_kernel_release_version():
-    try:
-        with open('/proc/version', 'r') as version_file:
-            version_string = version_file.read()
-            match = re.search(r'Linux version (\d+)\.(\d+)\.(\d+)', version_string)
-            if match:
-                major = int(match.group(1))
-                minor = int(match.group(2))
-                patch = int(match.group(3))
-                return major, minor, patch
-            else:
-                return None
-    except FileNotFoundError:
-        return None
+def configure_power_save_gpio(use_eeprom_config):
+    if int(use_eeprom_config) == 1:
+        #7394 STA using EEPROM B/D (host_gpio_out(15) --> target_gpio_in(12))
+        ps_gpio_arg = " power_save_gpio=15,12,1"
+    else:
+        #7394 STA (host_gpio_out(17) --> target_gpio_in(14))
+        ps_gpio_arg = " power_save_gpio=17,14,1"
+
+    return ps_gpio_arg
 
 def argv_print():
     print("------------------------------")
@@ -402,11 +409,17 @@ def argv_print():
             print("Listen Interval  : " + str(listen_interval))
     if strSTA() == 'MESH':
         print("Mesh Mode        : " + strMeshMode())
+    if int(use_eeprom_config) == 1:
+        print("CONFIG_LOCATION  : EEPROM")
+    else:
+        print("CONFIG_LOCATION  : FLASH")
     print("------------------------------")
 
 def copyConf():
-    os.system("sudo /home/pi/nrc_pkg/sw/firmware/copy " + str(model) + " " + strBDName())
+    os.system("sudo /home/pi/nrc_pkg/sw/firmware/copy.sh " + str(model) + " " + strBDName() + " " + str(use_eeprom_config))
     os.system("/home/pi/nrc_pkg/script/conf/etc/ip_config.sh " + strSTA() + " " +  str(relay_type) + " " + str(static_ip) + " " + str(batman))
+    if int(use_bridge_setup) > 0:
+        os.system("sudo /home/pi/nrc_pkg/script/conf/etc/ip_config_bridge.sh " + strSTA() + " " + str(use_bridge_setup - 1) + " " + str(bridge_ip_mode))
 
 def startNAT():
     os.system('sudo sh -c "echo 1 > /proc/sys/net/ipv4/ip_forward"')
@@ -452,7 +465,10 @@ def addWLANInterface(interface):
 
 def self_config_check():
     country = str(sys.argv[3])
+    if checkEUCountry():
+        country = "EU"
     conf_path = script_path + "conf/" + country
+    conf_temp = script_path + "conf/temp_self_config.conf"
     conf_file = ""
     orig_channel = ""
     global dwell_time
@@ -468,9 +484,9 @@ def self_config_check():
     elif strSecurity() == 'WPA-PBC' :
         conf_file+="/ap_halow_pbc.conf"
 
-    print("country: " + country +", prefer_bw: " + str(prefer_bw)+ ", dwell_time: "+ str(dwell_time))
+    print("country: " + country + ", prefer_bw: " + str(prefer_bw) + ", dwell_time: " + str(dwell_time))
 
-    self_conf_cmd = script_path+'cli_app show self_config ' + country +' '+str(prefer_bw) +' ' + str(dwell_time) + ' '
+    self_conf_cmd = script_path + 'cli_app show self_config ' + country + ' ' + str(prefer_bw) + ' ' + str(dwell_time) + ' '
     if int(dwell_time) > 1000:
         dwell_time = 1000
     elif int(dwell_time) < 10:
@@ -478,11 +494,11 @@ def self_config_check():
     # Max num of 1M channel is 26
     checkout_timeout = int(dwell_time)*26
     try:
-        print("Start CCA scan.... It will take up to "+str(checkout_timeout/1000) +" sec to complete")
-        result = subprocess.check_output('timeout ' +str(checkout_timeout) +' ' +self_conf_cmd, shell=True)
+        print("Start CCA scan.... It will take up to " + str(checkout_timeout/1000) + " sec to complete")
+        result = subprocess.check_output('timeout ' + str(checkout_timeout) + ' ' + self_conf_cmd, shell=True)
         result = result.decode()
     except:
-        sys.exit("[self_configuration] No return best channel within " +str(checkout_timeout/1000) +" seconds")
+        sys.exit("[self_configuration] No return best channel within " + str(checkout_timeout/1000) + " seconds")
 
     if 'no_self_conf' in result:
         print("Target FW does NOT support self configuration. Please check FW")
@@ -490,16 +506,16 @@ def self_config_check():
     else:
         print(result)
         best_channel = re.split('[:,\s,\t,\n]+', result)[-3]
-        os.system("sudo cp " + conf_path+conf_file + " temp_self_config.conf")
-        os.system("sudo mv temp_self_config.conf " +script_path +"conf/")
-        os.system("sed -i '/channel=/d' " + script_path + "conf/temp_self_config.conf")
-        os.system("sed -i '/hw_mode=/d' " + script_path + "conf/temp_self_config.conf")
-        os.system("sed -i '/#ssid=/d' " + script_path + "conf/temp_self_config.conf")
+        os.system("sudo cp " + conf_path + conf_file + " " + conf_temp)
+        os.system("sed -i '/channel=/d' " + conf_temp)
+        os.system("sed -i '/hw_mode=/d' " + conf_temp)
+        os.system("sed -i '/#ssid=/d' " + conf_temp)
         if int(best_channel) < 36:
-            os.system('sed -i "/ssid=.*/ahw_mode=' + 'g' +'" ' + script_path + 'conf/temp_self_config.conf')
+            os.system('sed -i "/ssid=.*/ahw_mode=' + 'g' +'" ' + conf_temp)
         else:
-            os.system('sed -i "/ssid=.*/ahw_mode=' + 'a' +'" ' + script_path + 'conf/temp_self_config.conf')
-        os.system('sed -i "/hw_mode=.*/achannel=' + best_channel +'" ' + script_path + 'conf/temp_self_config.conf')
+            os.system('sed -i "/ssid=.*/ahw_mode=' + 'a' +'" ' + conf_temp)
+        os.system('sed -i "/hw_mode=.*/achannel=' + best_channel +'" ' + conf_temp)
+        os.system("sed -i \"s/^country_code=.*/country_code=%s/g\" %s" % (strOriCountry(), conf_temp))
         print("Start with channel: " + best_channel)
         return 'Done'
 
@@ -536,16 +552,22 @@ def setSnifferParam():
     global sw_enc, ampdu_enable, bss_max_idle_enable, power_save, ndp_ack_1m, listen_interval
     sw_enc=0; ampdu_enable=0; bss_max_idle_enable=0; power_save=0; ndp_ack_1m=0; listen_interval=0;
 
+def setMeshParam():
+    # Re-define parameters for MESH mode
+    global short_bcn_enable
+    short_bcn_enable=0
+
 def setModuleParam():
     # Set module parameters based on configuration
 
     # Initialize arguments for module params
-    spi_arg = fw_arg = power_save_arg = sleep_duration_arg = \
+    spi_arg = fw_arg = power_save_arg = sleep_duration_arg = idle_mode_arg = \
     bss_max_idle_arg = ndp_preq_arg = ndp_ack_1m_arg = auto_ba_arg =\
     sw_enc_arg =  cqm_arg = listen_int_arg = drv_dbg_arg = \
     sbi_arg = discard_deauth_arg = dbg_fc_arg = kr_band_arg = legacy_ack_arg = \
     be_arg = rs_arg = beacon_bypass_arg = ps_gpio_arg = bd_name_arg = \
-    support_ch_width_arg = ps_pretend_arg = ""
+    support_ch_width_arg = ps_pretend_arg = duty_cycle_arg = cca_thresh_arg = \
+    twt_arg = auth_control_arg = ""
 
     # Check ft232h_usb_spi
     if int(ft232h_usb_spi) > 0:
@@ -562,6 +584,10 @@ def setModuleParam():
     # Set parameters for SNIFFER
     if strSTA() == 'SNIFFER':
         setSnifferParam()
+
+    # Set parameters for MESH
+    if strSTA() == 'MESH':
+        setMeshParam()
 
     # module param for spi setting
     # default:
@@ -580,9 +606,8 @@ def setModuleParam():
     # module param for power_save
     # default: power_save(0: active mode) sleep_duration(0,0)
     if strSTA() == 'STA' and int(power_save) > 0:
-        #7393/7394 STA (host_gpio_out(17) --> target_gpio_in(14))
-        if str(model) == "7393" or str(model) == "7394":
-            ps_gpio_arg = " power_save_gpio=17,14"
+        if str(model) == "7394":
+            ps_gpio_arg = configure_power_save_gpio(use_eeprom_config)
         power_save_arg = " power_save=" + str(power_save)
         if int(power_save) == 3:
             sleep_duration_arg = " sleep_duration=" + re.sub(r'[^0-9]','',sleep_duration)
@@ -591,6 +616,18 @@ def setModuleParam():
                 sleep_duration_arg += ",0"
             else:
                 sleep_duration_arg += ",1"
+
+    # module param for IDLE mode
+    # default: idle_mode(0: disabled)
+    if strSTA() == 'STA' and int(idle_mode) == 1:
+        idle_mode_arg = " idle_mode=1"
+        if str(model) == "7394":
+            ps_gpio_arg = configure_power_save_gpio(use_eeprom_config)
+
+    if int(duty_cycle_enable) == 1:
+        duty_cycle_arg = " set_duty_cycle="+str(duty_cycle_enable)+","+str(duty_cycle_window)+","+str(duty_cycle_duration)
+
+    cca_thresh_arg = " set_cca_threshold="+str(cca_threshold)
 
     # module param for bss_max_idle (keep alive)
     # default: bss_max_idle(0: disabled)
@@ -625,13 +662,21 @@ def setModuleParam():
 
     # module param for short beacon
     # default: enable_short_bi(1: Short Beacon enabled)
-    if int(short_bcn_enable) == 0:
+    if int(short_bcn_enable) == 1:
+        sbi_arg = " enable_short_bi=1"
+    elif int(short_bcn_enable) == 0:
         sbi_arg = " enable_short_bi=0"
 
     # module param for legacy ack mode
     # default: 0(Legacy ACK disabled)
     if int(legacy_ack_enable) == 1:
         legacy_ack_arg = " enable_legacy_ack=1"
+
+    # module param for authentication control
+    # default: 0(disabled)
+    if int(auth_control_enable) == 1 and strSTA() == 'AP':
+        auth_control_arg = " set_auth_control="+str(auth_control_enable)+","+str(auth_control_slot)+","+\
+                         str(auth_control_ti_min)+","+str(auth_control_ti_max)+ ","+str(auth_control_scale)
 
     # module param for beacon bypass
     # default: 0(beacon bypass disabled)
@@ -680,32 +725,33 @@ def setModuleParam():
     if int(power_save_pretend) == 1:
         ps_pretend_arg = " ps_pretend=1"
 
+    # module param for TWT
+    # default: disabled
+    if int(twt_num) > 0 or int(twt_sp) > 0 or int(twt_int) > 0:
+        twt_arg = " twt_num=" + str(twt_num) + " twt_sp=" + str(twt_sp) + " twt_int=" + str(twt_int) + \
+                  " twt_force_sleep=" + str(twt_force_sleep) + " twt_num_in_group=" + str(twt_num_in_group) + \
+                  " twt_algo=" + str(twt_algo)
+
     # module param for board data file
     # default: bd.dat
     bd_name_arg = " bd_name=" + strBDName()
-
-    # module parameter setting while loading NRC driver
-    # Default value is used if arg is not defined
-    module_param = ""
-
-    # From linux kernel version 5.16 or later, spi_arg is not used as a module param.
-    major, minor, patch = get_linux_kernel_release_version()
 
     # module param for supported channel width
     # default : support 1/2/4MHz (1: 1/2/4Mhz)
     if strSTA() == 'STA' and int(support_ch_width) == 0:
         support_ch_width_arg = " support_ch_width=0"
 
-    if major*1000+minor < 5016:
-        module_param = spi_arg
 
-    module_param += fw_arg + \
-                 power_save_arg + sleep_duration_arg + bss_max_idle_arg + \
+    # module parameter setting while loading NRC driver
+    # Default value is used if arg is not defined
+
+    module_param = spi_arg + fw_arg + \
+                 power_save_arg + sleep_duration_arg + idle_mode_arg + bss_max_idle_arg + \
                  ndp_preq_arg + ndp_ack_1m_arg + auto_ba_arg + sw_enc_arg + \
                  cqm_arg + listen_int_arg + drv_dbg_arg + \
                  sbi_arg + discard_deauth_arg + dbg_fc_arg + kr_band_arg + legacy_ack_arg + \
                  be_arg + rs_arg + beacon_bypass_arg + ps_gpio_arg + bd_name_arg + support_ch_width_arg + \
-                 ps_pretend_arg \
+                 ps_pretend_arg + duty_cycle_arg + cca_thresh_arg + twt_arg + auth_control_arg
 
     return module_param
 
@@ -765,27 +811,17 @@ def run_common():
     print("[5] Set guard interval: " + guard_int)
     os.system('/home/pi/nrc_pkg/script/cli_app set gi ' + guard_int)
 
-    print("[*] Start DHCPCD and DNSMASQ")
-    startDHCPCD()
-    startDNSMASQ()
-
-def run_ibss(interface):
-    country = str(sys.argv[3])
-    os.system("sudo killall -9 wpa_supplicant")
-
-    if int(supplicant_debug) == 1:
-        debug = '-dddd'
-    else:
-        debug = ''
-
-    print("[6] Start wpa_supplicant on " + interface)
-    if strSecurity() == 'OPEN':
-        os.system("sudo wpa_supplicant -i" + interface + " -c /home/pi/nrc_pkg/script/conf/" + country + "/ibss_halow_open.conf " + debug + " &")
-    elif strSecurity() == 'WPA2-PSK':
-        os.system("sudo wpa_supplicant -i" + interface + " -c /home/pi/nrc_pkg/script/conf/" + country + "/ibss_halow_wpa2.conf " + debug + " &")
+    if strSTA() != 'STA' and strSTA() != 'AP':
+        print("[*] Start DHCPCD and DNSMASQ")
+        startDHCPCD()
+        startDNSMASQ()
 
 def run_sta(interface):
     country = str(sys.argv[3])
+    if checkEUCountry():
+        country="EU"
+    conf_dir = script_path + "conf/" + country
+    conf_file = ""
     os.system("sudo killall -9 wpa_supplicant")
 
     if int(use_bridge_setup) > 0:
@@ -811,25 +847,36 @@ def run_sta(interface):
 
     print("[6] Start wpa_supplicant on " + interface)
     if strSecurity() == 'OPEN':
-        os.system("sudo wpa_supplicant -i" + interface + " -c /home/pi/nrc_pkg/script/conf/" + country + "/sta_halow_open.conf " + bridge + debug + " &")
+        conf_file = "/sta_halow_open.conf "
     elif strSecurity() == 'WPA2-PSK':
-        os.system("sudo wpa_supplicant -i" + interface + " -c /home/pi/nrc_pkg/script/conf/" + country + "/sta_halow_wpa2.conf " + bridge + debug + " &")
+        conf_file = "/sta_halow_wpa2.conf "
     elif strSecurity() == 'WPA3-OWE':
-        os.system("sudo wpa_supplicant -i" + interface + " -c /home/pi/nrc_pkg/script/conf/" + country + "/sta_halow_owe.conf " + bridge + debug + " &")
+        conf_file = "/sta_halow_owe.conf "
     elif strSecurity() == 'WPA3-SAE':
-        os.system("sudo wpa_supplicant -i" + interface + " -c /home/pi/nrc_pkg/script/conf/" + country + "/sta_halow_sae.conf " + bridge + debug + " &")
+        conf_file = "/sta_halow_sae.conf "
     elif strSecurity() == 'WPA-PBC':
-        os.system("sudo wpa_supplicant -i" + interface + " -c /home/pi/nrc_pkg/script/conf/" + country + "/sta_halow_pbc.conf " + bridge + debug + " &")
-        time.sleep(1)
-        os.system("sudo wpa_cli wps_pbc")
+        conf_file = "/sta_halow_pbc.conf "
+
+    if conf_file != "":
+        if country == "EU":
+            os.system("sed -i \"s/^country=.*/country=%s/g\" %s" % ( str(sys.argv[3]), conf_dir + conf_file ) )
+        os.system("sudo wpa_supplicant -i" + interface + " -c " + conf_dir + conf_file + bridge + debug + " &")
+        if strSecurity() == 'WPA-PBC':
+            time.sleep(1)
+            os.system("sudo wpa_cli wps_pbc")
     time.sleep(3)
+
+    if strSTA() == 'STA':
+        print("[*] Start DHCPCD and DNSMASQ")
+        startDHCPCD()
+        startDNSMASQ()
 
     print("[7] Connect and DHCP")
     if int(use_bridge_setup) > 0:
         interface = 'br0'
     ret = check(interface)
     while ret == '':
-        print("Waiting for IP")
+
         time.sleep(5)
         ret = check(interface)
 
@@ -842,7 +889,8 @@ def launch_hostapd(interface, orig_hostapd_conf_file, country, debug, channel):
     TEMP_HOSTAPD_CONF = script_path +  "conf/temp_hostapd_config.conf"
     os.system("sudo cp %s %s" % ( orig_hostapd_conf_file,  TEMP_HOSTAPD_CONF ) )
     os.system("sed -i \"4s/.*/interface=%s/g\" %s" % ( interface, TEMP_HOSTAPD_CONF ) )
-
+    if country == "EU":
+        os.system("sed -i \"s/^country_code=.*/country_code=%s/g\" %s" % ( str(sys.argv[3]), TEMP_HOSTAPD_CONF ) )
     if channel:
         os.system("sed -i \"s/^channel=.*/channel=%s/g\" %s" % ( channel, TEMP_HOSTAPD_CONF ) )
 
@@ -855,7 +903,14 @@ def launch_hostapd(interface, orig_hostapd_conf_file, country, debug, channel):
 
 
 def run_ap(interface):
+    if strSTA() == 'AP':
+        print("[*] Start DHCPCD and DNSMASQ")
+        startDHCPCD()
+        startDNSMASQ()
+
     country = str(sys.argv[3])
+    if checkEUCountry():
+        country="EU"
     conf_path = script_path + "conf/" + country
     conf_file = ""
     global self_config
@@ -901,7 +956,7 @@ def run_ap(interface):
     print("[6] Start hostapd on " + interface)
 
     if(int(self_config)==1 and self_conf_result=='Done'):
-        os.system("sed -i " + '"4s/.*/interface=' + interface + '/g" '  + script_path +  "conf/temp_self_config.conf " )
+        os.system("sed -i " + '"4s/.*/interface=' + interface + '/g" ' + script_path + "conf/temp_self_config.conf " )
         os.system("sudo hostapd " + script_path + "conf/temp_self_config.conf " + debug +" &")
         if strSecurity() == 'WPA-PBC':
             time.sleep(1)
@@ -919,7 +974,7 @@ def run_ap(interface):
             os.system('sudo brctl addif br0 {w}'.format(w=interface))
         else :
             eth = 'eth' + str(int(use_bridge_setup) - 1)
-            os.system('sudo ifconfig {e} up; sudo ifconfig {w} 0.0.0.0; sudo ifconfig {e} 0.0.0.0; sudo brctl addif br0 {e}; sudo ifconfig br0 up; sudo dhclient br0 -v '.format(e=eth, w=interface))
+            os.system('sudo ifconfig {e} up; sudo ifconfig {w} 0.0.0.0; sudo ifconfig {e} 0.0.0.0; sudo brctl addif br0 {e}; sudo ifconfig br0 up '.format(e=eth, w=interface))
         os.system('sudo brctl show')
         time.sleep(3)
 
@@ -960,8 +1015,6 @@ if __name__ == '__main__':
         usage_print()
     elif strSTA() == 'MESH':
         checkMeshUsage()
-    elif strSTA() == 'IBSS' or strSTA() == 'IBSS_DHCPS':
-        checkIBSSUsage()
     else:
         argv_print()
 
@@ -998,8 +1051,6 @@ if __name__ == '__main__':
             run_map('wlan0', 'mesh0', str(sys.argv[3]), strSecurity(), supplicant_debug, peer, static_ip, batman)
         else:
             usage_print()
-    elif strSTA() == 'IBSS' or strSTA() == 'IBSS_DHCPS':
-       run_ibss('wlan0')
     else:
         usage_print()
 

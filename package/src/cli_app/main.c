@@ -57,6 +57,9 @@ int main(int argc, char* argv[])
 
 	if (argc > 1) {
 		cli_app_run_onetime(argc, argv);
+#if ENABLE_CLI_HISTORY
+		cli_history_free(&history);
+#endif // ENABLE_CLI_HISTORY
 		return 0;
 	}
 
@@ -162,6 +165,9 @@ int main(int argc, char* argv[])
 	print_line('=', print_line_len,"", 0,0);
 	print_line(' ', print_line_len,(char*)NRC_CLI_APP_EXIT_MSG, 0,0);
 	print_line('=', print_line_len,"", 0,0);
+#if ENABLE_CLI_HISTORY
+	cli_history_free(&history);
+#endif // ENABLE_CLI_HISTORY
 	return 0;
 }
 

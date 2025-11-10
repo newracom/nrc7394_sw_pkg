@@ -19,7 +19,7 @@ H2E has been INTENTIONALLY disabled due to the following reason:
 
 ## Current Status
 
-### Host mode: Support H2E but disabled
+### Host mode: Support H2E with sae_pwe=2 option
 
 Default setting of hostapd/wpa_supplicant.conf files
 ```
@@ -31,7 +31,7 @@ Default setting of hostapd/wpa_supplicant.conf files
 # hash-to-element mechanism has received more interoperability testing.
 # When using SAE password identifier, the hash-to-element mechanism is used
 # regardless of the sae_pwe parameter value.
-#sae_pwe=0
+sae_pwe=2
 ```
 
 ## H2E Activation
