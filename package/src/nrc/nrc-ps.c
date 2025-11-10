@@ -27,7 +27,7 @@ static char *ps_mode_str[] = {
     "DEEPSLEEP_NONTIM",
 };
 
-char *nrc_ps_mode_str (enum NRC_PS_MODE mode)
+static char *nrc_ps_mode_str (enum NRC_PS_MODE mode)
 {
     BUG_ON(mode >= NRC_PS_MAX);
 

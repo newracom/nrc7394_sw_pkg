@@ -83,6 +83,8 @@ void nrc_dump_wim(struct sk_buff *skb);
 void nrc_init_debugfs(struct nrc *nw);
 void nrc_exit_debugfs(void);
 
+int nrc_get_beacon_updated(void);
+
 #define nrc_mac_dbg(fmt, ...) nrc_dbg(NRC_DBG_MAC, fmt, ##__VA_ARGS__)
 #define nrc_ps_dbg(fmt, ...) nrc_dbg(NRC_DBG_PS, fmt, ##__VA_ARGS__)
 #define nrc_stats_dbg(fmt, ...) nrc_dbg(NRC_DBG_STATS, fmt, ##__VA_ARGS__)

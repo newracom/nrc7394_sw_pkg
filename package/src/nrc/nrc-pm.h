@@ -21,6 +21,6 @@
 #include "nrc.h"
 
 void ap_max_idle_timer_start (struct nrc *nw, struct nrc_vif *i_vif);
-
 void ap_max_idle_timer_stop (struct nrc *nw, struct nrc_vif *i_vif);
+
 #endif

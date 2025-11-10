@@ -210,7 +210,7 @@ static int rssi_compute(void *arr_t, int index, int count, bool early)
 			sum -= max;
 			return sum / (index - 2);
 		} else {
-			return sum / index;
+			return (index == 0) ? sum : (sum/index);
 		}
 	}
 

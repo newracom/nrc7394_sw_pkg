@@ -38,6 +38,7 @@
 #include "wim.h"
 #include "nrc-pm.h"
 #include "nrc-debug.h"
+#include "nrc-pm.h"
 
 /**
  * DOC: STA powersaving
@@ -246,13 +247,16 @@ static int ieee80211_disconnect_sta(struct ieee80211_vif *vif,
 
 	return 0;
 }
+
 #if KERNEL_VERSION(4, 15, 0) > LINUX_VERSION_CODE
 static void ap_max_idle_period_expire(unsigned long data)
-{
-	struct nrc_vif *i_vif = (struct nrc_vif *) data;
 #else
 static void ap_max_idle_period_expire(struct timer_list *t)
+#endif
 {
+#if KERNEL_VERSION(4, 15, 0) > LINUX_VERSION_CODE
+	struct nrc_vif *i_vif = (struct nrc_vif *) data;
+#else
 	struct nrc_vif *i_vif = from_timer(i_vif, t, max_idle_timer);
 #endif
 	struct nrc_sta *i_sta = NULL, *tmp = NULL;

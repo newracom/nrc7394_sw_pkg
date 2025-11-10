@@ -36,7 +36,7 @@
 #define WIM_MAX_DATA_SIZE           (512)
 #define WIM_MAX_TLV_SIZE            (1024)
 #define WIM_MAX_SIZE                (WIM_HEAD_SIZE \
-					+ WIM_MAX_DATA_SIZE + WIM_MAX_TLV_SIZE)
+					+ WIM_MAX_DATA_SIZE + WIM_MAX_TLV_SIZE + 22)
 #define WIM_MAX_TLV_SCAN_IE         (512)
 
 #ifndef __packed

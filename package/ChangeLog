@@ -4,6 +4,41 @@
 *
 *******************************************************************
 
+[2025-08-07]
+Change summary for version 1.3.1:
+
+Bugfix
+  * Issue where key configuration intermittently failed after connection
+  * Issue where auth control parameters could not be retrieved from beacon frames
+  * Issue where scans triggered by NDP Probe Requests did not work on relay's STA
+  * Issue where the guard interval was not restored after exiting power save mode
+
+Changes
+  * Support for Linux kernel 6.8
+  * Add GPIO-based band selection feature for W8 and W9
+  * Update the RSSI compensation pipeline and modified the internal LNA RSSI compensation table
+  * Bound the inputs for LPF (Low-Pass Filter) gain compensation and temperature-based power offset estimation
+  * Add support for GP17 ALT4 TX-ON monitoring function based on sysconfig
+  * Change GP17 init state (cold boot / wake-up) from output/high to input
+  * Update LBT pause time range to ensure compliance with ETSI EN 300 220 standard
+  * Improve performance through enhanced rate control
+  * Enhance TCP throughput under medium and weak signal conditions
+  * Implement TX power compensation based on temperature
+  * Increase buffer size to support the maximum length of vendor-specific IEs
+  * Update EU channels
+    o Add 868.5MHz/1MHz S1G channel #11 (Experimental)
+    o Add 869.5MHz/1MHz S1G channel #13 (Experimental)
+    o Add 864.0MHz/2MHz S1G channel #2 (Experimental)
+    o Add 866.0MHz/2MHz S1G channel #6
+    o Add 868.0MHz/2MHz S1G channel #10 (Experimental)
+    o Add 865.0MHz/4MHz S1G channel #4 (Experimental)
+    o Add 867.0MHz/4MHz S1G channel #8 (Experimental)
+  * Remove CN channels
+  * Integrate 800/900MHz channel support for TW/SG
+  * Add cli_app command to set MCS index for management frames
+    o cli_app set mgmt_mcs [on|off] [mcs]
+  * Add support for W25Q32JV/XT25F32F/ZD25WQ32C flash memories
+
 [2024-12-27]
 Change summary for version 1.3:
 

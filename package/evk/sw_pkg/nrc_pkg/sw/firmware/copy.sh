@@ -65,4 +65,4 @@ fi
 
 # List files in source and destination directories
 ls -al "${FIRMWARE_PATH}"
-ls -al "${LIB_FIRMWARE_PATH}/uni_s1g*"
+ls -al ${LIB_FIRMWARE_PATH}/uni_s1g*

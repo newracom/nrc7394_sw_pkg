@@ -51,7 +51,7 @@ static unsigned int checksum(unsigned char *buf, int size)
  * but checksum will not include padding bytes
  */
 
-void nrc_fw_update_frag(struct nrc_fw_priv *priv, struct fw_frag *frag)
+static void nrc_fw_update_frag(struct nrc_fw_priv *priv, struct fw_frag *frag)
 {
 	struct fw_frag_hdr *frag_hdr = &priv->frag_hdr;
 

@@ -1054,8 +1054,10 @@ static int capi_bss_max_idle(struct sk_buff *skb, struct genl_info *info)
 				/* (Default) Convert in USF Format (Value (14bit) * USF(2bit)) and save it */
 				if (no_usf_auto_convert) {
 					i_vif->max_idle_period = max_idle;
+					no_convert_usf = true;
 				} else {
 					i_vif->max_idle_period = convert_usf(max_idle);
+					no_convert_usf = false;
 				}
 			}
 		} else {
@@ -1065,7 +1067,8 @@ static int capi_bss_max_idle(struct sk_buff *skb, struct genl_info *info)
 				i_vif->max_idle_period = max_idle;
 			}
 		}
-		nrc_dbg(NRC_DBG_CAPI, "%s max_idle(%d) vs converted_max_idle(%d)", __func__, max_idle, i_vif->max_idle_period);
+		nrc_dbg(NRC_DBG_CAPI, "%s (no_convert:%d) max_idle(%d) vs converted_max_idle(%d)",
+			__func__, no_usf_auto_convert, max_idle, i_vif->max_idle_period);
 	}
 
 	return capi_sta_reply(NL_WFA_CAPI_BSS_MAX_IDLE, info,
@@ -1476,7 +1479,10 @@ static int cli_app_get_info(struct sk_buff *skb, struct genl_info *info)
 
 	if (strcmp(cmd, "show signal -sr -num") == 0) {
 		//start monitoring
-		signal_monitor = true;
+		if (!signal_monitor) {
+			signal_monitor = true;
+			msleep(500);
+		}
 		nrc_dbg(NRC_DBG_CAPI, "%s Start Signal Monitor (%d)", __func__, signal_monitor);
 		total_count = nrc_stats_report_count();
 		sprintf(cmd_resp, "%d,%d", total_count,
