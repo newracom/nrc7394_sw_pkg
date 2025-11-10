@@ -438,9 +438,6 @@ void nrc_hif_sleep_target_prepare (struct nrc_hif_device *dev, int mode);
 void nrc_hif_sleep_target_start (struct nrc_hif_device *dev, int mode);
 void nrc_hif_sleep_target_end (struct nrc_hif_device *dev, int mode);
 
-bool nrc_is_valid_vif (struct nrc *nw, struct ieee80211_vif *vif);
-bool ieee80211_is_data_data(__le16 fc);
-void insert_qos_ctrl_field_in_skb(struct sk_buff *skb, unsigned int hdr_len);
 #define MON_STA_LIST_NUM 32
 
 typedef struct _mon_sta_t{
@@ -452,11 +449,6 @@ typedef struct _mon_sta_t{
 	uint32_t last_ts;
 } MON_STA_T;
 
-MON_STA_T* nrc_ampdu_mon_find_sta(uint8_t* addr);
-MON_STA_T* nrc_ampdu_mon_add_sta(uint8_t* addr);
-uint32_t nrc_ampdu_mon_get_ref_id(struct nrc *nw, struct sk_buff *skb);
 bool is_tcp_ack(struct sk_buff *skb);
-bool is_mgmt(struct sk_buff *skb);
-bool is_urgent_frame(struct sk_buff *skb);
-int nrc_xmit_wim(struct nrc *nw, struct sk_buff *skb, enum HIF_SUBTYPE stype);
+
 #endif
