@@ -40,7 +40,7 @@ static int nrc_nl_pre_doit(const struct genl_ops *ops,
 			   struct sk_buff *skb, struct genl_info *info)
 #endif
 #else
-static int nrc_nl_pre_doit(struct genl_ops *ops,
+static int nrc_nl_pre_doit(struct genl_split_ops *ops,
 			   struct sk_buff *skb, struct genl_info *info)
 #endif
 {
@@ -66,7 +66,7 @@ static void nrc_nl_post_doit(const struct genl_ops *ops,
 			     struct sk_buff *skb, struct genl_info *info)
 #endif
 #else
-static void nrc_nl_post_doit(struct genl_ops *ops,
+static void nrc_nl_post_doit(struct genl_split_ops *ops,
 			     struct sk_buff *skb, struct genl_info *info)
 #endif
 {
