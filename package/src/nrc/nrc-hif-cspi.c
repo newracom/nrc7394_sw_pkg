@@ -384,6 +384,10 @@ static ssize_t _c_spi_write(struct spi_device *spi, u8 *buf, ssize_t size)
 
 	if (size == 0 || buf == NULL)
 		return -EINVAL;
+	
+	if (unlikely(size > WIM_MAX_SIZE))
+		return -EINVAL;
+	
 
 	if ((uintptr_t)buf % 4 != 0) {
 		aligned_buf = (u8 *)kmalloc(size + 4, GFP_KERNEL);  // Allocate memory in kernel space

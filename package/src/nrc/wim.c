@@ -40,8 +40,11 @@ struct sk_buff *nrc_wim_alloc_skb(struct nrc *nw, u16 cmd, int size)
 {
 	struct sk_buff *skb;
 	struct wim *wim;
+	int payload  = min(size, MAX_WIM_PKT_TLV_SIZE);
+        int needed   = sizeof(struct hif) + sizeof(struct wim) + payload;
+        int alloc    = max_t(int, needed, WIM_MAX_DATA_SIZE);   /* guarantee at least one full 0x200-byte frame */
 
-	skb = dev_alloc_skb(size + sizeof(struct hif) + sizeof(struct wim));
+	skb = dev_alloc_skb(alloc);
 	if (!skb)
 		return NULL;
 
@@ -180,7 +183,8 @@ int nrc_wim_change_sta(struct nrc *nw, struct ieee80211_vif *vif,
 				    tlv_len(sizeof(*p)));
 
 	p = nrc_wim_skb_add_tlv(skb, WIM_TLV_STA_PARAM, sizeof(*p), NULL);
-	memset(p, 0, sizeof(*p));
+	// memset(p, 0, sizeof(*p));
+	memset(&p->wim_sta_data, 0, sizeof(p->wim_sta_data));
 
 	p->cmd = cmd;
 	p->flags = 0;
@@ -222,7 +226,8 @@ int nrc_wim_hw_scan(struct nrc *nw, struct ieee80211_vif *vif,
 
 	/* WIM_TL_SCAN_PARAM */
 	p = nrc_wim_skb_add_tlv(skb, WIM_TLV_SCAN_PARAM, sizeof(*p), NULL);
-	memset(p, 0, sizeof(*p));
+	// memset(p, 0, sizeof(*p));
+	memset(&p->wim_scan_param_data, 0, sizeof(p->wim_scan_param_data));
 
 	if (WARN_ON(req->n_channels > WIM_MAX_SCAN_CHANNEL))
 		req->n_channels = WIM_MAX_SCAN_CHANNEL;
@@ -407,7 +412,8 @@ int nrc_wim_install_key(struct nrc *nw, enum set_key_cmd cmd,
 
 	p = nrc_wim_skb_add_tlv(skb, WIM_TLV_KEY_PARAM, sizeof(*p), NULL);
 
-	memset(p, 0, sizeof(*p));
+	// memset(p, 0, sizeof(*p));
+	memset(&p->wim_key_param_data, 0, sizeof(p->wim_key_param_data));
 
 	if (sta) {
 		addr = sta->addr;
@@ -922,7 +928,11 @@ static int nrc_wim_event_handler(struct nrc *nw,
 		nrc_wim_handle_req_deauth(nw);
 		break;
 	case WIM_EVENT_CSA:
+#if KERNEL_VERSION(6, 9, 0) <= NRC_TARGET_KERNEL_VERSION
+		ieee80211_csa_finish(vif, 0);
+#else
 		ieee80211_csa_finish(vif);
+#endif
 		break;
 	case WIM_EVENT_CH_SWITCH:
 #if KERNEL_VERSION(6, 7, 0) <= NRC_TARGET_KERNEL_VERSION
@@ -1004,7 +1014,8 @@ int nrc_wim_set_ps (struct nrc *nw, enum NRC_PS_MODE mode, int timeout)
 	skb = nrc_wim_alloc_skb(nw, WIM_CMD_SET, tlv_len(sizeof(struct wim_pm_param)));
 
 	p = nrc_wim_skb_add_tlv(skb, WIM_TLV_PS_ENABLE, sizeof(struct wim_pm_param), NULL);
-	memset(p, 0, sizeof(struct wim_pm_param));
+	// memset(p, 0, sizeof(struct wim_pm_param));
+	memset(&p->wim_pm_param_data, 0, sizeof(p->wim_pm_param_data));
 
 	p->ps_mode = mode;
 	p->ps_enable = 1;

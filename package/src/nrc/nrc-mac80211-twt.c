@@ -115,7 +115,7 @@ done:
 	return ret;
 }
 
-void static twt_setup_dump (struct nrc *nw, struct ieee80211_twt_setup *twt)
+static void twt_setup_dump (struct nrc *nw, struct ieee80211_twt_setup *twt)
 {
 	struct nrc_twt_sched *twt_sched = nw->twt_sched;
 	struct ieee80211_twt_params *twt_agrt = (struct ieee80211_twt_params *)twt->params;
