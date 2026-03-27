@@ -18,6 +18,5 @@
 #define _NRC_DUMP_H_
 
 void nrc_dump_store(char *src, int len);
-void nrc_dump_init(void);
 
 #endif //_NRC_DUMP_H_

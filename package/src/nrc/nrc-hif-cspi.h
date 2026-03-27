@@ -92,6 +92,9 @@ struct nrc_cspi_ops {
 /* Object prepended to strut nrc_hif_device */
 struct nrc_spi_priv {
 	struct spi_device *spi;
+#if defined(CONFIG_SPI_USE_DT)
+	struct gpio_desc *reset_gpio;
+#endif
 	struct nrc_hif_device *hdev;
 
 	/* work, kthread, ... */

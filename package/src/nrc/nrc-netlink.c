@@ -40,7 +40,7 @@ static int nrc_nl_pre_doit(const struct genl_ops *ops,
 			   struct sk_buff *skb, struct genl_info *info)
 #endif
 #else
-static int nrc_nl_pre_doit(struct genl_split_ops *ops,
+static int nrc_nl_pre_doit(struct genl_ops *ops,
 			   struct sk_buff *skb, struct genl_info *info)
 #endif
 {
@@ -66,7 +66,7 @@ static void nrc_nl_post_doit(const struct genl_ops *ops,
 			     struct sk_buff *skb, struct genl_info *info)
 #endif
 #else
-static void nrc_nl_post_doit(struct genl_split_ops *ops,
+static void nrc_nl_post_doit(struct genl_ops *ops,
 			     struct sk_buff *skb, struct genl_info *info)
 #endif
 {
@@ -293,6 +293,91 @@ static int halow_reply(int id, struct genl_info *info, const char *response)
 	genlmsg_end(msg, hdr);
 
 	return genlmsg_reply(msg, info);
+}
+
+static bool ap_has_any_assoc(struct ieee80211_vif *ap_vif)
+{
+	struct nrc_vif *i_vif;
+	struct nrc_sta *i_sta;
+	unsigned long flags;
+	bool any = false;
+
+	if (!ap_vif)
+		return false;
+
+	if (ap_vif->type != NL80211_IFTYPE_AP)
+		return false;
+
+	i_vif = to_i_vif(ap_vif);
+
+	spin_lock_irqsave(&i_vif->preassoc_sta_lock, flags);
+	list_for_each_entry(i_sta, &i_vif->preassoc_sta_list, list) {
+		if (i_sta->state >= IEEE80211_STA_ASSOC) {
+			any = true;
+			break;
+		}
+	}
+	spin_unlock_irqrestore(&i_vif->preassoc_sta_lock, flags);
+
+	return any;
+}
+
+static bool sta_is_associated(struct ieee80211_vif *sta_vif)
+{
+	bool assoc;
+
+	if (!sta_vif)
+		return false;
+	if (sta_vif->type != NL80211_IFTYPE_STATION)
+		return false;
+
+#ifdef CONFIG_USE_VIF_CFG
+	assoc = sta_vif->cfg.assoc;
+#else
+	assoc = sta_vif->bss_conf.assoc;
+#endif
+	return assoc;
+}
+
+/*
+ * nrc_is_any_associated - check if any vif (STA or AP) has association
+ *
+ * Return: true if associated, false otherwise
+ */
+static bool nrc_is_any_associated(void)
+{
+	struct ieee80211_vif *vifs[2] = { nrc_nw->vif[0], nrc_nw->vif[1] };
+	bool associated = false;
+	int i;
+
+	for (i = 0; i < 2 && !associated; i++) {
+		struct ieee80211_vif *vif = vifs[i];
+
+		if (!vif) {
+			continue;
+		}
+
+		switch (vif->type) {
+			case NL80211_IFTYPE_STATION:
+				associated = sta_is_associated(vif);
+				pr_debug("nrc_is_any_associated: vif[%d] type=STA -> %s\n",
+					 i, associated ? "associated" : "not associated");
+				break;
+
+			case NL80211_IFTYPE_AP:
+				associated = ap_has_any_assoc(vif);
+				pr_debug("nrc_is_any_associated: vif[%d] type=AP -> %s\n",
+					 i, associated ? "has STA(s)" : "no STA");
+				break;
+
+			default:
+				pr_debug("nrc_is_any_associated: vif[%d] type=%d ignored\n",
+					 i, vif->type);
+				break;
+		}
+	}
+
+	return associated;
 }
 
 
@@ -1442,13 +1527,14 @@ static int cli_app_get_info(struct sk_buff *skb, struct genl_info *info)
 {
 	char *cmd = NULL;
 	char cmd_resp[512];
-	struct sk_buff *msg;
-	void *hdr;
+	struct sk_buff *msg = NULL;
+	void *hdr = NULL;
 	int total_count = 0;
 	int start_point = 0;
 	const int max_number_per_response = 20;
 	char *str = NULL;
 	int i = 0;
+	int ret;
 
 	memset(cmd_resp, 0x0, sizeof(cmd_resp));
 
@@ -1461,47 +1547,68 @@ static int cli_app_get_info(struct sk_buff *skb, struct genl_info *info)
 		return -EIO;
 	}
 
-#ifdef CONFIG_SUPPORT_GENLMSG_DEFAULT
-	msg = genlmsg_new(GENLMSG_DEFAULT_SIZE, GFP_KERNEL);
-	hdr = genlmsg_put(msg, info->snd_portid, info->snd_seq, &nrc_nl_fam,
-			0 /*no flags*/, NL_SHELL_RUN_CMD);
-#else
-	msg = genlmsg_new(NLMSG_DEFAULT_SIZE - GENL_HDRLEN, GFP_KERNEL);
-	hdr = genlmsg_put(msg, info->snd_pid, info->snd_seq, &nrc_nl_fam,
-			0 /*no flags*/, NL_SHELL_RUN_CMD);
-#endif
+	if (!info->attrs[NL_SHELL_RUN_CMD])
+		return -EINVAL;
 
-	if (info->attrs[NL_SHELL_RUN_CMD])
-		cmd = nla_data(info->attrs[NL_SHELL_RUN_CMD]);
-
+	cmd = nla_data(info->attrs[NL_SHELL_RUN_CMD]);
 	if (!cmd)
 		return -EINVAL;
 
-	if (strcmp(cmd, "show signal -sr -num") == 0) {
-		//start monitoring
-		if (!signal_monitor) {
-			signal_monitor = true;
-			msleep(500);
-		}
-		nrc_dbg(NRC_DBG_CAPI, "%s Start Signal Monitor (%d)", __func__, signal_monitor);
-		total_count = nrc_stats_report_count();
-		sprintf(cmd_resp, "%d,%d", total_count,
-				   max_number_per_response);
-	} else if (strcmp(cmd, "show signal stop") == 0) {
-		//stop monitoring
+	if (!strcmp(cmd, "show signal stop")) {
 		signal_monitor = false;
 		nrc_dbg(NRC_DBG_CAPI, "%s Stop Signal Monitor (%d)", __func__, signal_monitor);
-		sprintf(cmd_resp, "okay");
+		snprintf(cmd_resp, sizeof(cmd_resp), "%s", "okay");
 	} else {
-		str = strrchr(cmd, ' ');
-		for (i = 1; str[i] != '\0'; ++i)
-			start_point = start_point * 10 + str[i] - '0';
-
-		nrc_stats_report(nrc_nw, cmd_resp, start_point, max_number_per_response);
+		if (!nrc_is_any_associated()) {
+			snprintf(cmd_resp, sizeof(cmd_resp), "%s", "NOT ASSOCIATED");
+		} else if (!strcmp(cmd, "show signal -sr -num")) {
+			if (!signal_monitor) {
+				signal_monitor = true;
+				msleep(500);
+			}
+			nrc_dbg(NRC_DBG_CAPI, "%s Start Signal Monitor (%d)", __func__, signal_monitor);
+			total_count = nrc_stats_report_count();
+			snprintf(cmd_resp, sizeof(cmd_resp), "%d,%d",
+				 total_count, max_number_per_response);
+		} else {
+			str = strrchr(cmd, ' ');
+			start_point = 0;
+			if (str) {
+				for (i = 1; str[i] != '\0'; i++) {
+					if (str[i] < '0' || str[i] > '9')
+						break;
+					start_point = (start_point * 10) + (str[i] - '0');
+				}
+			}
+			nrc_stats_report(nrc_nw, cmd_resp, start_point, max_number_per_response);
+		}
 	}
-	nla_put_string(msg, NL_SHELL_RUN_CMD_RESP, cmd_resp);
-	genlmsg_end(msg, hdr);
 
+#ifdef CONFIG_SUPPORT_GENLMSG_DEFAULT
+	msg = genlmsg_new(GENLMSG_DEFAULT_SIZE, GFP_KERNEL);
+	hdr = genlmsg_put(msg, info->snd_portid, info->snd_seq, &nrc_nl_fam,
+			  0 /* no flags */, NL_SHELL_RUN_CMD);
+#else
+	msg = genlmsg_new(NLMSG_DEFAULT_SIZE - GENL_HDRLEN, GFP_KERNEL);
+	hdr = genlmsg_put(msg, info->snd_pid, info->snd_seq, &nrc_nl_fam,
+			  0 /* no flags */, NL_SHELL_RUN_CMD);
+#endif
+	if (!msg || !hdr) {
+		if (msg)
+			nlmsg_free(msg);
+		return -ENOMEM;
+	}
+
+	pr_debug("cmd_resp : %s\n",cmd_resp);
+
+	ret = nla_put_string(msg, NL_SHELL_RUN_CMD_RESP, cmd_resp);
+	if (ret) {
+		genlmsg_cancel(msg, hdr);
+		nlmsg_free(msg);
+		return ret;
+	}
+
+	genlmsg_end(msg, hdr);
 	return genlmsg_reply(msg, info);
 }
 
@@ -1624,6 +1731,66 @@ static int cli_app_driver_cmd(struct sk_buff *skb, struct genl_info *info)
 				sprintf(cmd_resp, "success");
 			}
 #endif
+		} else if (argc == 5 && strcmp(argv[1], "bss_max_idle") == 0) {
+			int max_idle, vif_id, no_usf_auto_convert;
+			struct ieee80211_vif *vif;
+			struct nrc_vif *i_vif;
+			if(kstrtoint(argv[2], 10, &vif_id) < 0) {
+				sprintf(cmd_resp, "fail");
+			} else {
+				if(vif_id < 0 || vif_id >= 2) {
+					sprintf(cmd_resp, "fail");
+				} else {
+					vif = nrc_nw->vif[vif_id];
+					if (!vif) {
+						sprintf(cmd_resp, "fail");
+					} else {
+						i_vif = to_i_vif(vif);
+						if (nrc_mac_is_s1g(nrc_nw->hw->priv) && max_idle) {
+							/* bss_max_idle: in unit of 1000 TUs (1024ms = 1.024 seconds) */
+							if (kstrtoint(argv[3], 10, &max_idle) < 0) {
+								i_vif->max_idle_period = 0;
+								sprintf(cmd_resp, "fail");
+							} else {
+								if (max_idle <= 0 || max_idle > 16383 * 10000) {
+									i_vif->max_idle_period = 0;
+									sprintf(cmd_resp, "fail");
+								} else {
+									if (kstrtoint(argv[4], 10, &no_usf_auto_convert) < 0) {
+										i_vif->max_idle_period = 0;
+										sprintf(cmd_resp, "fail");
+									} else {
+										if (no_usf_auto_convert > 1) {
+											i_vif->max_idle_period = 0;
+											sprintf(cmd_resp, "fail");
+										} else {
+											/* (Default) Convert in USF Format (Value (14bit) * USF(2bit)) and save it */
+											if (no_usf_auto_convert) {
+												i_vif->max_idle_period = max_idle;
+												no_convert_usf = true;
+											} else {
+												i_vif->max_idle_period = convert_usf(max_idle);
+												no_convert_usf = false;
+											}
+											sprintf(cmd_resp, "success");
+										}
+									}
+								}
+							}
+						} else {
+							if (max_idle > 65535 || max_idle <= 0) {
+								i_vif->max_idle_period = 0;
+								sprintf(cmd_resp, "fail");
+							} else {
+								i_vif->max_idle_period = max_idle;
+								sprintf(cmd_resp, "success");
+							}
+						}
+						bss_max_idle = i_vif->max_idle_period;
+					}
+				}
+
+			}
 		} else {
 			sprintf(cmd_resp, "fail");
 		}

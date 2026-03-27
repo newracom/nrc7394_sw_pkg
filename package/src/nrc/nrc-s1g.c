@@ -143,6 +143,26 @@ static const struct s1g_channel_table s1g_ch_table_us[]= {
 	{"US",	9180,	32,	BW_4M,	2,	3,		0,	1},
 	{"US",	9220,	40,	BW_4M,	1,	3,		0,	1},
 	{"US",	9260,	48,	BW_4M,	1,	3,		0,	1},
+	/* US Extended Channels — Op35 (2MHz) */
+	{"US",	9040,	128,	BW_2M,	2,	35,		0,	0},
+	{"US",	9060,	132,	BW_2M,	2,	35,		0,	0},
+	{"US",	9080,	136,	BW_2M,	2,	35,		0,	0},
+	{"US",	9100,	140,	BW_2M,	2,	35,		0,	0},
+	{"US",	9120,	144,	BW_2M,	2,	35,		0,	0},
+	{"US",	9140,	148,	BW_2M,	2,	35,		0,	0},
+	{"US",	9160,	152,	BW_2M,	2,	35,		0,	0},
+	{"US",	9180,	156,	BW_2M,	2,	35,		0,	0},
+	{"US",	9200,	160,	BW_2M,	1,	35,		0,	0},
+	{"US",	9220,	164,	BW_2M,	1,	35,		0,	0},
+	{"US",	9240,	168,	BW_2M,	1,	35,		0,	0},
+	{"US",	9260,	172,	BW_2M,	1,	35,		0,	0},
+	/* US Extended Channels — Op36 (4MHz) */
+	{"US",	9050,	130,	BW_4M,	2,	36,		0,	1},
+	{"US",	9090,	138,	BW_4M,	2,	36,		0,	1},
+	{"US",	9130,	146,	BW_4M,	2,	36,		0,	1},
+	{"US",	9170,	154,	BW_4M,	2,	36,		0,	1},
+	{"US",	9210,	162,	BW_4M,	2,	36,		0,	1},
+	{"US",	9250,	170,	BW_4M,	2,	36,		0,	1},
 	{}
 };
 
@@ -328,6 +348,8 @@ int nrc_get_current_ccid_by_country(char * country_code)
 		cc_index = AU;
 	} else if (strcmp(country_code, "K2") == 0) {
 		cc_index = K2;
+	} else if (strcmp(country_code, "T2") == 0) {
+		cc_index = T2;
 	} else {
 		cc_index = -1;
 	}

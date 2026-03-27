@@ -17,7 +17,7 @@
 #ifndef _NRC_BD_H_
 #define _NRC_BD_H_
 
-#define NRC_BD_MAX_CH_LIST		45
+#define NRC_BD_MAX_CH_LIST		63
 
 #define BD_DEBUG				0
 
@@ -53,4 +53,5 @@ extern bool g_bd_valid;
 struct wim_bd_param * nrc_read_bd_tx_pwr(struct nrc *nw, uint8_t *cc);
 int nrc_check_bd(struct nrc *nw);
 #endif /* defined(CONFIG_SUPPORT_BD) */
+
 #endif //_NRC_BD_H_

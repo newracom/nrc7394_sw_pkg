@@ -181,13 +181,16 @@ ret_fail:
 int cli_app_run_onetime(int argc, char* argv[]){
 	int ret = CMD_RET_SUCCESS;
 	char buffer[NRC_MAX_CMDLINE_SIZE] = { 0, };
+	int offset = 0;
+	int i = 0;
 
-	int i =0, j=0;
 	for(i=1; i<argc; i++){
-	        sprintf((buffer+j), "%s ", argv[i]);
-		j = strlen(buffer);
+		sprintf(buffer + offset, "%s ", argv[i]);
+		offset += strlen(argv[i]) + 1;
 	}
-	*(buffer + strlen(buffer)-1) = '\0';
+	if (offset > 0) {
+		buffer[offset - 1] = '\0';  /* Remove trailing space */
+	}
 
 	ret = cli_app_run_command(buffer);
 	if (ret == CMD_RET_SUCCESS) {
@@ -619,7 +622,9 @@ void run_awk(char* filename, int num, char* delim, int* pos, char** result)
 			char* token = strtok(read_file, delim);
 			while (token != NULL) {
 				if (count == pos[i]) {
-					strcpy(result[i], token);
+					/* Use strncpy to prevent buffer overflow */
+					strncpy(result[i], token, AWK_BUF_LENGTH - 1);
+					result[i][AWK_BUF_LENGTH - 1] = '\0';
 					i++;
 					if (i == num)
 						break;
@@ -628,7 +633,7 @@ void run_awk(char* filename, int num, char* delim, int* pos, char** result)
 				++count;
 			}
 			while(i != num){
-				strcpy(result[i], "");
+				result[i][0] = '\0';
 				i++;
 			}
 		}
@@ -644,7 +649,7 @@ int signal_log_create(int interval)
 	gettimeofday(&tv, NULL);
 	tm1 = localtime(&tv.tv_sec);
 
-	snprintf(filename, 1024, "%s_%04d%02d%02d_%02d%02d%02d.log",log_file_prefix, \
+	sprintf(filename, "%s_%04d%02d%02d_%02d%02d%02d.log",log_file_prefix, \
 		1900 + tm1->tm_year, tm1->tm_mon+ 1, tm1->tm_mday, tm1->tm_hour, tm1->tm_min, tm1->tm_sec);
 
 	if(fp_log_file != NULL) {
@@ -677,10 +682,8 @@ int signal_log_display(char* mac_addr, int snr_sum, int snr_sum_sqrs, int rssi_s
 {
 	double avg_rssi, avg_snr;
 	double std_dev_rssi, std_dev_snr;
-	char mac_addr_temp[MAX_ADDR_SIZE];
-	memset(mac_addr_temp, 0x0, MAX_ADDR_SIZE);
-	memcpy(mac_addr_temp, mac_addr, MAX_ADDR_SIZE);
-	mac_addr_temp[MAX_ADDR_SIZE]='\0';
+	char mac_addr_temp[MAX_ADDR_SIZE + 1];
+	strcpy(mac_addr_temp, mac_addr);
 
 	avg_rssi = calculate_avergage(rssi_sum, n);
 	avg_snr = calculate_avergage(snr_sum, n);
@@ -754,7 +757,8 @@ void eliminate_char(char *str, char ch)
 {
 	for (; *str != '\0'; str++) {
 		if (*str == ch){
-			strcpy(str, str + 1);
+			/* Use memmove for overlapping memory */
+			memmove(str, str + 1, strlen(str + 1) + 1);
 			str--;
 		}
 	}
@@ -766,7 +770,7 @@ void string_to_hexString(char* input, char* output)
 	int i = 0;
 
 	while(input[loop] != '\0') {
-		sprintf((char*)(output+i),"%02X", input[loop]);
+		sprintf((char*)(output+i), "%02X", input[loop]);
 		loop+=1;
 		i+=2;
 	}
@@ -823,7 +827,6 @@ void print_mac_address(char mac_addr[6])
 		printf("%02x%s", mac_addr[i], i == 5 ? "" : ":");
 	printf("\n");
 }
-
 
 // Initialize new terminal i/o settings
 static void initTermios(int echo)

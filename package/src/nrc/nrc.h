@@ -340,9 +340,6 @@ struct nrc {
 	bool twt_responder;
 
 	struct nrc_twt_sched *twt_sched;
-	
-	atomic_t cached_tp_kbps;          /* last valid throughput */
-        struct delayed_work tp_refresh_work;
 };
 
 /* vif driver data structure */
@@ -573,6 +570,7 @@ extern int ampdu_mode;
 extern int sw_enc;
 extern bool signal_monitor;
 extern int kr_band;
+extern int tw_band;
 extern bool debug_level_all;
 extern bool enable_short_bi;
 extern bool discard_deauth;
@@ -605,6 +603,7 @@ extern bool twt_service;
 extern bool twt_force_sleep;
 extern uint twt_num_in_group;
 extern bool no_convert_usf;
+extern int bss_max_idle;
 
 void nrc_set_bss_max_idle_offset(int value);
 void nrc_set_auto_ba(bool toggle);

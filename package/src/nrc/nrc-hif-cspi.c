@@ -16,13 +16,19 @@
 
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/version.h>
+#include "nrc-build-config.h"
 #include <linux/wait.h>
 #include <linux/spi/spi.h>
 #include <linux/gpio.h>
 #include <linux/irqreturn.h>
 #include <linux/interrupt.h>
 #include <net/mac80211.h>
+#if KERNEL_VERSION(6, 12, 0) <= NRC_TARGET_KERNEL_VERSION
+#include <linux/unaligned.h>
+#else
 #include <asm/unaligned.h>
+#endif
 #include <linux/smp.h>
 #ifdef CONFIG_SUPPORT_AFTER_KERNEL_3_0_36
 #include <linux/timekeeping.h>
@@ -384,10 +390,6 @@ static ssize_t _c_spi_write(struct spi_device *spi, u8 *buf, ssize_t size)
 
 	if (size == 0 || buf == NULL)
 		return -EINVAL;
-	
-	if (unlikely(size > WIM_MAX_SIZE))
-		return -EINVAL;
-	
 
 	if ((uintptr_t)buf % 4 != 0) {
 		aligned_buf = (u8 *)kmalloc(size + 4, GFP_KERNEL);  // Allocate memory in kernel space
@@ -1241,7 +1243,11 @@ static int spi_update_status(struct spi_device *spi)
 						nw->vif[nw->d_deauth.vif_index] = NULL;
 						nw->enable_vif[nw->d_deauth.vif_index] = false;
 						atomic_set(&nw->d_deauth.delayed_deauth, 0);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 9, 0)
+						nrc_mac_stop(nw->hw, false);
+#else
 						nrc_mac_stop(nw->hw);
+#endif
 					}
 					while (atomic_read(&nw->d_deauth.delayed_deauth)) {
 						atomic_set(&nw->d_deauth.delayed_deauth, 0);
@@ -2348,6 +2354,29 @@ static void c_spi_config(struct nrc_spi_priv *priv)
 	c_spi_enable_irq(priv->spi, spi_gpio_irq >= 0 ? true : false, CSPI_EIRQ_A_ENABLE);
 }
 
+#if defined(ENABLE_HW_RESET) && defined(CONFIG_SPI_USE_DT)
+static int nrc_cspi_device_hw_reset(struct nrc_spi_priv *priv)
+{
+	if (!priv->reset_gpio) {
+		dev_warn(&priv->spi->dev, "No reset GPIO defined\n");
+		return 0;
+	}
+
+	dev_info(&priv->spi->dev, "Resetting device\n");
+
+	/* Assert (Active Low) */
+	gpiod_set_value_cansleep(priv->reset_gpio, 1);
+	msleep(10);  /* 10ms wait */
+
+	/* Deassert */
+	gpiod_set_value_cansleep(priv->reset_gpio, 0);
+	msleep(50);  /* 50ms recovery wait */
+
+	dev_info(&priv->spi->dev, "Device reset completed\n");
+	return 0;
+}
+#endif
+
 static int nrc_cspi_gpio_alloc(struct spi_device *spi)
 {
 #if defined(SPI_DBG)
@@ -2360,11 +2389,20 @@ static int nrc_cspi_gpio_alloc(struct spi_device *spi)
 #endif
 
 #if defined(ENABLE_HW_RESET)
+#if defined(CONFIG_SPI_USE_DT)
+	((struct nrc_spi_priv *)(spi->dev.platform_data))->reset_gpio =
+		devm_gpiod_get_optional(&spi->dev, "reset", GPIOD_OUT_LOW);
+	if (IS_ERR(((struct nrc_spi_priv *)(spi->dev.platform_data))->reset_gpio)) {
+		dev_err(&spi->dev, "[Error] gpio_reqeust(nrc-reset) is failed");
+		goto err_dbg_irq_free;
+	}
+#else
 	if (gpio_request(HOST_GPIO_FOR_TARGET_RST, "nrc-reset") < 0) {
 		dev_err(&spi->dev, "[Error] gpio_reqeust(nrc-reset) is failed");
 		goto err_dbg_irq_free;
 	}
 	gpio_direction_output(HOST_GPIO_FOR_TARGET_RST, 1);
+#endif
 #endif
 
 	if (power_save >= NRC_PS_DEEPSLEEP_TIM || idle_mode) {
@@ -2397,7 +2435,9 @@ err_free_all:
 
 err_rst_free:
 #if defined(ENABLE_HW_RESET)
+#if !defined(CONFIG_SPI_USE_DT)
 	gpio_free(HOST_GPIO_FOR_TARGET_RST);
+#endif
 err_dbg_irq_free:
 #endif
 #if  defined(SPI_DBG)
@@ -2415,10 +2455,12 @@ static void nrc_cspi_gpio_free(struct spi_device *spi)
 #endif
 
 #if defined(ENABLE_HW_RESET)
+#if !defined(CONFIG_SPI_USE_DT)
 	gpio_set_value(HOST_GPIO_FOR_TARGET_RST, 0);
 	msleep(10);
 	gpio_set_value(HOST_GPIO_FOR_TARGET_RST, 1);
 	gpio_free(HOST_GPIO_FOR_TARGET_RST);
+#endif
 #endif
 
 	if (power_save >= NRC_PS_DEEPSLEEP_TIM || idle_mode) {
@@ -2506,6 +2548,10 @@ static int nrc_cspi_probe(struct spi_device *spi)
 	priv->hdev = hdev;
 
 try:
+#if defined(ENABLE_HW_RESET) && defined(CONFIG_SPI_USE_DT)
+	nrc_cspi_device_hw_reset(priv);
+#endif
+
 	if (fw_name) nrc_hif_reset_device(hdev);
 	ret = nrc_hif_probe(hdev);
 	if (ret && retry < MAX_RETRY_CNT) {

@@ -4,7 +4,7 @@ import sys, os, time, subprocess, re
 import threading
 from mesh import *
 script_path = "/home/pi/nrc_pkg/script/"
-s1g_ch_support_country_list = ["US", "JP", "TW", "AU", "NZ", "K1", "K2", "SG"]
+s1g_ch_support_country_list = ["US", "JP", "TW", "AU", "NZ", "K1", "K2", "SG", "T2"]
 eu_ch_support_country_list = ["AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK", "GB", "SA"]
 
 # Default Configuration (you can change value you want here)
@@ -43,11 +43,15 @@ spi_polling_interval = 0      # NRC-CSPI Polling Interval (msec)
 #  - NRC-CSPI Registers Polling   : spi_gpio_irq < 0 and spi_polling_interval > 0
 #
 #--------------------------------------------------------------------------------#
-# FT232H USB-SPI Conf. (FT232H CSPI Conf)
-ft232h_usb_spi = 0            # FTDI FT232H USB-SPI bridge
-                              # 0 : Unused
-                              # 1 : NRC-CSPI_EIRQ Input Polling
-                              # 2 : NRC-CSPI Registers Polling
+# ft232h usb-spi conf. (ft232h cspi conf)
+ft232h_usb_spi = 0            # ftdi ft232h usb-spi bridge
+                              # 0 : unused
+                              # 1 : nrc-cspi_eirq input polling
+                              # 2 : nrc-cspi registers polling
+# ch347 usb-spi conf. (ch347 cspi conf)
+ch347_usb_spi = 0             # wch ch347 usb-spi bridge
+                              # 0 : unused
+                              # 1 : nrc-cspi registers polling
 #################################################################################
 # RF Conf.
 max_txpwr         = 24       # Maximum TX Power (in dBm)
@@ -66,21 +70,21 @@ short_bcn_enable  = 0        # 0 (disable) or 1 (enable)
 # Legacy ACK enable (AP & STA)
 #  If disabled, AP/STA sends only NDP ack frame
 #  Recommend using NDP ack mode  (Default: disable)
-legacy_ack_enable  = 0        # 0 (NDP ack mode) or 1 (legacy ack mode)
+legacy_ack_enable  = 0       # 0 (NDP ack mode) or 1 (legacy ack mode)
 #--------------------------------------------------------------------------------#
 # DAC (Distributed Authentication Control) (AP only)
 #  If enabled, AP sends beaon/probe response frame including authentication control IE
-auth_control_enable   = 0	# 0 (disable) or 1 (enable)
-auth_control_slot     = 100	# slot duration (in TU) (1~127)
-auth_control_scale    = 10	# scale (1 or 10)
-auth_control_ti_min   = 8	# mininum time interval (in scale * BI) (1~127)
-auth_control_ti_max   = 64 	# maximum time interval (in scale * BI) (1~255)
+auth_control_enable   = 0	 # 0 (disable) or 1 (enable)
+auth_control_slot     = 100	 # slot duration (in TU) (1~127)
+auth_control_scale    = 10	 # scale (1 or 10)
+auth_control_ti_min   = 8	 # mininum time interval (in scale * BI) (1~127)
+auth_control_ti_max   = 64 	 # maximum time interval (in scale * BI) (1~255)
 #--------------------------------------------------------------------------------#
 # Beacon Bypass enable (STA only)
 #  If enabled, STA receives beacon frame from other APs even connected
 #  Recommend that STA only receives beacon frame from AP connected while connecting  (Default: disable)
-beacon_bypass_enable  = 0        # 0 (Receive beacon frame from only AP connected while connecting)
-                                 # 1 (Receive beacon frame from all APs even while connecting)
+beacon_bypass_enable  = 0    # 0 (Receive beacon frame from only AP connected while connecting)
+                             # 1 (Receive beacon frame from all APs even while connecting)
 #--------------------------------------------------------------------------------#
 # AMPDU (Aggregated MPDU)
 #  Enable AMPDU for full channel utilization and throughput enhancement (Default: auto)
@@ -129,13 +133,13 @@ bss_max_idle_enable = 1      # 0 (disable) or 1 (enable)
 bss_max_idle        = 1800   # time interval (e.g. 1800: 1843.2 sec) (1 ~ 163,830,000)
 #--------------------------------------------------------------------------------#
 #  SW encryption/decryption (default HW offload)
-sw_enc              = 0     # 0 (HW), 1 (SW), 2 (HYBRID: SW GTK HW PTK)
+sw_enc              = 0      # 0 (HW), 1 (SW), 2 (HYBRID: SW GTK HW PTK)
 #--------------------------------------------------------------------------------#
 # Mesh Options (Mesh Only)
 #  Manual Peering & Static IP
-peer                = 0     # 0 (disable) or Peer MAC Address
-static_ip           = 0     # 0 (disable) or Static IP Address
-batman              = 0     # 0 (disable) or 'bat0' (B.A.T.M.A.N routing protocol)
+peer                = 0      # 0 (disable) or Peer MAC Address
+static_ip           = 0      # 0 (disable) or Static IP Address
+batman              = 0      # 0 (disable) or 'bat0' (B.A.T.M.A.N routing protocol)
 #--------------------------------------------------------------------------------#
 # Self configuration (AP Only)
 #  AP scans the clearest CH and then starts with it
@@ -144,27 +148,27 @@ prefer_bw         = 0        # 0: no preferred bandwidth, 1: 1M, 2: 2M, 4: 4M
 dwell_time        = 100      # max dwell is 1000 (ms), min: 10ms, default: 100ms
 #--------------------------------------------------------------------------------#
 # Filter tx deauth frame for Multi Connection Test (STA Only) (Test only)
-discard_deauth    = 0         # 1: discard TX deauth frame on STA
+discard_deauth    = 0        # 1: discard TX deauth frame on STA
 #--------------------------------------------------------------------------------#
 # Use bitmap encoding for NDP (block) ack operation (NRC7292 only)
-bitmap_encoding   = 1         # 0 (disable) or 1 (enable)
+bitmap_encoding   = 1        # 0 (disable) or 1 (enable)
 #--------------------------------------------------------------------------------#
 # User scrambler reversely (NRC7292 only)
-reverse_scrambler = 1         # 0 (disable) or 1 (enable)
+reverse_scrambler = 1        # 0 (disable) or 1 (enable)
 #--------------------------------------------------------------------------------#
 # Use bridge setup in br0 interface
-use_bridge_setup  = 0         # AP & STA : 0 (not use bridge setup) or n (use bridge setup with eth(n-1))
-                              # RELAY : 0 (not use bridge setup) or 1 (use bridge setup with wlan0,wlan1)
-bridge_ip_mode = 1            # 0i (static ip) 1 (dhcp client) 2 (dhcp server)
+use_bridge_setup  = 0        # AP & STA : 0 (not use bridge setup) or n (use bridge setup with eth(n-1))
+                             # RELAY : 0 (not use bridge setup) or 1 (use bridge setup with wlan0,wlan1)
+bridge_ip_mode = 1           # 0i (static ip) 1 (dhcp client) 2 (dhcp server)
 #--------------------------------------------------------------------------------#
 # Supported CH Width (STA Only)
-support_ch_width  = 1         # 0 (1/2MHz Support) or 1 (1/2/4MHz Support)
+support_ch_width  = 1        # 0 (1/2MHz Support) or 1 (1/2/4MHz Support)
 #--------------------------------------------------------------------------------#
 # Use Power save pretend operation for no response STA
 power_save_pretend  = 0      # 0 (disable) or 1 (enable)
 #--------------------------------------------------------------------------------#
 # Duty cycle configuration
-duty_cycle_enable = 0      # 0 (disable) or 1 (enable)
+duty_cycle_enable = 0        # 0 (disable) or 1 (enable)
 duty_cycle_window = 0
 duty_cycle_duration = 0
 #--------------------------------------------------------------------------------#
@@ -173,15 +177,22 @@ cca_threshold = -75
 #--------------------------------------------------------------------------------#
 # TWT Wake Interval, Service Number, Service Period
 # Two out of three values should be set, and the remaining value will be automatically calculated.
-twt_int = 0					# 0 (disable) or Wake Interval (usec)
-twt_num = 0					# 0 (disable) or Service Number
-twt_sp = 0					# 0 (disable) or Service Period (usec)
-twt_force_sleep = 0         # force sleep at the end of service
-twt_num_in_group = 1        # Max STA Number in one Slot (default 1)
-twt_algo = 0                # 0 (Balanced) or 1 (FCFS)
+twt_int = 0                  # 0 (disable) or Wake Interval (usec)
+twt_num = 0                  # 0 (disable) or Service Number
+twt_sp = 0                   # 0 (disable) or Service Period (usec)
+twt_force_sleep = 0          # force sleep at the end of service
+twt_num_in_group = 1         # Max STA Number in one Slot (default 1)
+twt_algo = 0                 # 0 (Balanced) or 1 (FCFS)
 #--------------------------------------------------------------------------------#
 # Use EEPROM for sysconfig & RFCAL
-use_eeprom_config  = 0         # 0 (Flash Memory) or 1 (EEPROM)
+use_eeprom_config  = 0       # 0 (Flash Memory) or 1 (EEPROM)
+#--------------------------------------------------------------------------------#
+# Set sub-XTAL bypass
+sub_xtal_bypass = 0          # 0 (External XTAL is used ) or 1 (Enable sub-XTAL bypass)
+#--------------------------------------------------------------------------------#
+# Set Location of 1MHz Primary Channel (BW2M or BW4M AP/SNIFFER Only)
+loc_1m_primary_ch = -1       # -1        (default    : BW_2M(0),   BW_4M(1))
+                             #  0|1|2|3  (choose one : BW_2M(0|1), BW_4M(0|1|2|3))
 ##################################################################################
 
 def check(interface):
@@ -204,9 +215,9 @@ def usage_print():
     print("Usage: \n\tstart.py [sta_type] [security_mode] [country] [channel] [sniffer_mode] \
             \n\tstart.py [sta_type] [security_mode] [country] [mesh_mode] [mesh_peering] [mesh_ip]")
     print("Argument:    \n\tsta_type      [0:STA   |  1:AP  |  2:SNIFFER  | 3:RELAY |  4:MESH] \
-            \n\tsecurity_mode [0:Open  |  1:WPA2-PSK  |  2:WPA3-OWE  |  3:WPA3-SAE | 4:WPS-PBC] \
+            \n\tsecurity_mode [0:Open  |  1:WPA2-PSK  |  2:WPA3-OWE  |  3:WPA3-SAE | 4:WPA2-PSK(WPS-PBC)] \
                          \n\tcountry       [US:USA  |  JP:Japan  |  TW:Taiwan  |  AU:Australia  |  NZ:New Zealand  | \
-                         \n\t               K1:Korea-USN  |  K2:Korea-MIC  |  SG:Singapore | \
+                         \n\t               K1:Korea-USN  |  K2:Korea-MIC  |  SG:Singapore | T2: Taiwan-nCC \
                          \n\t               and EU channel support countries(EU countries, GB and SA)] \
                          \n\t----------------------------------------------------------- \
                          \n\tchannel       [S1G Channel Number]   * Only for Sniffer & AP \
@@ -284,7 +295,9 @@ def checkParamValidity():
         exit()
 
 def strSecurity():
-    if int(sys.argv[2]) == 0:
+    if int(sys.argv[2]) == -1:
+        return 'CUSTOM'
+    elif int(sys.argv[2]) == 0:
         return 'OPEN'
     elif int(sys.argv[2]) == 1:
         return 'WPA2-PSK'
@@ -293,7 +306,7 @@ def strSecurity():
     elif int(sys.argv[2]) == 3:
         return 'WPA3-SAE'
     elif int(sys.argv[2]) == 4:
-        return 'WPA-PBC'
+        return 'WPA2-PSK(WPS-PBC)'
     else:
         usage_print()
 
@@ -342,6 +355,8 @@ def strMeshMode():
 def strOriCountry():
     if str(sys.argv[3]) == 'K1' or str(sys.argv[3]) == 'K2':
         return 'KR'
+    elif str(sys.argv[3]) == 'T2':
+        return 'TW'
     else:
         return str(sys.argv[3])
 
@@ -473,7 +488,10 @@ def self_config_check():
     orig_channel = ""
     global dwell_time
 
-    if strSecurity() == "OPEN" :
+    if strSecurity() == "CUSTOM":
+        conf_path = "."
+        conf_file = "/wizard_ap.conf"
+    elif strSecurity() == "OPEN":
         conf_file+="/ap_halow_open.conf"
     elif strSecurity() == 'WPA2-PSK' :
         conf_file+="/ap_halow_wpa2.conf"
@@ -481,7 +499,7 @@ def self_config_check():
         conf_file+="/ap_halow_owe.conf"
     elif strSecurity() == 'WPA3-SAE' :
         conf_file+="/ap_halow_sae.conf"
-    elif strSecurity() == 'WPA-PBC' :
+    elif strSecurity() == 'WPA2-PSK(WPS-PBC)' :
         conf_file+="/ap_halow_pbc.conf"
 
     print("country: " + country + ", prefer_bw: " + str(prefer_bw) + ", dwell_time: " + str(dwell_time))
@@ -525,7 +543,7 @@ def ft232h_usb():
     global spi_clock, spi_bus_num, spi_gpio_irq, spi_cs_num, spi_polling_interval
     print("[*] use ft232h_usb_spi")
     spi_bus_num = 3
-    spi_gpio_irq = 500
+    spi_gpio_irq = 600
     if int(spi_clock) > 15000000:
         spi_clock = 15000000
     if int(spi_cs_num) != 0:
@@ -534,6 +552,20 @@ def ft232h_usb():
         spi_polling_interval = 50
     if int(ft232h_usb_spi) != 1:
         spi_gpio_irq = -1
+
+def ch347_usb():
+    # Re-define SPI parameters for ch347_usb_spi
+    # ch347_usb_spi
+    global spi_clock, spi_bus_num, spi_gpio_irq, spi_cs_num, spi_polling_interval
+    print("[*] use ch347_usb_spi")
+    spi_bus_num = 3
+    spi_gpio_irq = -1
+    if int(spi_clock) > 20000000:
+        spi_clock = 20000000
+    if int(spi_cs_num) != 0:
+        spi_cs_num = 0
+    if int(spi_polling_interval) <= 0:
+        spi_polling_interval = 50
 
 def setAPParam():
     # Re-define parameters for AP mode
@@ -563,15 +595,19 @@ def setModuleParam():
     # Initialize arguments for module params
     spi_arg = fw_arg = power_save_arg = sleep_duration_arg = idle_mode_arg = \
     bss_max_idle_arg = ndp_preq_arg = ndp_ack_1m_arg = auto_ba_arg =\
-    sw_enc_arg =  cqm_arg = listen_int_arg = drv_dbg_arg = \
+    sw_enc_arg =  cqm_arg = listen_int_arg = drv_dbg_arg = tw_band_arg = \
     sbi_arg = discard_deauth_arg = dbg_fc_arg = kr_band_arg = legacy_ack_arg = \
     be_arg = rs_arg = beacon_bypass_arg = ps_gpio_arg = bd_name_arg = \
     support_ch_width_arg = ps_pretend_arg = duty_cycle_arg = cca_thresh_arg = \
-    twt_arg = auth_control_arg = ""
+    twt_arg = auth_control_arg = sub_xtal_bypass_arg = loc_1m_primary_ch_arg = ""
 
     # Check ft232h_usb_spi
     if int(ft232h_usb_spi) > 0:
         ft232h_usb()
+
+    # Check ch347_usb_spi
+    if int(ch347_usb_spi) > 0:
+        ch347_usb()
 
     # Set parameters for AP (support NDP probing)
     if strSTA() == 'AP':
@@ -695,6 +731,11 @@ def setModuleParam():
     elif str(sys.argv[3]) == 'K2':
         kr_band_arg = " kr_band=2"
 
+    # module param for TW Band (TW only)
+    # default: not defined(TW:Taiwan) (2:T2(TW NCC))
+    if str(sys.argv[3]) == 'T2':
+        tw_band_arg = " tw_band=2"
+
     # module param for deauth-discard on STA (test only)
     # default: discard_deauth(0: disabled)
     if int(discard_deauth) == 1:
@@ -732,6 +773,11 @@ def setModuleParam():
                   " twt_force_sleep=" + str(twt_force_sleep) + " twt_num_in_group=" + str(twt_num_in_group) + \
                   " twt_algo=" + str(twt_algo)
 
+    # module param for Sub XTAL bypass
+    # default: use sub_xtal_pass (0: false)
+    if int(sub_xtal_bypass) == 1:
+        sub_xtal_bypass_arg = " sub_xtal_bypass=1"
+
     # module param for board data file
     # default: bd.dat
     bd_name_arg = " bd_name=" + strBDName()
@@ -741,6 +787,10 @@ def setModuleParam():
     if strSTA() == 'STA' and int(support_ch_width) == 0:
         support_ch_width_arg = " support_ch_width=0"
 
+    # module param for location of 1MHz primary channel
+    # default : BW2M(0) BW4M(1) (-1)
+    if int(loc_1m_primary_ch) >= -1 and (strSTA() == 'AP' or strSTA() == 'SNIFFER'):
+        loc_1m_primary_ch_arg = " loc_1m_primary_ch=" + str(loc_1m_primary_ch)
 
     # module parameter setting while loading NRC driver
     # Default value is used if arg is not defined
@@ -748,10 +798,11 @@ def setModuleParam():
     module_param = spi_arg + fw_arg + \
                  power_save_arg + sleep_duration_arg + idle_mode_arg + bss_max_idle_arg + \
                  ndp_preq_arg + ndp_ack_1m_arg + auto_ba_arg + sw_enc_arg + \
-                 cqm_arg + listen_int_arg + drv_dbg_arg + \
+                 cqm_arg + listen_int_arg + drv_dbg_arg + tw_band_arg + \
                  sbi_arg + discard_deauth_arg + dbg_fc_arg + kr_band_arg + legacy_ack_arg + \
                  be_arg + rs_arg + beacon_bypass_arg + ps_gpio_arg + bd_name_arg + support_ch_width_arg + \
-                 ps_pretend_arg + duty_cycle_arg + cca_thresh_arg + twt_arg + auth_control_arg
+                 ps_pretend_arg + duty_cycle_arg + cca_thresh_arg + twt_arg + auth_control_arg + \
+                 sub_xtal_bypass_arg + loc_1m_primary_ch_arg
 
     return module_param
 
@@ -846,7 +897,9 @@ def run_sta(interface):
         os.system("sudo iwconfig " + interface + " power timeout " + ps_timeout)
 
     print("[6] Start wpa_supplicant on " + interface)
-    if strSecurity() == 'OPEN':
+    if strSecurity() == "CUSTOM" :
+        os.system("sudo wpa_supplicant -i" + interface + " -c /home/pi/nrc_pkg/script/wizard_sta.conf " + bridge + debug + " &")
+    elif strSecurity() == 'OPEN':
         conf_file = "/sta_halow_open.conf "
     elif strSecurity() == 'WPA2-PSK':
         conf_file = "/sta_halow_wpa2.conf "
@@ -854,14 +907,14 @@ def run_sta(interface):
         conf_file = "/sta_halow_owe.conf "
     elif strSecurity() == 'WPA3-SAE':
         conf_file = "/sta_halow_sae.conf "
-    elif strSecurity() == 'WPA-PBC':
+    elif strSecurity() == 'WPA2-PSK(WPS-PBC)':
         conf_file = "/sta_halow_pbc.conf "
 
     if conf_file != "":
         if country == "EU":
             os.system("sed -i \"s/^country=.*/country=%s/g\" %s" % ( str(sys.argv[3]), conf_dir + conf_file ) )
         os.system("sudo wpa_supplicant -i" + interface + " -c " + conf_dir + conf_file + bridge + debug + " &")
-        if strSecurity() == 'WPA-PBC':
+        if strSecurity() == 'WPA2-PSK(WPS-PBC)':
             time.sleep(1)
             os.system("sudo wpa_cli wps_pbc")
     time.sleep(3)
@@ -874,13 +927,14 @@ def run_sta(interface):
     print("[7] Connect and DHCP")
     if int(use_bridge_setup) > 0:
         interface = 'br0'
-    ret = check(interface)
-    while ret == '':
-
-        time.sleep(5)
+    if not strSecurity() == "CUSTOM" :
         ret = check(interface)
+        while ret == '':
+    
+            time.sleep(5)
+            ret = check(interface)
 
-    print(ret)
+        print(ret)
     print("IP assigned. HaLow STA ready")
     print("--------------------------------------------------------------------")
 
@@ -916,7 +970,10 @@ def run_ap(interface):
     global self_config
     channel = None
 
-    if strSecurity() == "OPEN" :
+    if strSecurity() == "CUSTOM" :
+        conf_path = script_path
+        conf_file = "/wizard_ap.conf"
+    elif strSecurity() == "OPEN" :
         conf_file+="/ap_halow_open.conf"
     elif strSecurity() == 'WPA2-PSK' :
         conf_file+="/ap_halow_wpa2.conf"
@@ -924,7 +981,7 @@ def run_ap(interface):
         conf_file+="/ap_halow_owe.conf"
     elif strSecurity() == 'WPA3-SAE' :
         conf_file+="/ap_halow_sae.conf"
-    elif strSecurity() == 'WPA-PBC' :
+    elif strSecurity() == 'WPA2-PSK(WPS-PBC)' :
         conf_file+="/ap_halow_pbc.conf"
 
     if int(use_bridge_setup) > 0:
@@ -958,12 +1015,15 @@ def run_ap(interface):
     if(int(self_config)==1 and self_conf_result=='Done'):
         os.system("sed -i " + '"4s/.*/interface=' + interface + '/g" ' + script_path + "conf/temp_self_config.conf " )
         os.system("sudo hostapd " + script_path + "conf/temp_self_config.conf " + debug +" &")
-        if strSecurity() == 'WPA-PBC':
+        if strSecurity() == 'WPA2-PSK(WPS-PBC)':
             time.sleep(1)
             os.system("sudo hostapd_cli wps_pbc")
     else:
-        launch_hostapd( interface, '/home/pi/nrc_pkg/script/conf/' + country + conf_file, country, debug, channel )
-        if strSecurity() == 'WPA-PBC':            
+        if strSecurity() == 'CUSTOM':
+            launch_hostapd( interface, '/home/pi/nrc_pkg/script/wizard_ap.conf', country, debug, channel )
+        else:
+            launch_hostapd( interface, '/home/pi/nrc_pkg/script/conf/' + country + conf_file, country, debug, channel )
+        if strSecurity() == 'WPA2-PSK(WPS-PBC)':            
             time.sleep(1)
             os.system("sudo hostapd_cli wps_pbc")
     time.sleep(3)

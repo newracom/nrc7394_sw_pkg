@@ -1,0 +1,8 @@
+
+config SPI_CH347
+	tristate "CH347 SPI controller"
+	depends on USB || GPIOLIB || COMPILE_TEST
+	help
+	  CH347 supports UART/SPI/I2C/JTAG/GPIO. 
+	  This driver supports SPI/GPIO.
+

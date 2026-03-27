@@ -260,6 +260,13 @@ module_param(kr_band, int, 0600);
 MODULE_PARM_DESC(kr_band, "Specify KR band (KR USN1(1) or KR USN5(2))");
 
 /**
+ * Set configuration of TW Band (TW, T2)
+ */
+int tw_band = 1; //default TW
+module_param(tw_band, int, 0600);
+MODULE_PARM_DESC(tw_band, "Specify TW band (TW (1) or TW-NCC(2))");
+
+/**
  * Debug Level All
  */
 bool debug_level_all = false;
@@ -373,6 +380,20 @@ MODULE_PARM_DESC(set_duty_cycle, "Set duty cycle (0|1(off,on), window, duration"
 int set_cca_threshold = -75;
 module_param(set_cca_threshold, int, 0600);
 MODULE_PARM_DESC(set_cca_threshold, "Set cca threshold (default: -75)");
+
+/**
+ * Sub-crystal oscillator block bypass enable
+ */
+bool sub_xtal_bypass = false;
+module_param(sub_xtal_bypass, bool, 0600);
+MODULE_PARM_DESC(sub_xtal_bypass, "Set sub-crystal oscillator block bypass enable");
+
+/**
+ * location of 1MHz primary channel (0/1/2/3, -1: FW default (2MBW:0, 4MBW:1))
+ */
+int loc_1m_primary_ch = -1;
+module_param(loc_1m_primary_ch, int, 0600);
+MODULE_PARM_DESC(loc_1m_primary_ch, "Set location of 1MHz primary channel");
 
 /**
  * TWT 
@@ -625,6 +646,10 @@ static int nrc_fw_start(struct nrc *nw)
 	// 1-bit scale (0:1, 1:10)
 	p->auth_control_ti_min = set_auth_control[2] |(set_auth_control[4] == 10? 1<<7:0);
 	p->auth_control_ti_max = set_auth_control[3];
+	p->sub_xtal_bypass = sub_xtal_bypass;
+
+	// location of 1MHz primary channel for AP
+	p->loc_1m_prim_ch = loc_1m_primary_ch;
 
 	skb_resp = nrc_xmit_wim_request_wait(nw, skb_req, (WIM_RESP_TIMEOUT * 70));
 	if (skb_resp)

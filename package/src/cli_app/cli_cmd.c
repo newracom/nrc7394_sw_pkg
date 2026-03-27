@@ -95,10 +95,12 @@ static int cmd_show_mac_clear(cmd_tbl_t *t, int argc, char *argv[]);
 
 /* 3nd sub commands on show */
 static int cmd_show_mac_stats(cmd_tbl_t *t, int argc, char *argv[]);
-static int cmd_show_mac_clear(cmd_tbl_t *t, int argc, char *argv[]);
 
 /* results display for show mac [tx|rx] stats */
 static void cmd_show_mac_result_display(char *response, int dir, int type);
+
+static int cmd_show_rx_cnt_show(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_show_rx_cnt_clear(cmd_tbl_t *t, int argc, char *argv[]);
 
 /*******************************************************************************
 * sub commands on set
@@ -130,9 +132,12 @@ static int cmd_set_bcn_mcs(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_bcmc_mcs(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_dhcp_mcs(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_mgmt_mcs(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_set_eapol_mcs(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_set_arp_mcs(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_bgscan_trx(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_scan_period(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_mesh_rssi_threshold(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_set_mgmt_mcs10_permit(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_1m_prim_loc(cmd_tbl_t *t, int argc, char *argv[]);
 
 
@@ -149,6 +154,9 @@ static int cmd_set_rc_param(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_test_mcs(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_test_country(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_test_cont_tx(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_test_freq_bw(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_test_single_tx(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_test_length(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_test_sine_tx(cmd_tbl_t *t, int argc, char *argv[]);
 
 /*******************************************************************************
@@ -163,7 +171,7 @@ static int cmd_gpio_pullup(cmd_tbl_t *t, int argc, char *argv[]);
 /*******************************************************************************
 * function for periodic show signal command
 *******************************************************************************/
-void *showRxThreadRun();
+void *showRxThreadRun(void *arg);
 
 /*******************************************************************************
 * defines
@@ -247,6 +255,8 @@ cmd_tbl_t show_sub_list[] = {
 	{ "xtal_status", cmd_show_xtal_status, "show xtal_status", "show xtal_status",  SHOW_XTAL_STATUS_LIST, 0},
 	{ "clock_count", cmd_show_clock_count, "modem get_clock_count {xtal|lpo}", "show clock_count {xtal|lpo}",  SHOW_CLOCK_COUNT_LIST, 0},
 	{ "bcn_mcs", cmd_show_bcn_mcs, "show beacon mcs", "show bcn_mcs [vif_id]",  "", 0},
+	{ "rx_count", cmd_show_rx_cnt_show, "show RX packet count", "show rx_count",  "", 0},
+	{ "rx_clear", cmd_show_rx_cnt_clear, "clear RX Statistics", "show rx_clear",  "", 0},
 };
 
 /* sub command list on set */
@@ -259,7 +269,7 @@ cmd_tbl_t set_sub_list[] = {
 	{ "duty_debug", cmd_set_duty_debug, "set debug mode for duty cycle", "set duty_debug {on|off}", "",0},
 	{ "txpwr", cmd_set_txpwr, "set tx power and type", "set txpwr {auto|limit|fixed} {value} ", SET_TXPWR_KEY_LIST, 0},
 	{ "wakeup_pin", cmd_set_wakeup_pin, "set wakeup pin for deepsleep", "set wakeup_pin {Debounce(on|off)} {PIN Number(0~31)}", SET_WAKEUP_PIN_KEY_LIST, 0},
-	{ "wakeup_source", cmd_set_wakeup_source, "set wakeup source for deepsleep", "set wakeup_soruce rtc gpio hspi", SET_WAKEUP_SOURCE_KEY_LIST, 0},
+	{ "wakeup_source", cmd_set_wakeup_source, "set wakeup source for deepsleep", "set wakeup_source rtc gpio hspi", SET_WAKEUP_SOURCE_KEY_LIST, 0},
 	{ "addba", cmd_set_addba, "set addba tid / send addba with mac address", "set addba [tid] {mac address}", "", 0},
 	{ "delba", cmd_set_delba, "set delba tid / send delba with mac address", "set delba [tid] {mac address}", "", 0},
 	{ "rts", cmd_set_rts, "set rts on/off", "set rts {on|off|default} <threshold> <vif_id> {ndp rts ri:1, normal rts ri:2}", "", 0},
@@ -278,12 +288,15 @@ cmd_tbl_t set_sub_list[] = {
 	{ "bcmc_mcs", cmd_set_bcmc_mcs, "set bcmc_mcs ", "set bcmc_mcs [on|off] [10|0|1|2|3|4|5|6|7]", "", 0},
 	{ "dhcp_mcs", cmd_set_dhcp_mcs, "set dhcp_mcs ", "set dhcp_mcs [on|off] [10|0|1|2|3|4|5|6|7]", "", 0},
 	{ "mgmt_mcs", cmd_set_mgmt_mcs, "set mgmt_mcs ", "set mgmt_mcs [on|off] [10|0|1|2|3|4|5|6|7]", "", 0},
+	{ "eapol_mcs", cmd_set_eapol_mcs, "set eapol_mcs ", "set eapol_mcs [on|off] [10|0|1|2|3|4|5|6|7]", "", 0},
+	{ "arp_mcs", cmd_set_arp_mcs, "set arp_mcs ", "set arp_mcs [on|off] [10|0|1|2|3|4|5|6|7]", "", 0},
 	{ "rc_param", cmd_set_rc_param, "set rate control parameter", "set rc_param {1|2|3|4|5} {1|2|3|4|5|6|7} {1|..|255}", SET_RC_PARAM_KEY_LIST, 0},
 	{ "bgscan_trx", cmd_set_bgscan_trx, "set bgscan_trx ", "set bgscan_trx [1:enable|0:disable] [wait time operation ch for rx: (0~100)msec]", "", 0},
 	{ "scan_period", cmd_set_scan_period, "set scan_period", "set scan_period [dwell time (min 20ms)]", "", 0},
 	{ "mesh_rssi_threshold", cmd_set_mesh_rssi_threshold, "set mesh_rssi_threshold ", "set mesh_rssi_threshold {-120~-10dBm}", "", 0},
 	{ "prim_loc", cmd_set_1m_prim_loc, "set 1M primary location for sniffer ", "set prim_loc [0|1|2|3]", "", 0},
 
+	{ "mgmt_mcs10_permit", cmd_set_mgmt_mcs10_permit, "set mgmt_mcs10_permit", "set mgmt_mcs10_permit {on/off}", "", 2},
 };
 
 /* sub command list on test */
@@ -291,6 +304,9 @@ cmd_tbl_t test_sub_list[] = {
 	{ "mcs", cmd_test_mcs, "test mcs", "test mcs [mcs index]", "", 0},
 	{ "country", cmd_test_country, "test country", "test country [country code]", "", 0},
 	{ "cont_tx", cmd_test_cont_tx, "test continuous tx", "test cont_tx {stop} | {freq(in MHz)} {bw(1m|2m|4m)} {mcs} {txpwr} {wave type: 0(cont)|1(duty 99%)}", "", 0},
+	{ "freq_bw", cmd_test_freq_bw, "test freq_bw", "test freq_bw {freq(in MHz)} {bw(1m|2m|4m)}", "", 0},
+	{ "single_tx", cmd_test_single_tx, "test single tx", "test single_tx {remaining} | {stop} | {freq(in MHz)} {bw(1m|2m|4m)} {mcs} {txpwr} {packet count}", "", 0},
+	{ "length", cmd_test_length, "test length", "test length [length]", "", 0},
 	{ "sine_tx", cmd_test_sine_tx, "test sine wave tx", "test sine_tx {stop} | {freq(MHz)} {bw(1m|2m|4m)} {txpwr}", "", 0},
 };
 
@@ -838,22 +854,27 @@ static int cmd_show_signal(cmd_tbl_t *t, int argc, char *argv[])
 	key_list_temp = malloc(DISP_CMD_RESULT_BUF);
 	memset(key_list_temp, 0x0, DISP_CMD_RESULT_BUF);
 
-	if(!argv[2]){
-		memset(param, 0x0, sizeof(param));
-		strcpy(param, "show signal -sr -num");
+	memset(param, 0x0, sizeof(param));
+	strcpy(param, "show signal -sr -num");
 
-		nTry = 100;
-		while(nTry--){
-			netlink_ret = netlink_send_data(NL_CLI_APP_GET_INFO, param, response);
-			if(!netlink_ret){
-				ret = CMD_RET_SUCCESS;
-				break;
-			}else{
-				ret = CMD_RET_FAILURE;
-				cli_delay_ms(COMMAND_DELAY_MS);
-			}
+	nTry = 100;
+	while(nTry--){
+		netlink_ret = netlink_send_data(NL_CLI_APP_GET_INFO, param, response);
+		if(!netlink_ret){
+			ret = CMD_RET_SUCCESS;
+			break;
+		}else{
+			ret = CMD_RET_FAILURE;
+			cli_delay_ms(COMMAND_DELAY_MS);
 		}
+	}
 
+	if(strcmp(response, "NOT ASSOCIATED")== 0){
+		printf("NOT ASSOCIATED\n");
+		return CMD_RET_SUCCESS;
+	}
+
+	if(!argv[2]){
 		memcpy(key_list_temp, response, strlen(response));
 		t1 =  strtok_r(key_list_temp, ",", &next_ptr);
 		if(!t1) {
@@ -881,7 +902,11 @@ static int cmd_show_signal(cmd_tbl_t *t, int argc, char *argv[])
 			sprintf(param, "show signal -sr %d", start_point);
 			netlink_ret = netlink_send_data(NL_CLI_APP_GET_INFO, param, response);
 
-			if(strcmp(response, response_timeout_str)== 0){
+			if(strcmp(response, "NOT ASSOCIATED")== 0){
+				printf("NOT ASSOCIATED\n");
+				ret =  CMD_RET_SUCCESS;
+				break;
+			} else if(strcmp(response, response_timeout_str)== 0){
 				ret =  CMD_RET_RESPONSE_TIMEOUT;
 				break;
 			}else{
@@ -1292,7 +1317,7 @@ static int cmd_show_ap(cmd_tbl_t *t, int argc, char *argv[])
 
 	netlink_send_data_with_retry(NL_SHELL_RUN_RAW, param, response, -1);
 
-	if(response == NULL || strncmp("success", response, 7) == 0 || strncmp("fail", response, 4) == 0)
+	if(strncmp("success", response, 7) == 0 || strncmp("fail", response, 4) == 0)
 		return CMD_RET_FAILURE;
 
 	if(!response[0])
@@ -1607,15 +1632,14 @@ static void cmd_show_mac_result_display(char *response, int dir, int type)
 						break;
 					}
 
-					if (temp[0] != NULL) {
-						printf("- AC[%s]\t: OK(%10d/%10d)  %s(%10d/%10d)\n",
-							temp[0], atoi(temp[1]), atoi(temp[2]),
-							(dir == DIR_TX) ? "RTX" : "NOK", atoi(temp[3]), atoi(temp[4]));
+					if (temp[0][0] != '\0') {
+							printf("- AC[%s]\t: OK(%10d/%10d)  %s(%10d/%10d)\n",
+								temp[0], atoi(temp[1]), atoi(temp[2]),
+								(dir == DIR_TX) ? "RTX" : "NOK", atoi(temp[3]), atoi(temp[4]));
 					}
 				}
 				print_line('-', print_line_len,"", 0,0);
 				break;
-
 		case 1 :
 				/* mac stats type */
 				for(j=0; j <STATS_TYPES_MAX;j++){
@@ -2200,6 +2224,7 @@ static int cmd_set_mgmt_mcs(cmd_tbl_t *t, int argc, char *argv[])
 	return ret;
 }
 
+
 static int cmd_set_duty(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_SUCCESS;
@@ -2214,6 +2239,68 @@ static int cmd_set_duty(cmd_tbl_t *t, int argc, char *argv[])
 	ret = run_shell_cmd(t, argc, argv, "set duty", response, sizeof(response));
 	if(ret == CMD_RET_SUCCESS){
 		cmd_result_parse((char*)t->key_list, response, display_per_line);
+	}
+	return ret;
+}
+
+static int cmd_set_eapol_mcs(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_FAILURE;
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	const int display_per_line= 1;
+	int mcs = 0;
+
+	if (strcmp(argv[2], "on") != 0 && strcmp(argv[2], "off") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	if (strcmp(argv[2], "on") == 0 ) {
+		mcs = atoi(argv[3]);
+		if( mcs > 10 || mcs == 8 || mcs == 9){
+			printf("Usage : %s\n", (char*)t->usage);
+			return CMD_RET_FAILURE;
+		}
+	}
+
+	ret = run_shell_cmd(t, argc, argv, "set eapol_mcs", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS) {
+		if (strcmp(argv[2], "on") == 0 ) {
+			printf("set eapol_mcs: %s\n", argv[3]);
+		} else {
+			printf("disabled\n");
+		}
+	}
+	return ret;
+}
+
+static int cmd_set_arp_mcs(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_FAILURE;
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	const int display_per_line= 1;
+	int mcs = 0;
+
+	if (strcmp(argv[2], "on") != 0 && strcmp(argv[2], "off") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	if (strcmp(argv[2], "on") == 0 ) {
+		mcs = atoi(argv[3]);
+		if( mcs > 10 || mcs == 8 || mcs == 9){
+			printf("Usage : %s\n", (char*)t->usage);
+			return CMD_RET_FAILURE;
+		}
+	}
+
+	ret = run_shell_cmd(t, argc, argv, "set arp_mcs", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS) {
+		if (strcmp(argv[2], "on") == 0 ) {
+			printf("set arp_mcs: %s\n", argv[3]);
+		} else {
+			printf("disabled\n");
+		}
 	}
 	return ret;
 }
@@ -2502,6 +2589,11 @@ static int cmd_set_mesh_rssi_threshold(cmd_tbl_t *t, int argc, char *argv[])
 	return run_driver_cmd(t, argc, argv, "set mesh_rssi_threshold", NULL, 0);
 }
 
+static int cmd_set_mgmt_mcs10_permit(cmd_tbl_t *t, int argc, char *argv[])
+{
+	return run_shell_cmd(t, argc, argv, "set mgmt_mcs10_permit", NULL, 0);
+}
+
 static int cmd_set_1m_prim_loc(cmd_tbl_t *t, int argc, char *argv[])
 {
 	if (atoi(argv[2]) > 3 || atoi(argv[2]) < 0) {
@@ -2554,7 +2646,64 @@ static int cmd_test_cont_tx(cmd_tbl_t *t, int argc, char *argv[])
 		}
 	}
 
-	return run_shell_direct_cmd("test cont_tx %s %s %s %s %d", argv[2], argv[3], argv[4], argv[5], wave_type);
+	return run_shell_direct_cmd("test cont_tx %s %s %s %s %d",
+				argv[2], argv[3], argv[4], argv[5], wave_type);
+}
+
+static int cmd_test_single_tx(cmd_tbl_t *t, int argc, char *argv[])
+{
+	if (argc < 3) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	if (strcmp(argv[2], "stop") == 0) {
+		return run_shell_direct_cmd("test single_tx stop");
+	}
+
+	if (strcmp(argv[2], "remaining") == 0) {
+		int ret = CMD_RET_FAILURE;
+		char response[NL_MSG_MAX_RESPONSE_SIZE];
+
+		ret = run_shell_cmd(t, argc, argv, "test single_tx remaining", response, sizeof(response));
+		if(ret == CMD_RET_SUCCESS){
+			printf("%s\n", response);
+		}
+		return ret;
+	}
+
+	if(argc != 7) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	if (strcmp(argv[3], "1m") != 0 && strcmp(argv[3], "2m") != 0  && strcmp(argv[3], "4m") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	return run_shell_direct_cmd("test single_tx %s %s %s %s %s",
+					argv[2], argv[3], argv[4], argv[5],  argv[6]);
+}
+
+static int cmd_test_length(cmd_tbl_t *t, int argc, char *argv[])
+{
+	return run_shell_direct_cmd("test length %s", argv[2]);
+}
+
+static int cmd_test_freq_bw(cmd_tbl_t *t, int argc, char *argv[])
+{
+	if(argc < 3) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	if (strcmp(argv[3], "1m") != 0 && strcmp(argv[3], "2m") != 0  && strcmp(argv[3], "4m") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	return run_shell_direct_cmd("test freq_bw %s %s", argv[2], argv[3]);
 }
 
 static int cmd_test_sine_tx(cmd_tbl_t *t, int argc, char *argv[])
@@ -2574,6 +2723,38 @@ static int cmd_test_sine_tx(cmd_tbl_t *t, int argc, char *argv[])
 	}
 
 	return run_shell_direct_cmd("test sine_tx %s %s %s", argv[2], argv[3], argv[4]);
+}
+
+static int cmd_show_rx_cnt_show(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_SUCCESS;
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+
+	ret = run_shell_cmd(t, argc, argv, "show rx_count", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		if(strcmp(response, "-1")== 0){
+			printf("Invalid value of rx count\n");
+		} else {
+			printf("%s\n",response);
+		}
+	}
+	return ret;
+}
+
+static int cmd_show_rx_cnt_clear(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_SUCCESS;
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+
+	ret = run_shell_cmd(t, argc, argv, "show rx_clear", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		if(strcmp(response, "-1")== 0){
+			printf("Fail to clear rx count\n");
+		} else {
+			printf("%s\n",response);
+		}
+	}
+	return ret;
 }
 
 
@@ -2631,8 +2812,9 @@ static int cmd_gpio_pullup(cmd_tbl_t *t, int argc, char *argv[])
 /*******************************************************************************
 * function for periodic show signal command
 *******************************************************************************/
-void *showRxThreadRun(cmd_tbl_t *t)
+void *showRxThreadRun(void *arg)
 {
+	cmd_tbl_t *t = (cmd_tbl_t *)arg;
 	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
 	int netlink_ret = 0;

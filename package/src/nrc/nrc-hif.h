@@ -19,7 +19,6 @@
 
 #include <net/mac80211.h>
 #include "nrc.h"
-#include "wim.h"
 #include "nrc-debug.h"
 
 /*#define CONFIG_NRC_HIF_DEBUG_READ*/
@@ -437,18 +436,4 @@ void nrc_hif_wake_target_done (struct nrc_hif_device *dev);
 void nrc_hif_sleep_target_prepare (struct nrc_hif_device *dev, int mode);
 void nrc_hif_sleep_target_start (struct nrc_hif_device *dev, int mode);
 void nrc_hif_sleep_target_end (struct nrc_hif_device *dev, int mode);
-
-#define MON_STA_LIST_NUM 32
-
-typedef struct _mon_sta_t{
-	struct list_head list;
-	uint8_t  addr[6];
-	uint16_t scrambler;
-	uint8_t  rcpi;
-	uint32_t first_ts;
-	uint32_t last_ts;
-} MON_STA_T;
-
-bool is_tcp_ack(struct sk_buff *skb);
-
 #endif

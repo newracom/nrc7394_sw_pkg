@@ -47,6 +47,8 @@ ccflags-y += -Wall -Werror
 
 ccflags-y += -DCONFIG_NRC_TRACING
 
+#ccflags-y += -DENABLE_HW_RESET
+
 all: modules
 
 cleanall: clean all

@@ -174,10 +174,26 @@ static struct ieee80211_channel nrc_channels_5ghz[] = {
 	CHAN5G(5230), /* Channel 46 */
 	CHAN5G(5235), /* Channel 47 */
 	CHAN5G(5240), /* Channel 48 */
-	CHAN5G(5260), /* Channel 52 */
-	CHAN5G(5280), /* Channel 56 */
-	CHAN5G(5300), /* Channel 60 */
-	CHAN5G(5320), /* Channel 64 */
+	/* Op35 proxy block: 5250-5360 (12ch, 10MHz spacing) */
+	CHAN5G(5250), /* Channel 50  (Op35 ch128 2M proxy) */
+	CHAN5G(5260), /* Channel 52  (Op35 ch132 2M proxy) */
+	CHAN5G(5270), /* Channel 54  (Op35 ch136 2M proxy) */
+	CHAN5G(5280), /* Channel 56  (Op35 ch140 2M proxy) */
+	CHAN5G(5290), /* Channel 58  (Op35 ch144 2M proxy) */
+	CHAN5G(5300), /* Channel 60  (Op35 ch148 2M proxy) */
+	CHAN5G(5310), /* Channel 62  (Op35 ch152 2M proxy) */
+	CHAN5G(5320), /* Channel 64  (Op35 ch156 2M proxy) */
+	CHAN5G(5330), /* Channel 66  (Op35 ch160 2M proxy) */
+	CHAN5G(5340), /* Channel 68  (Op35 ch164 2M proxy) */
+	CHAN5G(5350), /* Channel 70  (Op35 ch168 2M proxy) */
+	CHAN5G(5360), /* Channel 72  (Op35 ch172 2M proxy) */
+	/* Op36 proxy block: 5380-5480 (6ch, 20MHz spacing) */
+	CHAN5G(5380), /* Channel 76  (Op36 ch130 4M proxy) */
+	CHAN5G(5400), /* Channel 80  (Op36 ch138 4M proxy) */
+	CHAN5G(5420), /* Channel 84  (Op36 ch146 4M proxy) */
+	CHAN5G(5440), /* Channel 88  (Op36 ch154 4M proxy) */
+	CHAN5G(5460), /* Channel 92  (Op36 ch162 4M proxy) */
+	CHAN5G(5480), /* Channel 96  (Op36 ch170 4M proxy) */
 	CHAN5G(5500), /* Channel 100 */
 	CHAN5G(5520), /* Channel 104 */
 	CHAN5G(5540), /* Channel 108 */
@@ -245,13 +261,11 @@ static const struct ieee80211_regdomain mac80211_regdom = {
 };
 #else
 static const struct ieee80211_regdomain mac80211_regdom = {
-	.n_reg_rules = 4,
+	.n_reg_rules = 2,
 	.alpha2 =  "99",
 	.reg_rules = {
 		REG_RULE(2412-10, 2484+10, 40, 0, 30, 0),
-		REG_RULE(5180-10, 5320+10, 40, 0, 30, 0),
-		REG_RULE(5500-10, 5580+10, 40, 0, 30, 0),
-		REG_RULE(5745-10, 5825+10, 40, 0, 30, 0),
+		REG_RULE(5180-10, 5825+10, 40, 0, 30, 0),
 	},
 };
 #endif /* CONFIG_S1G_CHANNEL */
@@ -998,7 +1012,7 @@ static int nrc_mac_start(struct ieee80211_hw *hw)
 	return 0;
 }
 
-#if KERNEL_VERSION(6,11,0) <= NRC_TARGET_KERNEL_VERSION
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 9, 0)
 void nrc_mac_stop(struct ieee80211_hw *hw, bool suspend)
 #else
 void nrc_mac_stop(struct ieee80211_hw *hw)
@@ -1114,74 +1128,6 @@ void nrc_mac_roc_finish(struct work_struct *work)
 #ifdef CONFIG_USE_SCAN_TIMEOUT
 static void nrc_mac_scan_timeout(struct work_struct *work);
 #endif
-
-// struct first_sta_ctx {
-//         struct ieee80211_sta *sta;
-// };
-// 
-// static void nrc_first_sta_cb(void *data, struct ieee80211_sta *sta)
-// {
-//         struct first_sta_ctx *ctx = data;
-// 
-//         if (!ctx->sta)                  /* keep the **first** one only */
-//                 ctx->sta = sta;
-// }
-
-// static void nrc_tp_refresh_worker(struct work_struct *ws)
-// {
-//         struct nrc *nw = container_of(to_delayed_work(ws),
-//                                       struct nrc, tp_refresh_work);
-//         u32 tput = 200;
-// 	struct sk_buff *skb;
-// 	struct ieee80211_sta *sta = NULL;
-// 	unsigned int delay = 0;
-// 	
-// 	rcu_read_lock();
-// #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,8,0)
-//         ieee80211_iterate_stations_atomic(nw->hw, nrc_first_sta_cb, &sta);
-// #else
-//         ieee80211_iterate_stations(nw->hw, nrc_first_sta_cb, &sta);
-// #endif
-//         if (sta)
-//                 tput = max(nrc_stats_metric(sta->addr), 200u);
-// 	
-// 	delay = sta ? 1000 : 5000;
-// 	
-// 	rcu_read_unlock();
-// 	
-// 	if(!sta)
-// 		goto done;
-// 
-//         /* ---- query firmware --------------------------------------- */
-// 	skb = nrc_xmit_wim_simple_request_wait(nw, WIM_CMD_GET_TX_STATS, WIM_RESP_TIMEOUT * 30);
-//         if (skb) {
-//                 struct wim *wim;
-//                 struct wim_tlv *tlv;
-// 		struct nrc_tx_stats *tx;
-// 		
-// 		if (skb->len > skb_headlen(skb)) {
-// 			skb_trim(skb, skb_headlen(skb));
-// 		}
-// 
-// 		wim = (void *)skb->data;
-// 		tlv = (void *)(wim + 1);
-// 		
-//                 if (skb->len >= sizeof(struct wim) + sizeof(struct wim_tlv) + sizeof(struct nrc_tx_stats)) {
-//                         tx = (void *)tlv->v;
-//                         if (tx->bw < 3 && tx->mcs < 11)
-//                                 nrc_stats_update_tx_stats(tx);
-//                 }
-//                 dev_kfree_skb(skb);
-//         }
-// done:
-//         /* ---- compute metric --------------------------------------- */	
-//         if (tput != atomic_read(&nw->cached_tp_kbps))
-//                 atomic_set(&nw->cached_tp_kbps, tput);
-// 
-//         /* adaptive interval */
-//         schedule_delayed_work(&nw->tp_refresh_work, msecs_to_jiffies(delay));
-// }
-
 
 static int nrc_mac_add_interface(struct ieee80211_hw *hw,
 				 struct ieee80211_vif *vif)
@@ -1303,11 +1249,6 @@ static int nrc_mac_add_interface(struct ieee80211_hw *hw,
 #ifdef CONFIG_USE_SCAN_TIMEOUT
 	INIT_DELAYED_WORK(&i_vif->scan_timeout, nrc_mac_scan_timeout);
 #endif
-	
-	/* read expected throughput asynchronously */
-	// INIT_DELAYED_WORK(&nw->tp_refresh_work, nrc_tp_refresh_worker);
-	// atomic_set(&nw->cached_tp_kbps, 433000);      /* sane initial value */
-	// schedule_delayed_work(&nw->tp_refresh_work, 0);/* kick immediately */
 
 	if (vif->type == NL80211_IFTYPE_MESH_POINT)
 		signal_monitor = true;
@@ -1398,9 +1339,6 @@ static void nrc_mac_remove_interface(struct ieee80211_hw *hw,
 	struct nrc_vif *i_vif = to_i_vif(vif);
 	int ret;
 
-	/* cancel async throughput update */
-	cancel_delayed_work_sync(&nw->tp_refresh_work);
-	
 	if (vif->type == NL80211_IFTYPE_MONITOR || vif->p2p){
 		if(vif->type == NL80211_IFTYPE_MONITOR){
 			nrc_ampdu_mon_deinit();
@@ -1734,6 +1672,8 @@ void nrc_mac_add_tlv_channel(struct sk_buff *skb,
 	ch_param.channel = chandef->chan->center_freq;
 	ch_param.type = ch_type;
 	ch_param.width = get_wim_channel_width(chandef->width);
+	nrc_mac_dbg("[drv->fw] freq=%d type=%d width=%d\n",
+		ch_param.channel, ch_param.type, ch_param.width);
 	nrc_wim_skb_add_tlv(skb, WIM_TLV_CHANNEL,
 				   sizeof(ch_param), &ch_param);
 #else
@@ -1754,6 +1694,13 @@ void nrc_mac_add_tlv_channel(struct sk_buff *skb,
 	param.offset = nrc_get_offset_by_freq(param.s1g_freq);
 	param.primary_loc = nrc_get_pri_loc_by_freq(param.s1g_freq);
 
+	nrc_mac_dbg("[drv->fw] s1g_freq=%d s1g_ch=%d oper_class=%d "
+		"spacing=%d offset=%d pri_loc=%d cca=%d cc=%c%c\n",
+		param.s1g_freq, param.s1g_freq_index,
+		param.global_oper_class, param.chan_spacing,
+		param.offset, param.primary_loc,
+		param.cca_level_type,
+		param.alpha2[0], param.alpha2[1]);
 	nrc_wim_skb_add_tlv(skb, WIM_TLV_S1G_CHANNEL, sizeof(param), &param);
 #endif /* CONFIG_S1G_CHANNEL */
 }
@@ -1789,11 +1736,24 @@ static int nrc_mac_config(struct ieee80211_hw *hw, u32 changed)
 #endif /* defined(CONFIG_SUPPORT_BD) */
 #ifdef CONFIG_SUPPORT_CHANNEL_INFO
 	struct cfg80211_chan_def chandef = {0,};
+	
+	/* In kernel 6.0+, hw->conf.chandef.chan may be NULL when using channel context */
+	if (!hw->conf.chandef.chan) {
+		nrc_mac_dbg("%s: chandef.chan is NULL, skipping channel configuration\n", __func__);
+		goto skip_channel_config;
+	}
+	
 	memcpy(&chandef, &hw->conf.chandef, sizeof(struct cfg80211_chan_def));
 	memcpy(&ch, hw->conf.chandef.chan, sizeof(struct ieee80211_channel));
 	chandef.chan = &ch;
 #else
 	struct ieee80211_conf chandef = {0,};
+	
+	if (!hw->conf.channel) {
+		nrc_mac_dbg("%s: channel is NULL, skipping channel configuration\n", __func__);
+		goto skip_channel_config;
+	}
+	
 	memcpy(&chandef, &hw->conf, sizeof(struct ieee80211_conf));
 	memcpy(&ch, hw->conf.channel, sizeof(struct ieee80211_channel));
 	chandef.channel = &ch;
@@ -1847,6 +1807,9 @@ static int nrc_mac_config(struct ieee80211_hw *hw, u32 changed)
 
 	if (changed & IEEE80211_CONF_CHANGE_CHANNEL) {
 		nrc_mac_dbg("%s: changed: IEEE80211_CONF_CHANGE_CHANNEL \n", __FUNCTION__);
+		nrc_mac_dbg("[hostap->drv] center_freq=%d width=%d\n",
+			chandef.chan->center_freq,
+			chandef.width);
 		skb = nrc_wim_alloc_skb(nw, WIM_CMD_SET,
 				tlv_len(sizeof(struct wim_channel_param)));
 
@@ -1877,6 +1840,7 @@ static int nrc_mac_config(struct ieee80211_hw *hw, u32 changed)
 		/* TODO: band (2G, 5G, etc) and bandwidth (20MHz, 40MHz, etc) */
 	}
 
+skip_channel_config:
 	if (changed & IEEE80211_CONF_CHANGE_PS) {
 		nrc_mac_dbg("%s: changed: IEEE80211_CONF_CHANGE_PS\n", __FUNCTION__);
 		nw->ps_enabled = (hw->conf.flags & IEEE80211_CONF_PS);
@@ -3458,28 +3422,42 @@ static void nrc_mac_channel_policy(void *data, u8 *mac,
 		struct ieee80211_vif *vif)
 {
 	struct sk_buff *skb;
-	struct nrc_vif *i_vif = to_i_vif(vif);
-	struct nrc *nw = i_vif->nw;
+	struct nrc_vif *i_vif;
+	struct nrc *nw;
 #ifdef CONFIG_SUPPORT_CHANNEL_INFO
 	struct cfg80211_chan_def *chan_to_follow =
 		(struct cfg80211_chan_def *)data;
-	struct wireless_dev *wdev = ieee80211_vif_to_wdev(vif);
+	struct wireless_dev *wdev;
 #ifdef CONFIG_USE_LINK_ID
 	struct cfg80211_chan_def *chandef;
 #endif
 #else
 	struct ieee80211_conf *chan_to_follow =
 		(struct ieee80211_conf *)data;
-	struct wireless_dev *wdev = i_vif->dev->ieee80211_ptr;
+	struct wireless_dev *wdev;
+#endif
+
+	if (!vif)
+		return;
+
+	i_vif = to_i_vif(vif);
+	nw = i_vif->nw;
+
+#ifdef CONFIG_SUPPORT_CHANNEL_INFO
+	wdev = ieee80211_vif_to_wdev(vif);
+#else
+	wdev = i_vif->dev->ieee80211_ptr;
 #endif
 
 	if (!wdev)
 		return;
 
 #ifdef CONFIG_SUPPORT_CHANNEL_INFO
+	if (!chan_to_follow || !chan_to_follow->chan)
+		return;
 #ifdef CONFIG_USE_LINK_ID
 	chandef = wdev_chandef(wdev, vif->bss_conf.link_id);
-	if (chandef->chan &&
+	if (chandef && chandef->chan &&
 		chandef->chan->center_freq ==
 		chan_to_follow->chan->center_freq)
 #else
@@ -3488,6 +3466,8 @@ static void nrc_mac_channel_policy(void *data, u8 *mac,
 		chan_to_follow->chan->center_freq)
 #endif /* ifdef CONFIG_USE_LINK_ID */
 #else
+	if (!chan_to_follow || !chan_to_follow->channel)
+		return;
 	if (wdev->channel &&
 		wdev->channel->center_freq ==
 		chan_to_follow->channel->center_freq)
@@ -3630,9 +3610,16 @@ static void nrc_mac_change_chanctx(struct ieee80211_hw *hw,
 			ctx->def.center_freq1, ctx->def.center_freq2);
 }
 
+#if KERNEL_VERSION(6, 0, 0) <= NRC_TARGET_KERNEL_VERSION
+static int nrc_mac_assign_vif_chanctx(struct ieee80211_hw *hw,
+		struct ieee80211_vif *vif,
+		struct ieee80211_bss_conf *link_conf,
+		struct ieee80211_chanctx_conf *ctx)
+#else
 static int nrc_mac_assign_vif_chanctx(struct ieee80211_hw *hw,
 		struct ieee80211_vif *vif,
 		struct ieee80211_chanctx_conf *ctx)
+#endif
 {
 	struct nrc *nw = hw->priv;
 	struct sk_buff *skb;
@@ -3662,9 +3649,16 @@ static int nrc_mac_assign_vif_chanctx(struct ieee80211_hw *hw,
 	return 0;
 }
 
+#if KERNEL_VERSION(6, 0, 0) <= NRC_TARGET_KERNEL_VERSION
+static void nrc_mac_unassign_vif_chanctx(struct ieee80211_hw *hw,
+		struct ieee80211_vif *vif,
+		struct ieee80211_bss_conf *link_conf,
+		struct ieee80211_chanctx_conf *ctx)
+#else
 static void nrc_mac_unassign_vif_chanctx(struct ieee80211_hw *hw,
 		struct ieee80211_vif *vif,
 		struct ieee80211_chanctx_conf *ctx)
+#endif
 {
 	nrc_mac_dbg("%s, vif[type:%d, addr:%pM] %d MHz/width: %d/cfreqs:%d/%d MHz\n",
 			__func__, vif->type, vif->addr,
@@ -3893,6 +3887,8 @@ static u32 nrc_get_expected_throughput(struct ieee80211_hw *hw,
 static u32 nrc_get_expected_throughput(struct ieee80211_sta *sta)
 #endif
 {
+	uint32_t tput = 0;
+	struct sk_buff *skb_resp;
 #if KERNEL_VERSION(4, 8, 0) <= NRC_TARGET_KERNEL_VERSION
 	struct nrc *nw = hw->priv;
 #else
@@ -3901,18 +3897,6 @@ static u32 nrc_get_expected_throughput(struct ieee80211_sta *sta)
 	i_sta = to_i_sta(sta);
 	nw = i_sta->nw;
 #endif
-	// return atomic_read(&nw->cached_tp_kbps);
-	
-	uint32_t tput = 0;
-	struct sk_buff *skb_resp;
-// #if KERNEL_VERSION(4, 8, 0) <= NRC_TARGET_KERNEL_VERSION
-// 	struct nrc *nw = hw->priv;
-// #else
-// 	struct nrc_sta *i_sta;
-// 	struct nrc *nw;
-// 	i_sta = to_i_sta(sta);
-// 	nw = i_sta->nw;
-// #endif
 
 	if (!sta)
 		return 0;
@@ -3968,6 +3952,13 @@ static int nrc_set_frag_threshold(struct ieee80211_hw *hw, u32 value)
 
 	return 0;
 }
+
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 9, 0)
+#define HAS_CHANCTX_EMULATORS 1
+#else
+#define HAS_CHANCTX_EMULATORS 0
+#endif
 
 static const struct ieee80211_ops nrc_mac80211_ops = {
 	.tx = nrc_mac_tx,
@@ -4037,6 +4028,13 @@ static const struct ieee80211_ops nrc_mac80211_ops = {
 	.assign_vif_chanctx = nrc_mac_assign_vif_chanctx,
 	.unassign_vif_chanctx = nrc_mac_unassign_vif_chanctx,
 	.switch_vif_chanctx = nrc_mac_switch_vif_chanctx,
+#else
+#if HAS_CHANCTX_EMULATORS
+	.add_chanctx = ieee80211_emulate_add_chanctx,
+	.remove_chanctx = ieee80211_emulate_remove_chanctx,
+	.change_chanctx = ieee80211_emulate_change_chanctx,
+	.switch_vif_chanctx = ieee80211_emulate_switch_vif_chanctx,
+#endif
 #endif
 	.channel_switch_beacon = nrc_mac_channel_switch_beacon,
 	.pre_channel_switch = nrc_pre_channel_switch,
@@ -5562,7 +5560,7 @@ int nrc_register_hw(struct nrc *nw)
 
 #ifdef CONFIG_SUPPORT_AFTER_KERNEL_3_0_36
 	hw->wiphy->regulatory_flags =
-		REGULATORY_CUSTOM_REG|WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL;
+		REGULATORY_WIPHY_SELF_MANAGED|WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL;
 #endif
 
 #ifdef CONFIG_PM
@@ -5572,7 +5570,6 @@ int nrc_register_hw(struct nrc *nw)
 	hw->wiphy->wowlan = &nrc_wowlan_support;
 #endif
 
-	wiphy_apply_custom_regulatory(hw->wiphy, &mac80211_regdom);
 	nw->alpha2[0] = '9';
 	nw->alpha2[1] = '9';
 
@@ -5609,7 +5606,21 @@ int nrc_register_hw(struct nrc *nw)
 		hw = NULL;
 		return -EINVAL;
 	}
-	
+
+	/* REGULATORY_WIPHY_SELF_MANAGED requires explicitly setting the
+	 * regulatory domain after hw registration. Without this,
+	 * nl80211_get_reg_do() triggers a WARN_ON due to NULL regdomain.
+	 * Use _sync_rtnl version so channels are available immediately when
+	 * hostapd queries hw_features — the async version schedules a
+	 * workqueue that may run after hostapd has already started.
+	 * _sync_rtnl requires the caller to hold the RTNL lock. */
+	rtnl_lock();
+	ret = regulatory_set_wiphy_regd_sync_rtnl(hw->wiphy,
+		(struct ieee80211_regdomain *)&mac80211_regdom);
+	rtnl_unlock();
+	if (ret)
+		dev_warn(nw->dev, "regulatory_set_wiphy_regd_sync_rtnl failed (%d)\n", ret);
+
 	dev_info(nw->dev, "registered network device %s\n", wiphy_name(hw->wiphy));
 
 	return 0;

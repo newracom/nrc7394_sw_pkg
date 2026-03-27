@@ -4,6 +4,33 @@
 *
 *******************************************************************
 
+[2026-03-27]
+Change summary for version 1.3.2:
+
+Bugfix
+  * Resolved an intermittent issue where TX power deviation occurred after waking up from sleep mode.
+  * Blocked broadcast probe responses when an invalid configuration of the cssid_present flag is detected.
+  * Fixed an issue where the guard interval was incorrectly changed during watchdog recovery.
+  * Added compatibility fixes for kernel version 6.9 and above.
+
+Changes
+  * Improved intermittent performance degradation caused by LO leakage.
+  * Added support for sub-crystal oscillator (XTAL) bypass configuration.
+  * Enabled per-VIF TX power configuration.
+  * Added support for Taiwan NCC frequency bands.
+  * Updated EU channel configurations:
+    o Added S1G channel #31 (916.9 MHz / 1 MHz).
+    o Added S1G channel #33 (917.9 MHz / 1 MHz).
+    o Added S1G channel #35 (918.9 MHz / 1 MHz).
+  * Added US channels for S1G operating classes 35 and 36.
+  * Added device tree support for hardware reset GPIO.
+  * Added support for the following flash memory: GD25Q32E, PY25Q16HB, and W77Q32JWXGIR.
+  * Implemented AP reset detection based on TSF, with automatic reconnection upon detection.
+  * Added support for adaptive LNA.
+  * Enabled manual MCS configuration for EAPOL frames.
+  * Added module parameters to configure the 1 MHz primary location for both AP and sniffer modes.
+  * Optimized TX token adaptation when changing the MCS index of beacon frames.
+
 [2025-08-07]
 Change summary for version 1.3.1:
 

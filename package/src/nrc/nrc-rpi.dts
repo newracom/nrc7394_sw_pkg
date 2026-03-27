@@ -21,6 +21,7 @@
 				interrupt-parent = <&gpio>;
 				interrupts = <5 4>;  			/* GPIO Number */ /* IRQ_TYPE_LEVEL_HIGH */
 				spi-max-frequency = <20000000>;		/* Max Freq */
+				reset-gpios = <&gpio 6 1>;      /* Reset GPIO Number */ /* GPIO_ACTIVE_LOW */
 			};
 		};
 	};

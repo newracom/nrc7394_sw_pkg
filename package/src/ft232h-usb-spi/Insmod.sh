@@ -3,7 +3,7 @@
 
 LATENCY_TIME=1
 SPI_BUS_NUM=3
-GPIO_BASE_NUM=500
+GPIO_BASE_NUM=600
 
 while getopts "l:s:g:h" option; do
 case $option in
