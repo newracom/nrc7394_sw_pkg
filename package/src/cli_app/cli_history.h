@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2020-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+/*
  * MIT License
  *
  * Copyright (c) 2020 Newracom, Inc.

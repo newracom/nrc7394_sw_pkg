@@ -1,0 +1,15 @@
+[Unit]
+Description=HaLow AP configuration daemon (Web GUI)
+# Independent of halow-wlan.service on purpose: the GUI must stay reachable
+# even when the AP stack is stopped, so the user can (re)start it from the UI.
+After=network.target
+
+[Service]
+Type=exec
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/usr/bin/python3 /usr/lib/halow/web/halow_webd.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

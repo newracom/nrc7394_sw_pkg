@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2016-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: ISC
+ */
+
+/*
  * Copyright (c) 2016-2019 Newracom, Inc.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
@@ -17,12 +23,7 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/module.h>
-#include <linux/syscalls.h>
-#include <linux/fcntl.h>
-#include <linux/file.h>
-#include <linux/fs.h>
-#include <linux/stat.h>
-#include <asm/uaccess.h>
+#include <linux/firmware.h>
 #include "nrc.h"
 #include "nrc-bd.h"
 #include "nrc-debug.h"
@@ -130,6 +131,20 @@ static const struct bd_ch_table g_bd_ch_table[CC_MAX][NRC_BD_MAX_CH_LIST] = {
 	},
 	{
 		/* Japan */
+		{8470,  2412,   54,  1},
+		{8480,  2417,   56, 2},
+		{8490,  2422,   58, 3},
+		{8500,  2427,   60, 4},
+		{8510,  2432,   62, 5},
+		{8520,  2437,   64, 6},
+		{8530,  2442,   66, 7},
+		{8540,  2447,   68,  8},
+		{8475,  2452,   55, 9},
+		{8495,  2457,   59, 10},
+		{8515,  2462,   63, 11},
+		{8535,  2467,   67, 12},
+		{8485,  2472,   57,  13},
+		{8525,  5205,   65,  41},
 		{9210,  5200,   9,   40},
 		{9230,  5210,   13,  42},
 		{9240,  5215,   15,  43},
@@ -232,8 +247,8 @@ static const struct bd_ch_table g_bd_ch_table[CC_MAX][NRC_BD_MAX_CH_LIST] = {
 		{9285,	5195,	7,	39},
 		{9295,	5200,	9,	40},
 		{9305,	5205,	11,	41},
-		{9280,	5210,	4,	42},
-		{9300,	5215,	8,	43}
+		{9270,	5210,	4,	42},
+		{9290,	5215,	8,	43}
 	},
 	{
 		/* Dummy for deprecated CC */
@@ -340,66 +355,27 @@ static uint16_t nrc_checksum_16(uint16_t len, uint8_t* buf)
 
 static void * nrc_dump_load(struct nrc *nw, int len)
 {
-	struct file *filp;
-	loff_t pos=0;
-	/*
-	 * function force_uaccess_begin(), force_uaccess_end() and type mm_segment_t
-	 * are removed in 5.18
-	 * (https://patchwork.ozlabs.org/project/linux-arc/patch/20220216131332.1489939-19-arnd@kernel.org/#2847918)
-	 * function get_fs(), and set_fs() are removed in 5.18
-	 * (https://patchwork.kernel.org/project/linux-arm-kernel/patch/20201001141233.119343-11-arnd@arndb.de/)
-	 */
-	char filepath[64];
+	const struct firmware *fw;
 	char *buf = NULL;
 #if BD_DEBUG
 	int i;
 #endif
-#if KERNEL_VERSION(5,18,0) > NRC_TARGET_KERNEL_VERSION
-	mm_segment_t old_fs;
-#if KERNEL_VERSION(5,0,0) > NRC_TARGET_KERNEL_VERSION
-	old_fs = get_fs();
-	set_fs( get_ds() );
-#elif KERNEL_VERSION(5,10,0) > NRC_TARGET_KERNEL_VERSION
-	old_fs = get_fs();
-	set_fs( KERNEL_DS );
-#else
-	old_fs = force_uaccess_begin();
-#endif
-#endif /* if KERNEL_VERSION(5,18,0) < NRC_TARGET_KERNEL_VERSION */
-	sprintf(filepath, "/lib/firmware/%s", bd_name);
-	filp = filp_open(filepath, O_RDONLY, 0);
-	if (IS_ERR(filp)) {
-		dev_err(nw->dev, "Failed to load board data, error:%d",IS_ERR(filp));
-#if KERNEL_VERSION(5,18,0) > NRC_TARGET_KERNEL_VERSION
-#if KERNEL_VERSION(5,10,0) > NRC_TARGET_KERNEL_VERSION
-	set_fs(old_fs);
-#else
-	force_uaccess_end(old_fs);
-#endif
-#endif /* if KERNEL_VERSION(5,18,0) < NRC_TARGET_KERNEL_VERSION */
+
+	if (request_firmware(&fw, bd_name, nw->dev)) {
+		dev_err(nw->dev, "Failed to load board data (%s)", bd_name);
 		return NULL;
 	}
 
 	buf = (char *) kmalloc(len, GFP_KERNEL);
 	if (!buf) {
 		dev_err(nw->dev, "malloc input buf error!\n");
+		release_firmware(fw);
 		return NULL;
 	}
 
-#if KERNEL_VERSION(4, 14, 0) <= NRC_TARGET_KERNEL_VERSION
-	kernel_read(filp, buf, len, &pos);
-#else
-	kernel_read(filp, pos, buf, len);
-#endif
+	memcpy(buf, fw->data, min_t(int, len, (int)fw->size));
+	release_firmware(fw);
 
-	filp_close(filp, NULL);
-#if KERNEL_VERSION(5,18,0) > NRC_TARGET_KERNEL_VERSION
-#if KERNEL_VERSION(5,10,0) > NRC_TARGET_KERNEL_VERSION
-	set_fs(old_fs);
-#else
-	force_uaccess_end(old_fs);
-#endif
-#endif /* if KERNEL_VERSION(5,18,0) < NRC_TARGET_KERNEL_VERSION */
 #if BD_DEBUG
 	for(i=0; i < len;) {
 		nrc_dbg(NRC_DBG_STATE,"%02X %02X %02X %02X %02X %02X %02X %02X",
@@ -618,109 +594,36 @@ struct wim_bd_param * nrc_read_bd_tx_pwr(struct nrc *nw, uint8_t *country_code)
 int nrc_check_bd(struct nrc *nw)
 {
 	struct BDF *bd;
-	struct file *filp;
-	loff_t pos=0;
-	struct kstat *stat;
-	char *buf;
-	size_t length;
-#if KERNEL_VERSION(5, 10, 0) <= NRC_TARGET_KERNEL_VERSION
-	int rc;
-#endif
-
+	const struct firmware *fw;
 	int ret;
-	char filepath[64];
-	/*
-	 * function force_uaccess_begin(), force_uaccess_end() and type mm_segment_t
-	 * are removed in 5.18
-	 * (https://patchwork.ozlabs.org/project/linux-arc/patch/20220216131332.1489939-19-arnd@kernel.org/#2847918)
-	 * function get_fs(), and set_fs() are removed in 5.18
-	 * (https://patchwork.kernel.org/project/linux-arm-kernel/patch/20201001141233.119343-11-arnd@arndb.de/)
-	 */
-#if KERNEL_VERSION(5,18,0) > NRC_TARGET_KERNEL_VERSION
-	mm_segment_t old_fs;
-#if KERNEL_VERSION(5,0,0) > NRC_TARGET_KERNEL_VERSION
-	old_fs = get_fs();
-	set_fs(get_ds());
-#elif KERNEL_VERSION(5,10,0) > NRC_TARGET_KERNEL_VERSION
-	old_fs = get_fs();
-	set_fs(KERNEL_DS);
-#else
-	old_fs = force_uaccess_begin();
-#endif
-#endif /* if KERNEL_VERSION(5,18,0) < NRC_TARGET_KERNEL_VERSION */
-	sprintf(filepath, "/lib/firmware/%s", bd_name);
-	filp = filp_open(filepath, O_RDONLY, 0);
-	if (IS_ERR(filp)) {
-		dev_err(nw->dev, "Failed to load board data (%s) :error: %d", filepath, IS_ERR(filp));
-#if KERNEL_VERSION(5,18,0) > NRC_TARGET_KERNEL_VERSION
-#if KERNEL_VERSION(5,10,0) > NRC_TARGET_KERNEL_VERSION
-		set_fs(old_fs);
-#else
-		force_uaccess_end(old_fs);
-#endif
-#endif /* if KERNEL_VERSION(5,18,0) < NRC_TARGET_KERNEL_VERSION */
+
+	if (request_firmware(&fw, bd_name, nw->dev)) {
+		dev_err(nw->dev, "Failed to load board data (%s)", bd_name);
 		return -EIO;
 	}
 
-	stat = (struct kstat *) kmalloc(sizeof(struct kstat), GFP_KERNEL);
-	if(!stat)
-		return -ENOMEM;
-
-#if KERNEL_VERSION(5, 10, 0) <= NRC_TARGET_KERNEL_VERSION
-	rc = vfs_getattr(&filp->f_path, stat, STATX_SIZE, AT_STATX_SYNC_AS_STAT);
-	if(rc != 0){
-        nrc_common_dbg("vfs_getattr Error");
-    }
-	length = (size_t)stat->size;
-#else
-	vfs_stat(filepath, stat);
-	length = (size_t)stat->size;
-#endif
-
-	buf = (char *) kmalloc((int)length, GFP_KERNEL);
-	if(!buf) {
-		kfree(stat);
-		dev_err(nw->dev, "buf is NULL");
-		return -ENOMEM;
-	}
-
-#if KERNEL_VERSION(4, 14, 0) <= NRC_TARGET_KERNEL_VERSION
-	g_bd_size = kernel_read(filp, buf, (int)length, &pos);
-#else
-	g_bd_size = kernel_read(filp, pos, buf, (int)length);
-#endif
-
-	filp_close(filp, NULL);
-#if KERNEL_VERSION(5,18,0) > NRC_TARGET_KERNEL_VERSION
-#if KERNEL_VERSION(5,10,0) > NRC_TARGET_KERNEL_VERSION
-	set_fs(old_fs);
-#else
-	force_uaccess_end(old_fs);
-#endif
-#endif /* if KERNEL_VERSION(5,18,0) < NRC_TARGET_KERNEL_VERSION */
-	kfree(stat);
-
-	if(g_bd_size < NRC_BD_HEADER_LENGTH) {
+	g_bd_size = (int)fw->size;
+	if (g_bd_size < NRC_BD_HEADER_LENGTH) {
 		dev_err(nw->dev, "Invalid data size(%d)", g_bd_size);
-		kfree(buf);
+		release_firmware(fw);
 		return -EINVAL;
 	}
 
-	bd = (struct BDF *)buf;
+	bd = (struct BDF *)fw->data;
 	if((bd->total_len > g_bd_size-NRC_BD_HEADER_LENGTH) || (bd->total_len < NRC_BD_HEADER_LENGTH)) {
 		dev_err(nw->dev, "Invalid total length(%d)", bd->total_len);
-		kfree(buf);
+		release_firmware(fw);
 		return -EINVAL;
 	}
 
 	ret = nrc_checksum_16(bd->total_len, (uint8_t *)&bd->data[0]);
 	if(bd->checksum_data != ret) {
 		dev_err(nw->dev, "Invalid checksum(%u : %u)", bd->checksum_data, ret);
-		kfree(buf);
+		release_firmware(fw);
 		return -EINVAL;
 	}
 
-	kfree(buf);
+	release_firmware(fw);
 
 	return 0;
 }

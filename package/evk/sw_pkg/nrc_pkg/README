@@ -1,41 +1,50 @@
 1. Alias
  There are 4 aliases for fast access to folder or files.
  You can just type aliases to access them fast.
- For example, type "script" to access folder(/home/pi/nrc_pkg/script/) where there are scripts to manipulate 11ah AP, STA and SNIFFER.
+ For example, type "script" to access folder(~/nrc_pkg/script/) where there are scripts to manipulate 11ah AP, STA and SNIFFER.
 
-  1) nrc='cd /home/pi/nrc_pkg'
-  2) script='cd /home/pi/nrc_pkg/script/'
+  1) nrc='cd ~/nrc_pkg'
+  2) script='cd ~/nrc_pkg/script/'
   3) ipset='sudo vi /etc/dhcpcd.conf'
   4) dhcpset='sudo vi /etc/dnsmasq.conf'
 
 2. Before running EVK, you should change python files included in nrc_pkg as executable.
    Just do like below.
 
-  cd /home/pi/nrc_pkg
+  cd ~/nrc_pkg
   chmod -R 755 *
 
 
-3. Run EVK as AP, STA or Sniffer
- We provide the python script to run and stop STA, AP and Sniffer, so it's not difficult to run and stop.
- You should give 4 or 6 arguments when running them by script.
- Usage is like below. (This script is at /home/pi/nrc_pkg/script)
+3. Run EVK as AP, STA, Sniffer, Relay or Mesh
+ We provide the python script to run and stop each mode, so it's not difficult
+ to run and stop. Run start.py with no argument to print this usage.
+ (This script is at ~/nrc_pkg/script)
 
 Usage:
         start.py [sta_type] [security_mode] [country] [channel] [sniffer_mode]
+        start.py [sta_type] [security_mode] [country] [mesh_mode] [mesh_peering] [mesh_ip]
 Argument:
-        sta_type      [0:STA   |  1:AP  		|  2:SNIFFER  | 3:RELAY]
-        security_mode [0:Open  |  1:WPA2-PSK  	|  2:WPA3-OWE | 3:WPA3-SAE]
-        country       [US:USA  |  JP:Japan  |  TW:Taiwan  | KR:Korea | EU:EURO | CN:China |
-	                   AU:Austrailia  |  NZ:New Zealand]
+        sta_type      [0:STA  | 1:AP | 2:SNIFFER | 3:RELAY | 4:MESH]
+        security_mode [0:Open | 1:WPA2-PSK | 2:WPA3-OWE | 3:WPA3-SAE | 4:WPA2-PSK(WPS-PBC)]
+        country       [US:USA | JP:Japan | TW:Taiwan | AU:Australia | NZ:New Zealand |
+                       K1:Korea-USN | K2:Korea-MIC | SG:Singapore | T2:Taiwan-nCC |
+                       and EU channel support countries(EU countries, GB and SA)]
         -----------------------------------------------------------
-        channel       [S1G Channel Number]   * Only for Sniffer
+        channel       [S1G Channel Number]   * Only for Sniffer & AP
+                       (AP: giving a channel = manual; channel_manager auto is ignored)
         sniffer_mode  [0:Local | 1:Remote]   * Only for Sniffer
+        mesh_mode     [0:MPP | 1:MP | 2:MAP] * Only for Mesh
+        mesh_peering  [Peer MAC address]     * Only for Mesh
+        mesh_ip       [Static IP address]    * Only for Mesh
 Example:
-        OPEN mode STA for Korea                : ./start.py 0 0 KR
+        OPEN mode STA for US                   : ./start.py 0 0 US
         Security mode AP for US                : ./start.py 1 1 US
         Local Sniffer mode on CH 40 for Japan  : ./start.py 2 0 JP 40 0
+        SAE mode Mesh AP for US                : ./start.py 4 3 US 2
+        Mesh Point with static ip              : ./start.py 4 3 US 1 192.168.222.1
 Note:
         sniffer_mode should be set as '1' when running sniffer on remote terminal
+        MPP, MP mode support only Open, WPA3-SAE security mode
 
 4. Stop AP, STA or Sniffer
  To stop STA/AP/Sniffer, just run stop.py script like below.
@@ -45,6 +54,6 @@ Note:
 
 5. Changing Channel for Sniffer
  Running-change of channel is possible only during Sniffer Mode.
- It can be done by the script below which are on /home/pi/nrc_pkg/script/sniffer/
+ It can be done by the script below which are on ~/nrc_pkg/script/sniffer/
 
   ./change_channel [channel]

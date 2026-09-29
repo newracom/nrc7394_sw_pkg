@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2016-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: ISC
+ */
+
+/*
  * Copyright (c) 2016-2019 Newracom, Inc.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
@@ -790,6 +796,28 @@ static const struct file_operations hspi_report_ops = {
 	.release	= single_release,
 };
 
+/* Per-station modulation, recorded on the RX path from the S1G SIG. There is
+ * no other host-side source: the driver reports transmits without filling
+ * status.rates[], so mac80211 (and `iw`) have no MCS to show.
+ */
+static int nrc_debugfs_sta_rate_show(struct seq_file *s, void *data)
+{
+	return nrc_stats_rate_dump(s);
+}
+
+static int nrc_debugfs_sta_rate_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, nrc_debugfs_sta_rate_show, inode->i_private);
+}
+
+static const struct file_operations nrc_debugfs_sta_rate_fops = {
+	.owner		= THIS_MODULE,
+	.open		= nrc_debugfs_sta_rate_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+};
+
 void nrc_init_debugfs(struct nrc *nw)
 {
 
@@ -798,6 +826,8 @@ void nrc_init_debugfs(struct nrc *nw)
 
 	nw->debugfs = nw->hw->wiphy->debugfsdir;
 
+	debugfs_create_file("sta_rate", 0444, nw->debugfs, nw,
+			    &nrc_debugfs_sta_rate_fops);
 	nrc_debugfs_create_file("nrc_credit", &nrc_debugfs_txq_fops);
 	nrc_debugfs_create_file("nrc_debug", &nrc_debugfs_debug_fops);
 	nrc_debugfs_create_file("nrc_cspi", &nrc_debugfs_cspi);

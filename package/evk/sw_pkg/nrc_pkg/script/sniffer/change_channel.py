@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+# SPDX-FileCopyrightText: 2023-2026 Newracom, Inc.
+#
+# SPDX-License-Identifier: ISC
+
 import sys
 import os
 import time
@@ -13,7 +17,7 @@ total = len(sys.argv)
 cmdargs = str(sys.argv)
 
 if total < 2:
-	print ("NewraPeek Channel Change Usage: change_ch.py channelnumber")
+	print ("Usage: change_channel.py channelnumber")
 else:
-	print ("NewraPeek channel number: %s " % str(sys.argv[1]))
+	print ("channel number: %s " % str(sys.argv[1]))
 	change_channel()

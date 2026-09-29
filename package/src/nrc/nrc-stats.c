@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2016-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: ISC
+ */
+
+/*
  * Copyright (c) 2016-2019 Newracom, Inc.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
@@ -318,8 +324,7 @@ int nrc_stats_get_mesh_rssi_threshold(void)
 #endif
 
 /* Must larger than 0 and lower than STA_SLOW_THRESHOLD(6000).
- * Codel parameters get more TX delays in this condition.
- * Ref: https://newracom.atlassian.net/browse/MACSW-4 */
+ * Codel parameters get more TX delays in this condition. */
 #define METRIC_DEFAULT (5000)
 
 /* Worthless to calculate RSSI which is lower than -120 */
@@ -386,9 +391,12 @@ void nrc_stats_deinit(void)
 		kfree(cur);
 	}
 	spin_unlock(&state_lock);
+
+	nrc_stats_channel_noise_reset();
 }
 
-int nrc_stats_update(uint8_t *macaddr, int8_t snr, int8_t rssi)
+int nrc_stats_update(uint8_t *macaddr, int8_t snr, int8_t rssi,
+		     uint8_t mcs, uint8_t bw)
 {
 	struct stats_sta *cur, *next;
 
@@ -397,9 +405,33 @@ int nrc_stats_update(uint8_t *macaddr, int8_t snr, int8_t rssi)
 		if (memcmp(cur->macaddr, macaddr, 6) == 0) {
 			nrc_stats_rssi_update2(cur->rssi, rssi);
 			nrc_stats_snr_update2(cur->snr, snr);
+			if (mcs != 0xff) {
+				cur->mcs = mcs;
+				cur->bw = bw;
+			}
 			spin_unlock(&state_lock);
 			return 0;
 		}
+	}
+	spin_unlock(&state_lock);
+
+	return 0;
+}
+
+/* One line per station: the modulation we last heard it transmit at. Rows
+ * whose station has not been heard yet are skipped rather than reported as
+ * MCS 0, which would read as a real (and very poor) link.
+ */
+int nrc_stats_rate_dump(struct seq_file *m)
+{
+	struct stats_sta *cur, *next;
+
+	seq_puts(m, "# mac mcs bw\n");
+	spin_lock(&state_lock);
+	list_for_each_entry_safe(cur, next, &state_head, list) {
+		if (cur->mcs == 0xff)
+			continue;
+		seq_printf(m, "%pM %u %u\n", cur->macaddr, cur->mcs, cur->bw);
 	}
 	spin_unlock(&state_lock);
 
@@ -434,6 +466,8 @@ int nrc_stats_add(uint8_t *macaddr, int count)
 
 	sta->rssi = nrc_stats_rssi_init2();
 	sta->snr = nrc_stats_snr_init2();
+	sta->mcs = 0xff;                 /* nothing heard from it yet */
+	sta->bw = 0;
 
 	nrc_stats_dbg("[add] %pM\n", macaddr);
 	spin_unlock(&state_lock);
@@ -572,7 +606,8 @@ int nrc_stats_channel_noise_update(uint32_t freq, int8_t noise)
 	int i;
 
 	for(i = 0; i < state_channel_num; i++){
-		if(channel_noise_info[i].chan->center_freq == freq){
+		if(channel_noise_info[i].chan &&
+				channel_noise_info[i].chan->center_freq == freq){
 			channel_noise_info[i].noise = noise;
 			return 0;
 		}
@@ -586,7 +621,12 @@ int nrc_stats_channel_noise_update(uint32_t freq, int8_t noise)
 	memset(chan, 0, sizeof(*chan));
 
 	channel_noise_info[state_channel_num].noise = noise;
+
+	if (channel_noise_info[state_channel_num].chan) {
+		kfree(channel_noise_info[state_channel_num].chan);
+	}
 	channel_noise_info[state_channel_num].chan = chan;
+
 	channel_noise_info[state_channel_num].chan->center_freq = freq;
 	state_channel_num ++;
 
@@ -603,6 +643,7 @@ int nrc_stats_channel_noise_reset(void)
 		nrc_stats_dbg("[remove channel noise] freq : %d\n", channel_noise_info[i].chan->center_freq);
 		channel_noise_info[i].noise = 0;
 		kfree(channel_noise_info[i].chan);
+		channel_noise_info[i].chan = NULL;
 	}	
 	state_channel_num = 0;
 

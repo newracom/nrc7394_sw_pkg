@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023-2026 Newracom, Inc.
+#
+# SPDX-License-Identifier: ISC
+
 import os
 import sys
 import time
@@ -16,8 +20,14 @@ from libnl.socket_ import nl_socket_add_membership, nl_socket_alloc, nl_socket_d
 
 NL_CMD_RECOVERY_MSG = 27
 
-PATH_TO_DRIVER = "/home/pi/nrc_pkg/sw/driver/nrc.ko"
-PATH_TO_CONFIG = "/home/pi/nrc_pkg/script/conf/{}/"
+# The package installs into whichever user's home ran
+# install.sh, so locate it from this file rather than assuming
+# /home/pi.
+NRC_PKG_DIR = os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__)))
+
+PATH_TO_DRIVER = os.path.join(NRC_PKG_DIR, "sw/driver/nrc.ko")
+PATH_TO_CONFIG = os.path.join(NRC_PKG_DIR, "script/conf/{}/")
 FIRMWARE = "uni_s1g.bin"
 
 class Recovery:

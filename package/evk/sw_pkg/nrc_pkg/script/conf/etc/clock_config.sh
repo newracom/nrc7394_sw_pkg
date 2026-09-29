@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# SPDX-FileCopyrightText: 2023-2026 Newracom, Inc.
+#
+# SPDX-License-Identifier: ISC
+
 RPI3BREV="2082"
 RPI4BREV="3115"
 

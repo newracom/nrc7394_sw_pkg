@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2023-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: ISC
+ */
+
+/*
  * Device Tree overlay for Newracom
  *
  */

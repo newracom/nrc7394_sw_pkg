@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2016-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: ISC
+ */
+
+/*
  * Copyright (c) 2016-2019 Newracom, Inc.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
@@ -18,6 +24,7 @@
 #include "nrc.h"
 #include "wim.h"
 #include "nrc-hif.h"
+#include "nrc-netlink.h"
 #include "nrc-fw.h"
 #include "nrc-mac80211.h"
 #ifdef CONFIG_S1G_CHANNEL
@@ -545,6 +552,11 @@ int nrc_wim_set_sta_type(struct nrc *nw, struct ieee80211_vif *vif)
 	nrc_wim_skb_add_tlv(skb, WIM_TLV_STA_TYPE, sizeof(u32), &sta_type);
 	if (nrc_mac_is_s1g(nw)) {
 		nrc_wim_skb_add_tlv(skb, WIM_TLV_NDP_ACK_1M, sizeof(u8), &ndp_ack_1m);
+		if (eu_en_300_220) {
+			u8 en300 = 1;
+			nrc_wim_skb_add_tlv(skb, WIM_TLV_EU_EN300_220, sizeof(u8), &en300);
+			nrc_dbg(NRC_DBG_MAC, "EU EN 300 220 mode enabled");
+		}
 		if (sta_type == WIM_STA_TYPE_AP) {
 			nrc_wim_set_ndp_preq(nw, skb, true);
 			nrc_wim_set_twt_requester(nw, skb, false);
@@ -934,6 +946,21 @@ static int nrc_wim_event_handler(struct nrc *nw,
 #else
 		ieee80211_chswitch_done(vif, true);
 #endif
+		break;
+	case WIM_EVENT_DCS_SWITCH_REQ:
+		/* validate before reading: n_tlvs, and the TLV fits the skb */
+		if (wim->n_tlvs >= 1 &&
+		    skb->len >= sizeof(*wim) + sizeof(struct wim_tlv) + sizeof(u16)) {
+			tlv = (struct wim_tlv *) wim->payload;
+			if (tlv->t == WIM_TLV_DCS_CHANNEL && tlv->l >= sizeof(u16)) {
+				u16 ch = *(u16 *) tlv->v;
+				u16 vif = (hif->vifindex != -1) ? hif->vifindex : 0;
+
+				nrc_dbg(NRC_DBG_HIF, "dcs switch req: proxy ch %u vif %u",
+					ch, vif);
+				nrc_netlink_dcs_switch_req(nw, ch, vif);
+			}
+		}
 		break;
 	case WIM_EVENT_LBT_ENABLED:
 		nrc_dbg(NRC_DBG_HIF, "lbt enabled");

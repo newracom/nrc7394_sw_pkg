@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HaLow support report</title>
+<!--
+  Self-contained support-bundle viewer. The daemon replaces __BUNDLE_DATA__
+  with the collected JSON; everything else (style, rendering) lives in this
+  one file so the report opens from a plain double-click, offline. Raw
+  artifacts sit next to it in the extracted bundle and are linked relatively.
+-->
+<style>
+:root { --bg:#10151c; --card:#1a222d; --line:#2b3644; --fg:#dce5ee; --dim:#8b9bab;
+        --acc:#3fa9f5; --ok:#41c47d; --warn:#e5b567; --err:#e0705f; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--fg); font:14px/1.5 system-ui,sans-serif; }
+main { max-width:1060px; margin:0 auto; padding:22px; }
+h1 { font-size:20px; }
+h1 span { color:var(--acc); }
+.sub { color:var(--dim); font-size:12.5px; margin-top:3px; }
+.note { margin:12px 0; padding:10px 14px; border-radius:8px; font-size:13.5px;
+        background:rgba(229,181,103,.12); color:var(--warn);
+        border:1px solid rgba(229,181,103,.35); }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(215px,1fr));
+        gap:12px; margin:16px 0; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:10px;
+        padding:13px; }
+.card .k { color:var(--dim); font-size:11.5px; text-transform:uppercase;
+           letter-spacing:.4px; }
+.card .v { font-size:17px; font-weight:600; margin-top:3px; word-break:break-word; }
+.card .s { color:var(--dim); font-size:12px; margin-top:2px; }
+.pill { display:inline-block; padding:2px 9px; border-radius:99px; font-size:12px; }
+.ok   { background:rgba(65,196,125,.15);  color:var(--ok); }
+.warn { background:rgba(229,181,103,.15); color:var(--warn); }
+.err  { background:rgba(224,112,95,.15);  color:var(--err); }
+details { background:var(--card); border:1px solid var(--line); border-radius:10px;
+          margin:10px 0; overflow:hidden; }
+details > summary { cursor:pointer; user-select:none; padding:11px 14px;
+        font-weight:600; font-size:13.5px; list-style:none; display:flex;
+        align-items:center; gap:9px; }
+details > summary::before { content:"▸"; color:var(--dim); font-size:11px;
+        transition:transform .12s; }
+details[open] > summary::before { transform:rotate(90deg); }
+details > summary .cnt { margin-left:auto; color:var(--dim); font-weight:400;
+        font-size:12px; }
+details .body { padding:2px 14px 13px; }
+pre { background:var(--bg); border:1px solid var(--line); border-radius:8px;
+      padding:10px 12px; font-size:12px; line-height:1.45; overflow-x:auto;
+      white-space:pre; color:var(--fg); }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th,td { text-align:left; padding:6px 10px; border-bottom:1px solid var(--line); }
+th { color:var(--dim); font-weight:500; }
+tr:last-child td { border-bottom:none; }
+a { color:var(--acc); }
+.mono { font-family:ui-monospace,monospace; }
+svg { display:block; width:100%; height:auto; }
+.legend { display:flex; gap:16px; flex-wrap:wrap; margin:6px 0 4px;
+          font-size:12px; color:var(--dim); }
+.legend i { width:12px; height:3px; display:inline-block; border-radius:2px;
+            margin-right:5px; vertical-align:middle; }
+h2 { font-size:13.5px; color:var(--dim); margin:22px 0 8px;
+     text-transform:uppercase; letter-spacing:.5px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>HaLow <span>support report</span></h1>
+  <div class="sub" id="hdr"></div>
+  <div id="note"></div>
+  <div class="grid" id="cards"></div>
+  <div id="sections"></div>
+</main>
+<script>
+// If anything below throws, show the error instead of a blank page - the
+// raw files in the bundle stay usable either way.
+window.onerror = function (msg, _src, line) {
+  var d = document.createElement('pre');
+  d.style.color = '#e0705f';
+  d.textContent = 'report renderer error (line ' + line + '): ' + msg +
+    '\\nThe raw files in this bundle are unaffected.';
+  document.querySelector('main').appendChild(d);
+};
+const B = __BUNDLE_DATA__;
+const $ = q => document.querySelector(q);
+const esc = v => String(v ?? '').replace(/[&<>"']/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// ---------- header / cards ----------
+$('#hdr').textContent = `${B.host} · generated ${B.generated} · mode ${B.mode || '?'}`;
+if (B.note) $('#note').innerHTML =
+  `<div class="note">operator note: ${esc(B.note)}</div>`;
+
+const idn = B.identity || {}, sys = (B.hostinfo || {}).sys || {},
+      hlt = B.health || {}, st = B.status || {};
+function card(k, v, s, cls) {
+  return `<div class="card"><div class="k">${esc(k)}</div>
+    <div class="v"${cls ? ` style="color:var(--${cls})"` : ''}>${esc(v ?? '-')}</div>
+    ${s ? `<div class="s">${esc(s)}</div>` : ''}</div>`;
+}
+const hstate = hlt.state || 'UNKNOWN';
+$('#cards').innerHTML =
+  card('Health', hstate, hlt.checked_at,
+       hstate === 'OK' ? 'ok' : hstate === 'UNKNOWN' ? 'dim' : 'err') +
+  card('Package', idn.build_type ? `${idn.version || ''} (${idn.build_type})`
+       : (idn.version || '-'), idn.mcp_vendor ? 'vendor ' + idn.mcp_vendor : '') +
+  card('Stack uptime', sys.stack_uptime ||
+       (sys.stack_state ? '(' + sys.stack_state + ')' : '-'),
+       'device ' + (sys.uptime || '?') + ' · load ' + (sys.load || '?')) +
+  card('Memory free', sys.mem_free_mb != null ? sys.mem_free_mb + ' MB' : '-') +
+  card('Disk', sys.disk_used_pct != null ? sys.disk_used_pct + '% used' : '-',
+       sys.disk_free_mb != null ? sys.disk_free_mb + ' MB free' : '',
+       sys.disk_used_pct > 90 ? 'err' : null) +
+  card('SoC temp', sys.temp_c != null ? sys.temp_c + ' °C' : '-') +
+  card('Stations (11ah)', (B.map && B.map.stations || []).length);
+
+// ---------- generic section helpers ----------
+const S = [];
+function sec(title, bodyHtml, cnt, open) {
+  S.push(`<details${open ? ' open' : ''}><summary>${esc(title)}
+    ${cnt ? `<span class="cnt">${esc(cnt)}</span>` : ''}</summary>
+    <div class="body">${bodyHtml}</div></details>`);
+}
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+function kvTable(rows) {
+  return `<table><tbody>${rows.map(r =>
+    `<tr><td style="color:var(--dim);width:34%">${esc(r[0])}</td>
+     <td class="mono">${esc(r[1] ?? '-')}</td></tr>`).join('')}</tbody></table>`;
+}
+
+// ---------- firmware ----------
+if ((B.cli || []).length) {
+  sec('Firmware (cli_app)', (B.cli).map(c =>
+    `<details${c.ok ? '' : ' class="warn"'}><summary>${esc(c.cmd)}
+       ${c.ok ? '' : '<span class="cnt">no output</span>'}</summary>
+     <div class="body"><pre>${esc(c.text)}</pre></div></details>`).join(''),
+    B.cli.length + ' commands', true);
+}
+
+// ---------- firmware log ----------
+// The firmware console, which on a board with no UART header exists nowhere
+// else. Lead with what the log says went wrong, then the raw files.
+(function () {
+  const fw = B.fwlog;
+  if (!fw) return;
+  const st = fw.state || {}, an = fw.analysis || {};
+  let body = kvTable([
+    ['Delivery mode', st.mode], ['Level', st.level],
+    ['Highest level this build can emit', st.maxlevel],
+    ['Console output included', st.cli], ['Follower service', st.service],
+    ['Ring', st.ring_used != null ? `${st.ring_used} / ${st.ring_size}` : null],
+    ['Overwritten / skipped', (() => {
+       const s = st.stats; if (!s) return null;
+       // `lost` is bytes; firmware older than the wrap change reports `drop`,
+       // a count of refused lines.
+       const w = s.lost != null ? `${s.lost} B` : s.drop != null ? `${s.drop} line(s)` : '?';
+       return `${w} / ${s.skip ?? '?'}`; })()]]);
+  // In flight mode the ring wraps by design (it keeps the newest lines and the
+  // upload marks where the older ones were), so overwritten bytes only mean
+  // loss when the firmware was streaming and the drain fell behind. Skipped
+  // and failed uploads are loss in any mode.
+  const sst = st.stats || {};
+  const legacy = sst.lost == null && sst.drop != null;
+  const wrapped = legacy ? sst.drop : (sst.lost || 0);
+  const unit = legacy ? 'line(s)' : 'B';
+  const lostN = (st.mode === 'flight' && !legacy) ? 0 : wrapped;
+  const missing = (sst.skip || 0) + (sst.fail || 0);
+  if (lostN || missing)
+    body += `<div class="sub" style="color:var(--warn)">⚠ This log is not a
+      complete record: since boot the firmware
+      ${[lostN ? `lost ${lostN} ${unit} that were never sent` : '',
+         missing ? `declined or failed ${missing} upload(s)` : '']
+        .filter(Boolean).join(' and ')}.</div>`;
+  else if (wrapped)
+    body += `<div class="sub">The flight recorder wrapped ${wrapped} B since
+      boot — expected in this mode; the log marks where.</div>`;
+  if (fw.analysed_all === false)
+    body += `<div class="sub" style="color:var(--warn)">⚠ The reading below
+      covers only the last ${Math.round((fw.analysed_bytes || 0) / 1024)} KB of
+      the current log. Anything earlier is in the raw files, unanalysed.</div>`;
+
+  const sites = an.sites || [];
+  if (sites.length) {
+    body += `<h2>Crash sites named by the log</h2>` + sites.map(s =>
+      `<div style="margin:4px 0"><span class="pill warn">${esc(s.kind)}</span>
+       <span class="mono">${esc(s.text || '')}</span>
+       ${s.sym ? `<div class="sub">PC in <b>${esc(s.sym)}</b></div>` : ''}
+       ${s.seen > 1 ? `<span class="cnt">seen ${s.seen}×</span>` : ''}</div>`
+    ).join('');
+  }
+
+  const blocks = an.blocks || [];
+  if (blocks.length) {
+    body += `<h2>Call stacks</h2>`;
+    if (an.has_symbols === false)
+      body += `<div class="sub">Addresses are unresolved: the symbol table
+        ships only with a debug package. Re-read fwlog/analysis.json against
+        the matching firmware to name them.</div>`;
+    body += blocks.map(b => {
+      // The dumper prints while it walks, so its own frames sit on top;
+      // they are dimmed rather than dropped, and the first real frame is
+      // marked, so the reader's eye lands in the right place.
+      let marked = false;
+      const rows = (b.frames || []).map(f => {
+        let lead = '';
+        if (!f.noise && !marked) { marked = true;
+          lead = `<div class="sub">↓ crash context from here</div>`; }
+        return lead + `<div class="mono"${f.noise
+          ? ' style="opacity:.45"' : ''}>0x${(f.addr >>> 0).toString(16)
+          .padStart(8, '0')} &nbsp; ${esc(f.sym || '')}${
+          f.repeat > 1 ? ` <span class="cnt">×${f.repeat}</span>` : ''}</div>`;
+      }).join('');
+      return `<details><summary>${esc(b.task || 'stack dump')}
+        <span class="cnt">${b.words} words · ${(b.frames || []).length}
+        frames${b.seen > 1 ? ` · seen ${b.seen}×` : ''}</span></summary>
+        <div class="body">${rows ||
+          `<div class="sub">no code addresses in this block</div>`}
+        </div></details>`;
+    }).join('');
+  }
+
+  body += `<h2>Files</h2><table><thead><tr><th>file</th><th>bytes</th>
+    <th></th></tr></thead><tbody>` +
+    (fw.files || []).map(f => `<tr>
+      <td><a href="fwlog/${esc(f.file)}">${esc(f.file)}</a></td>
+      <td>${f.bytes}</td>
+      <td>${f.current ? '<span class="pill ok">current</span>' : ''}
+          ${f.truncated ? '<span class="pill warn">tail only</span>' : ''}</td>
+     </tr>`).join('') + `</tbody></table>`;
+  if ((fw.omitted || []).length)
+    body += `<div class="sub">Left on the board: ` +
+      fw.omitted.map(o => esc(o.file) + (o.error ? ` (${esc(o.error)})` : ''))
+        .join(', ') + `</div>`;
+
+  sec('Firmware log', body,
+      sites.length ? plural(sites.length, 'crash site')
+                   : plural((fw.files || []).length, 'file'),
+      sites.length > 0);
+})();
+
+// ---------- firmware core dumps ----------
+(function () {
+  const cd = B.coredumps;
+  if (!cd || !(cd.dumps || []).length) return;
+  const hex = v => '0x' + ((v || 0) >>> 0).toString(16).toUpperCase()
+    .padStart(8, '0');
+  const body = cd.dumps.map(d => {
+    const dg = d.diagnosis || {}, f = d.fault || {}, r = d.regs || {},
+          sy = d.symbols || {};
+    let inner = '';
+    if (d.reason)
+      inner += `<div style="border:1px solid var(--warn);border-radius:6px;
+        padding:8px 10px;margin-bottom:8px"><div class="sub">reason</div>
+        <div class="mono"><b>${esc(d.reason)}</b></div></div>`;
+    if (dg.headline)
+      inner += `<div style="font-weight:600;margin-bottom:4px">
+        ${esc(dg.headline)}</div>`;
+    (dg.detail || []).forEach(l => { inner += `<div>${esc(l)}</div>`; });
+    const flags = (f.cfsr_flags || []).concat(f.hfsr_flags || []);
+    if (flags.length)
+      inner += `<h2>fault bits</h2>` + flags.map(x =>
+        `<div><b style="color:var(--warn)">${esc(x.name)}</b> — ${esc(x.meaning)}
+         </div>`).join('');
+    if (Object.keys(r).length)
+      inner += `<h2>registers</h2>` + kvTable(Object.entries(r).map(([k, v]) =>
+        [k, hex(v) + (sy[k] ? '  ' + sy[k] : '')]));
+    if (d.meta)
+      inner += `<h2>state when it was taken</h2>` + kvTable(
+        Object.entries(d.meta).map(([k, v]) => [k, v]));
+    (d.notes || []).forEach(n => { inner += `<div class="sub">${esc(n)}</div>`; });
+    inner += `<div class="sub"><a href="coredump/${esc(d.file)}">raw dump</a>
+      · <a href="coredump/${esc(d.file)}.json">decoded json</a></div>`;
+    const when = d.mtime ? new Date(d.mtime * 1000).toLocaleString() : '';
+    return `<details><summary>${esc(d.file)}
+      <span class="cnt">${esc(when)}${d.complete === false
+        ? ' · truncated' : ''}</span></summary>
+      <div class="body">${inner}</div></details>`;
+  }).join('');
+  sec('Firmware core dumps', body +
+    ((cd.omitted || []).length
+      ? `<div class="sub">Left on the board: ` + cd.omitted.map(o =>
+          esc(o.file) + (o.error ? ` (${esc(o.error)})` : '')).join(', ') +
+        `</div>` : ''),
+    plural(cd.dumps.length, 'dump'), true);
+})();
+
+// ---------- host ----------
+if (B.hostinfo) {
+  const h = B.hostinfo;
+  let body = kvTable([['Board', h.model], ['OS', h.os], ['Kernel', h.kernel],
+    ['CPU', h.cpu], ['Boot cmdline', h.cmdline],
+    ['Throttle flags', h.throttled]]);
+  if (h.top) body += `<h2>Top processes</h2><pre>${esc(h.top)}</pre>`;
+  if (h.dmesg_flags) body += `<h2>Kernel log — flagged lines
+    (<a href="host/dmesg.txt">full dmesg</a>)</h2><pre>${esc(h.dmesg_flags)}</pre>`;
+  sec('Host device', body);
+}
+
+// ---------- driver ----------
+if (B.driver) {
+  let body = kvTable([['Loaded modules', (B.driver.modules || []).join(', ')],
+    ['debugfs dumps', (B.driver.debugfs || []).map(n =>
+       `driver/mcp_${n}.txt`).join(', ')]]);
+  sec('Host driver', body);
+}
+
+// ---------- mode conf ----------
+if (B.modeconf) {
+  const m = B.modeconf, rows = [];
+  if (m.hostapd) rows.push(['hostapd status', m.hostapd_status || '(not running)']);
+  if (m.wpa_supplicant) rows.push(['wpa_supplicant status', m.wpa_status || '(not running)']);
+  if (rows.length)
+    sec('AP / STA daemon', rows.map(r => `<h2>${esc(r[0])}</h2>
+      <pre>${esc(r[1])}</pre>`).join('') +
+      `<div class="sub">confs (redacted) under modeconf/ in this bundle</div>`);
+}
+
+// ---------- traffic chart ----------
+(function () {
+  const rows = (B.traffic || {}).rows || [];
+  if (rows.length < 2) return;
+  const SERIES = [['wtx', '#3fa9f5', '11ah TX'], ['wrx', '#41c47d', '11ah RX']];
+  const W = 980, H = 260, L = 64, R = 12, T = 14, Bm = 30,
+        iw = W - L - R, ih = H - T - Bm;
+  const step = iw / (rows.length - 1);
+  let vmax = 1;
+  rows.forEach(r => SERIES.forEach(s => { if (r[s[0]] > vmax) vmax = r[s[0]]; }));
+  const fmt = v => v >= 1 << 20 ? (v / (1 << 20)).toFixed(1) + ' MB/s'
+             : v >= 1024 ? (v / 1024).toFixed(1) + ' KB/s' : v + ' B/s';
+  let grid = '', lines = '';
+  for (let k = 0; k <= 4; k++) {
+    const y = T + ih - ih * k / 4;
+    grid += `<line x1="${L}" y1="${y}" x2="${W - R}" y2="${y}"
+      stroke="var(--line)"${k ? ' stroke-dasharray="3,5" opacity=".5"' : ''}/>
+      <text x="${L - 7}" y="${y + 4}" text-anchor="end" font-size="10.5"
+      fill="var(--dim)">${fmt(Math.round(vmax * k / 4))}</text>`;
+  }
+  SERIES.forEach(s => {
+    const pts = rows.map((r, i) =>
+      `${(L + i * step).toFixed(1)},${(T + ih - ih * (r[s[0]] || 0) / vmax).toFixed(1)}`);
+    lines += `<polyline fill="none" stroke="${s[1]}" stroke-width="1.6"
+      points="${pts.join(' ')}"/>`;
+  });
+  const t0 = new Date(rows[0].t * 1000).toTimeString().slice(0, 8);
+  const t1 = new Date(rows[rows.length - 1].t * 1000).toTimeString().slice(0, 8);
+  const legend = SERIES.map(s =>
+    `<span><i style="background:${s[1]}"></i>${s[2]}</span>`).join('');
+  sec('Traffic (last ' + Math.round(rows.length *
+      (B.traffic.interval || 1)) + ' s, sampled on the box)',
+    `<div class="legend">${legend}</div>
+     <svg viewBox="0 0 ${W} ${H}">
+       <rect x="${L}" y="${T}" width="${iw}" height="${ih}" fill="var(--bg)" rx="3"/>
+       ${grid}${lines}
+       <text x="${L}" y="${H - 9}" font-size="10.5" fill="var(--dim)">${t0}</text>
+       <text x="${W - R}" y="${H - 9}" text-anchor="end" font-size="10.5"
+             fill="var(--dim)">${t1}</text>
+     </svg>`, rows.length + ' samples', true);
+})();
+
+// ---------- network map snapshot ----------
+(function () {
+  const stas = (B.map || {}).stations || [];
+  if (!stas.length) return;
+  const W = 980, H = 460, cx = W / 2, cy = H / 2;
+  // distance rings by RSSI: -30 (near) .. -100 (edge)
+  const rOf = rssi => {
+    const v = Math.max(-100, Math.min(-30, +rssi || -100));
+    return 34 + (-(v) - 30) / 70 * (H / 2 - 44);
+  };
+  const angOf = mac => {           // deterministic angle from the MAC
+    let a = 0; for (const ch of String(mac)) a = (a * 31 + ch.charCodeAt(0)) >>> 0;
+    return (a % 3600) / 3600 * 2 * Math.PI;
+  };
+  let rings = '';
+  [-40, -60, -80, -100].forEach(v => {
+    rings += `<circle cx="${cx}" cy="${cy}" r="${rOf(v)}" fill="none"
+      stroke="var(--line)" stroke-dasharray="4,6"/>
+      <text x="${cx + 6}" y="${cy - rOf(v) - 4}" font-size="10"
+      fill="var(--dim)">${v} dBm</text>`;
+  });
+  const dot = (mac, rssi, color, label) => {
+    const a = angOf(mac), r = rOf(rssi);
+    return `<circle cx="${(cx + r * Math.cos(a)).toFixed(1)}"
+      cy="${(cy + r * Math.sin(a)).toFixed(1)}" r="3.2" fill="${color}"
+      opacity=".85"><title>${esc(label)}</title></circle>`;
+  };
+  let dots = '';
+  stas.forEach(s => dots += dot(s.mac, s.rssi, '#3fa9f5',
+    `${s.mac}  rssi ${s.rssi} dBm  ${s.ip || ''}`));
+  sec('Network map snapshot',
+    `<div class="legend"><span><i style="background:#3fa9f5"></i>802.11ah station
+     (${stas.length})</span></div>
+     <svg viewBox="0 0 ${W} ${H}">
+       <rect x="0" y="0" width="${W}" height="${H}" fill="var(--bg)" rx="6"/>
+       ${rings}<circle cx="${cx}" cy="${cy}" r="7" fill="var(--acc)">
+       <title>AP</title></circle>${dots}
+     </svg>
+     <div class="sub">position = RSSI ring + MAC-hashed angle — a data
+     snapshot at bundle time, hover any dot</div>`, '', true);
+})();
+
+// ---------- health ----------
+if (B.health && B.health.installed) {
+  sec('Health monitor', kvTable([
+    ['State', B.health.state], ['Driver OK', B.health.driver_ok],
+    ['FW observable / OK', `${B.health.fw_observable} / ${B.health.fw_ok}`],
+    ['Checked at', B.health.checked_at]]) +
+    "");
+}
+
+// ---------- journals ----------
+if (B.journal) {
+  sec('Service logs', Object.entries(B.journal).map(([u, j]) =>
+    `<details><summary>${esc(u)}
+       <span class="cnt"><a href="journal/${esc(u === 'system_warnings'
+         ? 'system_warnings.log' : u + '.log')}">raw</a></span></summary>
+     <div class="body">
+       ${j.errors ? `<h2>flagged lines</h2><pre>${esc(j.errors)}</pre>` : ''}
+       <h2>tail</h2><pre>${esc(j.tail)}</pre></div></details>`).join('') +
+    `<h2>service snapshot</h2><pre>${esc(B.units_snapshot || '')}</pre>`);
+}
+
+// ---------- collection record ----------
+sec('Bundle contents', `<h2>collection steps</h2><table><thead>
+  <tr><th>step</th><th>ms</th><th></th></tr></thead><tbody>` +
+  (B.steps || []).map(s => `<tr><td>${esc(s.step)}</td><td>${s.ms}</td>
+    <td>${s.skipped ? `<span class="pill warn">skipped: ${esc(s.skipped)}</span>`
+      : '<span class="pill ok">ok</span>'}</td></tr>`).join('') +
+  `</tbody></table><h2>files</h2><table><thead><tr><th>file</th><th>bytes</th>
+   </tr></thead><tbody>` +
+  (B.files || []).map(f => `<tr><td><a href="${esc(f.file)}">${esc(f.file)}</a></td>
+    <td>${f.bytes}</td></tr>`).join('') + '</tbody></table>');
+
+$('#sections').innerHTML = S.join('');
+</script>
+</body>
+</html>

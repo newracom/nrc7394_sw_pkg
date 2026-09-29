@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2020-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+/*
  * MIT License
  *
  * Copyright (c) 2020 Newracom, Inc.
@@ -26,7 +32,7 @@
 #ifndef _CLI_CONFIG_H_
 #define _CLI_CONFIG_H_
 
-#define NRC_CLI_APP_VER "2.24.6"
+#define NRC_CLI_APP_VER "2.24.7"
 #define NRC_CLI_APP_NAME "Newracom Command Line Application"
 #define NRC_CLI_APP_EXIT_MSG "Exit Newracom Command Line Application"
 #define NRC_CLI_APP_PROMPT "NRC"

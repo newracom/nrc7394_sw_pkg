@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# SPDX-FileCopyrightText: 2023-2026 Newracom, Inc.
+#
+# SPDX-License-Identifier: ISC
+
+# Paths are relative to the package this script lives in: it installs
+# into whichever user's home ran install.sh, not always /home/pi.
+NRC_PKG_DIR=$(cd "$(dirname "$(readlink -f "$0")")/../.." && pwd)
+
 # Default Channel
 CHANNEL=153
 # Default IP Addresses for VIF 0,1
@@ -133,13 +141,13 @@ wait_for_intf() {
 
 enable_drv() {
 	local ifname=wlan0
-	sudo cp /home/pi/nrc_pkg/sw/firmware/nrc7292_cspi.bin /lib/firmware/uni_s1g.bin
-	sudo insmod /home/pi/nrc_pkg/sw/driver/nrc.ko fw_name=uni_s1g.bin hifspeed=10000000
+	sudo cp $NRC_PKG_DIR/sw/firmware/nrc7292_cspi.bin /lib/firmware/uni_s1g.bin
+	sudo insmod $NRC_PKG_DIR/sw/driver/nrc.ko fw_name=uni_s1g.bin hifspeed=10000000
 	wait_for_intf $ifname
         sleep 5
         sudo ifconfig $ifname up
         echo set txpwr 17
-        /home/pi/nrc_pkg/script/cli_app set txpwr 17
+        $NRC_PKG_DIR/script/cli_app set txpwr 17
 }
 
 # Enable conc interface

@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2016-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: ISC
+ */
+
+/*
  * Copyright (c) 2016-2019 Newracom, Inc.
  *
  * TX/RX routines
@@ -620,6 +626,7 @@ static void nrc_mac_rx_h_status(struct nrc *nw, struct sk_buff *skb)
 	struct frame_hdr *fh;
 	struct ieee80211_rx_status *status = IEEE80211_SKB_RXCB(skb);
 	struct ieee80211_hdr *mh;
+	uint8_t mcs, bw = 0;
 
 
 	fh = (void *)skb->data; /* frame header */
@@ -652,8 +659,29 @@ static void nrc_mac_rx_h_status(struct nrc *nw, struct sk_buff *skb)
 	}
 #endif
 
+	/* Modulation of this frame, from the S1G SIG the firmware puts between
+	 * the frame header and the MAC header (the monitor path parses the
+	 * same field for radiotap). Only read it when the header really is
+	 * that long; 0xff means "unknown" and leaves the stored value alone.
+	 */
+	mcs = 0xff;
+	if (nw->fwinfo.rx_head_size - sizeof(struct hif) >=
+	    sizeof(struct frame_hdr) + sizeof(struct sigS1g) +
+		    sizeof(struct rxInfo)) {
+		struct sigS1g *sig = (void *)(skb->data +
+					      sizeof(struct frame_hdr));
+		struct rxInfo *rxi = (void *)(sig + 1);
+		bool one_m = rxi->bandwidth == WIM_BW_1M ||
+			     (rxi->bandwidth == WIM_BW_2M &&
+			      rxi->format == WIM_S1G_DUP_1M);
+
+		mcs = one_m ? sig->flags.s1g1M.mcs : sig->flags.s1gShort.mcs;
+		bw = rxi->bandwidth;
+	}
+
 	//update snr and rssi only if signal monitor is enabled
-	nrc_stats_update(mh->addr2, fh->flags.rx.snr, fh->flags.rx.rssi);
+	nrc_stats_update(mh->addr2, fh->flags.rx.snr, fh->flags.rx.rssi,
+			 mcs, bw);
 	//nrc_stats_print();
 
 	if(ieee80211_is_probe_resp(mh->frame_control))
@@ -904,8 +932,32 @@ int nrc_mac_rx(struct nrc *nw, struct sk_buff *skb)
 		/* Modified assoc issue after STA OFF/ON (connection without deauth) */
 		if (ieee80211_is_auth(mh->frame_control) && rx.sta && rx.vif && rx.vif->type == NL80211_IFTYPE_AP) {
 			struct nrc_sta *i_sta = to_i_sta(rx.sta);
-			if(i_sta && i_sta->state > IEEE80211_STA_NOTEXIST){
-				struct ieee80211_mgmt *mgmt = (struct ieee80211_mgmt *)skb->data;
+			struct ieee80211_mgmt *mgmt = (struct ieee80211_mgmt *)skb->data;
+			/*
+			 * PMF (802.11w) guard: if the STA is already fully AUTHORIZED
+			 * and negotiated Management Frame Protection, an unprotected
+			 * Authentication frame is not sufficient proof that the real
+			 * STA wants to restart the connection (it may be spoofed/
+			 * injected). Do NOT synthesize a deauth and tear the session
+			 * down here; instead let the frame flow up to mac80211/
+			 * hostapd normally below, so hostapd's own SA Query defense
+			 * (triggered on the subsequent (Re)Association Request while
+			 * WLAN_STA_MFP is set) can protect the still-valid session.
+			 */
+			if (i_sta && i_sta->state == IEEE80211_STA_AUTHORIZED && rx.sta->mfp) {
+				nrc_mac_dbg("%s: %pM is PMF-authorized, forward unprotected auth to host instead of tearing down session",
+					    __func__, mgmt->sa);
+			} else if (skb->len >= offsetof(struct ieee80211_mgmt, u.auth.variable) &&
+				   (le16_to_cpu(mgmt->u.auth.auth_alg) == WLAN_AUTH_OPEN ||
+				    le16_to_cpu(mgmt->u.auth.auth_alg) == WLAN_AUTH_SAE)) {
+				/* Let hostapd handle Open System/WPA2 and SAE restarts.
+				 * Consuming this frame as a local deauth forces a retry;
+				 * keep the existing STA/PMF state for hostapd to validate.
+				 */
+				nrc_mac_dbg("%s: %pM forward auth to host (algorithm=%u)",
+					    __func__, mgmt->sa,
+					    le16_to_cpu(mgmt->u.auth.auth_alg));
+			} else if (i_sta && i_sta->state > IEEE80211_STA_NOTEXIST) {
 				struct sk_buff *skb_deauth;
 				/* Pretend to receive a deauth from @sta */
 				skb_deauth = ieee80211_deauth_get(nw->hw, mgmt->bssid, mgmt->sa, mgmt->bssid, WLAN_REASON_DEAUTH_LEAVING, NULL, false);
@@ -959,6 +1011,9 @@ int nrc_mac_rx(struct nrc *nw, struct sk_buff *skb)
 				nrc_send_beacon_loss(nw);
 			}
 		}
+	}
+	else {
+		dev_kfree_skb(skb);
 	}
 
 	return 0;
@@ -1651,10 +1706,7 @@ nrc_add_rx_s1g_radiotap_header(struct nrc *nw, struct sk_buff *skb)
 		skb_put(skb, 6);
 		p = (uint8_t *)(rxi + 1);
 		*p = ((*(char *)sig_s1g & 0x07) == 0x07) ? 0xF0 : 0x04;
-		/*
-		 * README: Remove reserved field of 2MHz NDP frame
-		 *			  Aaron - 2019-0412 - Gerrit#1973
-		 */
+		/* Remove reserved field of 2MHz NDP frame */
 		if (!s1g_1m_ppdu) {
 			memcpy((char *)(p + 1), (char *)&sig_s1g->flags, 3);
 			memcpy((char *)(p + 4), (char *)&sig_s1g->flags + 4, 2);

@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2016-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: ISC
+ */
+
+/*
  * Copyright (c) 2016-2019 Newracom, Inc.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
@@ -46,6 +52,7 @@ enum nrc_nl_op_cmds {
 	NL_SHELL_RUN_RAW                    = 19,
 	NL_AUTO_BA_TOGGLE                   = 20,
 	NL_CLI_APP_DRIVER               = 21,
+	NL_CMD_DCS_SWITCH                   = 22,
 };
 
 enum nrc_nl_op_attrs {
@@ -89,6 +96,8 @@ enum nrc_nl_op_attrs {
 	NL_AUTO_BA_ON						= 37,
 	NL_CLI_APP_DRIVER_CMD				= 38,
 	NL_CLI_APP_DRIVER_CMD_RESP			= 39,
+	NL_DCS_CHANNEL						= 40,
+	NL_DCS_VIF							= 41,
 	NL_WFA_CAPI_ATTR_LAST,
 	MAX_NL_WFA_CAPI_ATTR = NL_WFA_CAPI_ATTR_LAST-1,
 };
@@ -105,6 +114,7 @@ enum nrc_nl_op_attrs {
 enum nrc_nl_multicast_grp {
 	NL_MCGRP_WFA_CAPI_RESPONSE,
 	NL_MCGRP_NRC_LOG,
+	NL_MCGRP_NRC_CHMGR,
 	NL_MCGRP_LAST,
 };
 
@@ -112,5 +122,6 @@ int nrc_netlink_init(struct nrc *nw);
 void nrc_netlink_exit(void);
 int nrc_netlink_rx(struct nrc *nw, struct sk_buff *skb, u8 subtype);
 int nrc_netlink_trigger_recovery(struct nrc *nw);
+int nrc_netlink_dcs_switch_req(struct nrc *nw, u16 channel, u16 vif);
 
 #endif

@@ -1,0 +1,159 @@
+NEWRACOM DOCUMENTATION LICENSE
+Version 1.0
+
+Copyright (c) 2016-2026 Newracom, Inc. All rights reserved.
+
+
+-----------------------------------------------------------------------------
+1. SCOPE
+-----------------------------------------------------------------------------
+
+1.1 This License applies to the technical documentation distributed by
+    Newracom, Inc. ("Newracom") with this software package, including without
+    limitation user guides, application notes, release notes, datasheets and
+    similar materials, in any format (collectively, the "Documentation").
+
+1.2 The Documentation is a copyrighted work. It is not software, and it is not
+    licensed under any open source license. No open source license applicable
+    to any software component distributed alongside the Documentation extends
+    to the Documentation.
+
+
+-----------------------------------------------------------------------------
+2. LICENSE GRANT
+-----------------------------------------------------------------------------
+
+Subject to your compliance with this License, Newracom grants you a
+non-exclusive, non-transferable, royalty-free, worldwide license to:
+
+2.1 use and reproduce the Documentation, in unmodified form, for the purpose
+    of evaluating, developing, manufacturing, operating, supporting or
+    marketing a product that incorporates a Newracom integrated circuit or
+    module ("Permitted Purpose");
+
+2.2 distribute the Documentation, in unmodified form and together with this
+    License, to your employees, contractors, customers, contract manufacturers
+    and distributors for the Permitted Purpose; and
+
+2.3 quote reasonable excerpts from the Documentation in your own product
+    documentation and marketing materials, provided that each excerpt is
+    attributed to Newracom and is not presented in a manner that alters its
+    meaning.
+
+
+-----------------------------------------------------------------------------
+3. RESTRICTIONS
+-----------------------------------------------------------------------------
+
+You shall not:
+
+3.1 modify, adapt, translate or create derivative works of the Documentation,
+    except for excerpts as permitted in Section 2.3;
+
+3.2 remove, obscure or alter any copyright, trademark, confidentiality or
+    other proprietary notice contained in the Documentation;
+
+3.3 use the Documentation for the purpose of developing, manufacturing or
+    supporting a product that does not incorporate a Newracom integrated
+    circuit or module, or for the purpose of designing a competing product;
+
+3.4 sell, rent, lease or license the Documentation on a standalone basis; or
+
+3.5 publish or otherwise make the Documentation available to the general
+    public, except where Newracom has itself published the same Documentation
+    publicly.
+
+
+-----------------------------------------------------------------------------
+4. OWNERSHIP
+-----------------------------------------------------------------------------
+
+Newracom retains all right, title and interest in and to the Documentation,
+including all intellectual property rights therein. Except for the limited
+rights expressly granted in Section 2, no right or license is granted to you,
+whether by implication, estoppel or otherwise. No license is granted under any
+Newracom patent by reason of the Documentation describing a product, method or
+implementation.
+
+
+-----------------------------------------------------------------------------
+5. ACCURACY AND CHANGES
+-----------------------------------------------------------------------------
+
+5.1 Newracom may change the Documentation and the products it describes at any
+    time without notice.
+
+5.2 The Documentation describes a particular version of a product. You are
+    responsible for verifying that the Documentation you rely on corresponds
+    to the version of the product you are using.
+
+5.3 Newracom does not warrant that the Documentation is complete, accurate or
+    current.
+
+
+-----------------------------------------------------------------------------
+6. DISCLAIMER OF WARRANTY
+-----------------------------------------------------------------------------
+
+THE DOCUMENTATION IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. TO THE
+MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, NEWRACOM DISCLAIMS ALL WARRANTIES,
+CONDITIONS AND REPRESENTATIONS, WHETHER EXPRESS, IMPLIED OR STATUTORY,
+INCLUDING WITHOUT LIMITATION ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT OR ACCURACY.
+
+
+-----------------------------------------------------------------------------
+7. LIMITATION OF LIABILITY
+-----------------------------------------------------------------------------
+
+7.1 TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL
+    NEWRACOM BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL,
+    EXEMPLARY OR PUNITIVE DAMAGES, OR FOR ANY LOSS OF PROFITS, REVENUE,
+    BUSINESS OR DATA, ARISING OUT OF OR IN CONNECTION WITH THE DOCUMENTATION
+    OR ITS USE, WHETHER IN CONTRACT, TORT (INCLUDING NEGLIGENCE) OR OTHERWISE.
+
+7.2 Nothing in this License excludes or limits liability that cannot be
+    excluded or limited under applicable law.
+
+
+-----------------------------------------------------------------------------
+8. TERM AND TERMINATION
+-----------------------------------------------------------------------------
+
+This License is effective until terminated. It terminates automatically,
+without notice, if you fail to comply with any of its terms. Upon termination
+you shall cease using the Documentation and destroy all copies in your
+possession or control. Sections 3, 4, 6, 7 and 9 survive termination.
+
+
+-----------------------------------------------------------------------------
+9. GENERAL
+-----------------------------------------------------------------------------
+
+9.1 Governing Law. This License is governed by and construed in accordance
+    with the laws of the Republic of Korea, without regard to its conflict of
+    law principles.
+
+9.2 Jurisdiction. The parties submit to the exclusive jurisdiction of the
+    Seoul Central District Court, Republic of Korea, as the court of first
+    instance for any dispute arising out of or in connection with this
+    License.
+
+9.3 Severability. If any provision of this License is held to be invalid or
+    unenforceable, that provision shall be modified to the minimum extent
+    necessary to make it enforceable, and the remaining provisions shall
+    remain in full force and effect.
+
+9.4 Entire Agreement. This License constitutes the entire agreement between
+    the parties with respect to the Documentation. Where you and Newracom have
+    entered into a separate written agreement covering the Documentation, the
+    terms of that agreement prevail to the extent of any conflict.
+
+9.5 Language. This License is written in English. Any translation is provided
+    for convenience only, and the English text governs.
+
+
+-----------------------------------------------------------------------------
+
+Newracom, Inc.
+https://www.newracom.com

@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2020-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+/*
  * MIT License
  *
  * Copyright (c) 2020 Newracom, Inc.
@@ -31,6 +37,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <strings.h>	/* strncasecmp */
 #include <time.h>
 #include <ctype.h>
 #include <sys/time.h>
@@ -85,7 +92,15 @@ int util_cmd_parse_line(char *s, char *argv[])
 	printf("Too many args\n");
 
 out:
-	argv[argc] = NULL;
+	/* Point the unused slots at an empty string rather than leaving them
+	 * NULL. A dozen handlers reach straight for argv[2] without consulting
+	 * argc - e.g. `show 32k_status` with no argument used to segfault
+	 * cli_app - and running a command with its arguments left blank is
+	 * exactly what the Web GUI does. An empty string fails every strcmp
+	 * the handlers make, so they fall through to printing their usage.
+	 * Callers that must tell "absent" from "empty" test argv[i][0]. */
+	for (int i = argc; i < NRC_MAX_ARGV; i++)
+		argv[i] = "";
 	return argc;
 }
 
@@ -232,25 +247,39 @@ static  int get_tab_number(int max_tab_number, int string_length)
 	return (max_length - string_length) / TAB_TO_SPACE_LENGTH;
 }
 
+/* A usage may run over several lines: only the first carries the description. */
+static void print_cmd_usage(cmd_tbl_t *t, int max_tab_number)
+{
+	const char *nl = strchr(t->usage, '\n');
+	int len = nl ? (int)(nl - t->usage) : (int)strlen(t->usage);
+	int tab_len = get_tab_number(max_tab_number, len + 1);
+	int j;
+
+	printf(" %.*s", len, t->usage);
+	for (j = 0; j < tab_len; j++)
+		printf("\t");
+	printf(":%s\n", t->desc);
+	while (nl) {
+		const char *s = nl + 1;
+
+		nl = strchr(s, '\n');
+		printf(" %.*s\n", nl ? (int)(nl - s) : (int)strlen(s), s);
+	}
+}
+
 cmd_tbl_t *cmd_list_display(enum cmd_list_type type)
 {
 	int list_size, list_depth;
 	cmd_tbl_t *list = get_cmd_list(type, &list_size, &list_depth);
 
 	cmd_tbl_t *t = NULL;
-	int i = 0, j = 0;
-	int tab_len =0;
+	int i = 0;
 	int max_tab_number = 11;
 
 	for (i = 0; i < list_size; i++) {
 		t = (cmd_tbl_t *)(list + i);
-		if(t->flag == 0){
-			tab_len = get_tab_number(max_tab_number, strlen(t->usage)+1);
-			printf(" %s",t->usage);
-			for(j=0; j<tab_len; j++)
-				printf("\t");
-			printf(":%s\n", t->desc);
-		}
+		if(t->flag == 0)
+			print_cmd_usage(t, max_tab_number);
 	}
 	return NULL;
 }
@@ -374,9 +403,23 @@ void cmd_result_parse(char* key, char *value, const int displayPerLine)
 		free(key_list_temp);
 }
 
+/* A "-sr" reply is a binary blob whose first byte is count|more, but the
+ * target can also answer with a plain status string: the firmware sends
+ * "fail" and the driver sends "Failed" when the shell is busy or the WIM
+ * request timed out. Those must never be cast to a struct - doing so
+ * printed the status text as if it were a MAC address. Compare case
+ * insensitively and treat an empty reply as a failure too. */
+static bool raw_result_is_status(const char *value)
+{
+	if (value == NULL || value[0] == '\0')
+		return true;
+	return strncasecmp("success", value, 7) == 0 ||
+	       strncasecmp("fail", value, 4) == 0;
+}
+
 int cmd_umac_info_result_parse(char *value, int mode, int *display_start_index)
 {
-	if(value == NULL || strncmp("success", value, 7) == 0 || strncmp("fail", value, 4) == 0)
+	if(raw_result_is_status(value))
 		return 0;
 
 	uint8_t header = value[0];
@@ -402,6 +445,7 @@ int cmd_umac_info_result_parse(char *value, int mode, int *display_start_index)
 		printf("\t maximum mpdu_len(%u)\t\tampdu_len_exp(%u)\tminimum mpdu_start_spacing(%u)\trx_s1gmcs_map(0x%x)\tcolor(%u)\n",
 			apinfo->maximum_mpdu_length, apinfo->maximum_ampdu_length_exp, apinfo->minimum_mpdu_start_spacing,
 			apinfo->rx_s1gmcs_map, apinfo->color);
+		printf("\t tpc(%d)\n", apinfo->tpc);
 		printf("\n");
 	}
 	else if(mode == STA_UMAC_INFO)
@@ -419,6 +463,7 @@ int cmd_umac_info_result_parse(char *value, int mode, int *display_start_index)
 				stainfo->shortgi_4mhz_support, stainfo->s1g_1mctrlresppreamble_support);
 			printf("\t maximum mpdu_len(%u)\t\tampdu_len_exp(%u)\tminimum mpdu_start_spacing(%u)\trx_s1gmcs_map(0x%x)\n",
 				stainfo->maximum_mpdu_length, stainfo->maximum_ampdu_length_exp, stainfo->minimum_mpdu_start_spacing, stainfo->rx_s1gmcs_map);
+			printf("\t tpc(%d)\n", stainfo->tpc);
 			printf("\n");
 			stainfo++;
 		}
@@ -429,7 +474,7 @@ int cmd_umac_info_result_parse(char *value, int mode, int *display_start_index)
 
 int cmd_sta_umac_info_mini_result_parse(char *value, int *display_start_index, int *aid_count)
 {
-	if(value == NULL || strncmp("success", value, 7) == 0 || strncmp("fail", value, 4) == 0)
+	if(raw_result_is_status(value))
 		return 0;
 
 	uint8_t header = value[0];
@@ -480,7 +525,7 @@ int cmd_set_maxagg_result_parse(char *value)
 	const char *str_ba_session[2] ={"NO", "YES"};
 	int index = 0;
 	int vif_id = 0;
-	if(value == NULL || strncmp("success", value, 7) == 0 || strncmp("fail", value, 4) == 0)
+	if(raw_result_is_status(value))
 		return 0;
 
 	uint8_t header = value[index++];
@@ -518,7 +563,7 @@ int cmd_show_maxagg_result_parse(char *value, int vif, int *display_start_index)
 	const char *str_ba_session[2] ={"NO", "YES"};
 	int index = 0;
 	int vif_id = vif;
-	if (value == NULL || strncmp("success", value, 7) == 0 || strncmp("fail", value, 4) == 0)
+	if (raw_result_is_status(value))
 		return 0;
 
 	uint8_t header = value[index++];

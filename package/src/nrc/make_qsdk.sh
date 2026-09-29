@@ -1,4 +1,9 @@
 #!/bin/sh
+
+# SPDX-FileCopyrightText: 2023-2026 Newracom, Inc.
+#
+# SPDX-License-Identifier: ISC
+
 #export KDIR=/mnt/sdb1/qsdk/qca/src/linux-3.14
 export KDIR=/mnt/sdb1/qsdk/build_dir/target-arm_cortex-a7_uClibc-1.0.14_eabi/linux-ipq806x/linux-3.14.77
 export NRCLINUXHOSTIDR=/mnt/sdb1/qsdk/build_dir/target-arm_cortex-a7_uClibc-1.0.14_eabi/linux-ipq806x/backports-20161201-3.14.77-9ab3068

@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2016-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: ISC
+ */
+
+/*
  * Copyright (c) 2016-2019 Newracom, Inc.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
@@ -564,6 +570,7 @@ extern int sleep_duration[];
 extern bool wlantest;
 extern bool ndp_preq;
 extern bool ndp_ack_1m;
+extern int eu_en_300_220;
 extern bool enable_hspi_init;
 extern bool nullfunc_enable;
 extern int ampdu_mode;
@@ -604,6 +611,7 @@ extern bool twt_force_sleep;
 extern uint twt_num_in_group;
 extern bool no_convert_usf;
 extern int bss_max_idle;
+extern bool tx_power_control;
 
 void nrc_set_bss_max_idle_offset(int value);
 void nrc_set_auto_ba(bool toggle);

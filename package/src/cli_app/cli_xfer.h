@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2020-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+/*
  * MIT License
  *
  * Copyright (c) 2020 Newracom, Inc.
@@ -50,6 +56,7 @@ typedef struct _xfer_umac_apinfo{
 	uint16_t	shortgi_2mhz_support       : 1;
 	uint16_t	shortgi_4mhz_support       : 1;
 	uint16_t	s1g_1mctrlresppreamble_support       : 1;
+	uint16_t	tpc                        : 1;
 	uint16_t	maximum_mpdu_length        : 1; //is this really a boolean?
 	uint8_t	    maximum_ampdu_length_exp   : 3;
 	uint8_t	    minimum_mpdu_start_spacing : 5;
@@ -73,6 +80,7 @@ typedef struct _xfer_umac_stainfo {
 	uint16_t	shortgi_2mhz_support       : 1;
 	uint16_t	shortgi_4mhz_support       : 1;
 	uint16_t	s1g_1mctrlresppreamble_support       : 1;
+	uint16_t	tpc                        : 1;
 	uint8_t	    maximum_mpdu_length;
 	uint8_t	    maximum_ampdu_length_exp   : 3;
 	uint8_t	    minimum_mpdu_start_spacing : 5;

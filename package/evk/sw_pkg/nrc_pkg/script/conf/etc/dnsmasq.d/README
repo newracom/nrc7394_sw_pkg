@@ -1,0 +1,13 @@
+Operator dnsmasq options for the HaLow DHCP server.
+
+start.py runs one dnsmasq for every mode that serves leases (AP, the relay's
+AP leg, a mesh portal, br0 in DHCP-server mode). Its configuration is
+generated at /run/halow/dnsmasq.conf and includes this directory, so *.conf
+files placed here survive a restart and a package update.
+
+  dhcp-option=6,192.168.200.1      # DNS server handed to clients
+  dhcp-host=8c:0f:fa:00:29:46,192.168.200.20
+  log-dhcp
+
+The generated file sets interface=, dhcp-range=, the lease file and DNS
+forwarding; do not repeat those here.

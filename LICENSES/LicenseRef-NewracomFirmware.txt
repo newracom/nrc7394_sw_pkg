@@ -1,0 +1,345 @@
+NEWRACOM FIRMWARE AND BOARD DATA DISTRIBUTION LICENSE
+Version 1.0
+
+Copyright (c) 2016-2026 Newracom, Inc. All rights reserved.
+
+IMPORTANT — READ CAREFULLY BEFORE USING THE SOFTWARE.
+
+This Firmware and Board Data Distribution License (this "License") is a legal
+agreement between you ("Licensee", "you") and Newracom, Inc. ("Newracom"). By
+downloading, copying, installing, distributing or otherwise using the Software,
+you accept and agree to be bound by the terms of this License. If you do not
+agree, do not download, copy, install, distribute or use the Software.
+
+
+-----------------------------------------------------------------------------
+1. DEFINITIONS
+-----------------------------------------------------------------------------
+
+1.1 "Software" means the firmware images, Board Data and other binary files
+    distributed by Newracom under this License, together with any updates,
+    error corrections, patches or successor versions that Newracom makes
+    available to you under this License.
+
+1.2 "Newracom Product" means an integrated circuit, wireless module,
+    evaluation kit or reference design designed, manufactured or authorized by
+    Newracom.
+
+1.3 "Licensee Product" means a hardware product designed, manufactured or sold
+    by you that incorporates a Newracom Product.
+
+1.4 "Board Data" means the board-specific configuration and calibration data
+    supplied or generated for a particular module or board design, including
+    without limitation transmit power tables and regulatory domain parameters
+    (for example, files with the extension ".dat").
+
+1.5 "Board Data Tool" means any software tool made available by Newracom for
+    the purpose of generating or editing Board Data.
+
+1.6 "Authorized Module Partner" means a Licensee to whom Newracom has made a
+    Board Data Tool available under a separate written agreement with
+    Newracom, for so long as that agreement remains in effect.
+
+
+-----------------------------------------------------------------------------
+2. LICENSE GRANT
+-----------------------------------------------------------------------------
+
+Subject to your compliance with this License, Newracom grants you a
+non-exclusive, non-transferable, non-sublicensable (except as set out in
+Section 2.3), royalty-free, worldwide license to:
+
+2.1 Use. Use the Software solely in connection with a Newracom Product,
+    including for the purposes of evaluation, development, testing,
+    manufacturing, operation and support.
+
+2.2 Reproduce and Distribute. Reproduce the Software and distribute it, in
+    binary form only and without modification, solely as incorporated in or
+    supplied together with a Licensee Product.
+
+2.3 Onward Distribution. Permit your customers, contract manufacturers and
+    distributors to further reproduce and distribute the Software as
+    incorporated in or supplied together with a Licensee Product, provided
+    that such distribution is subject to terms at least as protective of
+    Newracom as this License, and that a copy of this License accompanies the
+    Software.
+
+2.4 Updates. Distribute the Software on a standalone basis where reasonably
+    necessary to deliver firmware updates to users of a Licensee Product
+    previously distributed under this License.
+
+
+-----------------------------------------------------------------------------
+3. BOARD DATA
+-----------------------------------------------------------------------------
+
+3.1 General Rule. Except as provided in Section 3.2, Board Data is part of the
+    Software and may be reproduced and distributed only in unmodified form, as
+    supplied by Newracom.
+
+3.2 Authorized Module Partners. An Authorized Module Partner may, solely for
+    its own module or board designs that incorporate a Newracom Product:
+
+    (a) use a Board Data Tool to generate or modify Board Data; and
+
+    (b) reproduce and distribute the Board Data so generated or modified,
+        together with a Licensee Product, under the terms of this License.
+
+3.3 Board Data Tool. A Board Data Tool is not licensed under this License. Its
+    use is governed by the separate written agreement under which Newracom
+    made it available. You shall not distribute, disclose or otherwise make a
+    Board Data Tool available to any third party.
+
+3.4 Responsibility for Modified Board Data. Board Data determines transmit
+    power and regulatory domain behaviour of a Newracom Product. Where you
+    generate or modify Board Data under Section 3.2, you are solely
+    responsible for the resulting radio behaviour and for the regulatory
+    compliance and certification of the Licensee Product, and Newracom makes
+    no representation or warranty with respect to Board Data that Newracom did
+    not itself supply.
+
+3.5 Ownership of Modified Board Data. Newracom retains all right, title and
+    interest in and to Board Data supplied by Newracom, in the Board Data Tool
+    and in the data formats and calibration methods embodied in them. Subject
+    to the foregoing, Newracom claims no ownership of the board-specific
+    values you determine for your own module designs.
+
+
+-----------------------------------------------------------------------------
+4. RESTRICTIONS
+-----------------------------------------------------------------------------
+
+You shall not, and shall not permit any third party to:
+
+4.1 modify, adapt, translate or create derivative works of the Software,
+    except as expressly permitted in Section 3.2 with respect to Board Data;
+
+4.2 reverse engineer, decompile or disassemble the Software, or otherwise
+    attempt to derive its source code, internal structure or algorithms,
+    except to the extent that such activity is expressly permitted by
+    applicable law notwithstanding this restriction, and then only to the
+    extent so permitted;
+
+4.3 use, reproduce or distribute the Software with any integrated circuit,
+    module or product that is not a Newracom Product;
+
+4.4 distribute the Software on a standalone basis, except as permitted in
+    Section 2.4;
+
+4.5 remove, obscure or alter any copyright, trademark or other proprietary
+    notice contained in or accompanying the Software; or
+
+4.6 sublicense, sell, rent, lease, lend or otherwise transfer the Software,
+    except as expressly permitted in Sections 2.2, 2.3, 2.4 and 3.2.
+
+
+-----------------------------------------------------------------------------
+5. THIRD-PARTY AND OPEN SOURCE COMPONENTS
+-----------------------------------------------------------------------------
+
+5.1 The Software may incorporate components supplied by third parties,
+    including components licensed under open source licenses. Those components
+    are licensed to you under their own applicable terms and not under this
+    License.
+
+5.2 To the extent of any conflict between this License and the license terms
+    applicable to such a component, those terms govern with respect to that
+    component. Nothing in this License limits, restricts or purports to
+    override any right you have under a third-party license.
+
+5.3 Where such components are present, they are identified in the Software
+    Bill of Materials or in the file LICENSING.md distributed with the
+    Software.
+
+
+-----------------------------------------------------------------------------
+6. OWNERSHIP AND RESERVATION OF RIGHTS
+-----------------------------------------------------------------------------
+
+6.1 The Software is licensed, not sold. Newracom and its suppliers retain all
+    right, title and interest in and to the Software, including all patent,
+    copyright, trade secret, trademark and other intellectual property rights
+    therein.
+
+6.2 Except for the limited rights expressly granted in Sections 2 and 3, no
+    right or license is granted to you under this License, whether by
+    implication, estoppel or otherwise. No license is granted to you under any
+    Newracom patent except as necessary to exercise the rights expressly
+    granted in Sections 2 and 3 with respect to a Newracom Product.
+
+6.3 You shall reproduce and retain all copyright and proprietary notices on
+    all copies of the Software, and shall distribute the Software with a copy
+    of this License.
+
+
+-----------------------------------------------------------------------------
+7. NO SOURCE CODE OBLIGATION
+-----------------------------------------------------------------------------
+
+The Software is provided in binary form only. Except with respect to
+third-party components governed by Section 5, Newracom has no obligation under
+this License to provide source code, design documentation, calibration
+methodology or other technical information relating to the Software.
+
+
+-----------------------------------------------------------------------------
+8. PRIVACY
+-----------------------------------------------------------------------------
+
+The Software does not collect personal information and does not transmit data
+to Newracom. Diagnostic and debug information produced by the Software, such
+as crash dumps and logs, is delivered only to the host system to which the
+Newracom Product is connected, and its handling is your responsibility.
+
+
+-----------------------------------------------------------------------------
+9. REGULATORY COMPLIANCE
+-----------------------------------------------------------------------------
+
+9.1 Radio equipment is subject to national and regional regulatory
+    requirements. You are solely responsible for obtaining and maintaining all
+    approvals, certifications and authorizations required for a Licensee
+    Product in each jurisdiction in which it is placed on the market or
+    operated.
+
+9.2 Newracom does not warrant that the Software, whether used alone or in a
+    Licensee Product, complies with the requirements of any particular
+    jurisdiction. Configuration choices, including country code selection and
+    Board Data, materially affect regulatory compliance and are your
+    responsibility.
+
+
+-----------------------------------------------------------------------------
+10. HIGH-RISK USE
+-----------------------------------------------------------------------------
+
+The Software is not designed, tested or intended for use in applications in
+which the failure of the Software could reasonably be expected to result in
+death, personal injury, or severe physical or environmental damage, including
+without limitation life-support systems, nuclear facilities, aircraft
+navigation or communication systems, air traffic control, or weapons systems.
+Any such use is entirely at your own risk, and you shall indemnify and hold
+Newracom harmless from any claim arising out of such use.
+
+
+-----------------------------------------------------------------------------
+11. DISCLAIMER OF WARRANTY
+-----------------------------------------------------------------------------
+
+THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE", WITHOUT WARRANTY OF ANY
+KIND. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, NEWRACOM AND ITS
+SUPPLIERS DISCLAIM ALL WARRANTIES, CONDITIONS AND REPRESENTATIONS, WHETHER
+EXPRESS, IMPLIED OR STATUTORY, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE,
+NON-INFRINGEMENT, ACCURACY, OR ARISING FROM A COURSE OF DEALING OR USAGE OF
+TRADE.
+
+NEWRACOM DOES NOT WARRANT THAT THE SOFTWARE WILL OPERATE UNINTERRUPTED OR
+ERROR-FREE, THAT DEFECTS WILL BE CORRECTED, OR THAT THE SOFTWARE WILL MEET
+YOUR REQUIREMENTS.
+
+
+-----------------------------------------------------------------------------
+12. LIMITATION OF LIABILITY
+-----------------------------------------------------------------------------
+
+12.1 TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL
+     NEWRACOM OR ITS SUPPLIERS BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
+     SPECIAL, CONSEQUENTIAL, EXEMPLARY OR PUNITIVE DAMAGES, OR FOR ANY LOSS OF
+     PROFITS, REVENUE, BUSINESS, DATA, GOODWILL OR ANTICIPATED SAVINGS,
+     ARISING OUT OF OR IN CONNECTION WITH THIS LICENSE OR THE SOFTWARE,
+     WHETHER IN CONTRACT, TORT (INCLUDING NEGLIGENCE), STRICT LIABILITY OR
+     OTHERWISE, EVEN IF NEWRACOM HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH
+     DAMAGES.
+
+12.2 TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, NEWRACOM'S TOTAL
+     AGGREGATE LIABILITY ARISING OUT OF OR IN CONNECTION WITH THIS LICENSE
+     SHALL NOT EXCEED THE AMOUNTS PAID BY YOU TO NEWRACOM FOR THE NEWRACOM
+     PRODUCTS WITH WHICH THE SOFTWARE IS USED DURING THE TWELVE (12) MONTHS
+     PRECEDING THE EVENT GIVING RISE TO THE CLAIM.
+
+12.3 Nothing in this License excludes or limits liability that cannot be
+     excluded or limited under applicable law.
+
+12.4 The Software is provided without charge. The allocation of risk in
+     Sections 11 and 12 is a fundamental element of the basis of the bargain
+     between the parties, and this License would not be granted on different
+     terms.
+
+
+-----------------------------------------------------------------------------
+13. TERM AND TERMINATION
+-----------------------------------------------------------------------------
+
+13.1 This License is effective until terminated.
+
+13.2 This License terminates automatically, without notice, if you fail to
+     comply with any of its terms.
+
+13.3 Upon termination you shall immediately cease all use, reproduction and
+     distribution of the Software and destroy all copies in your possession or
+     control, except that Licensee Products distributed before termination may
+     continue to be used, operated and supported, and firmware updates may
+     continue to be supplied to users of those products under Section 2.4.
+
+13.4 Sections 4, 5, 6, 7, 10, 11, 12, 13.3, 14 and 15 survive termination of
+     this License.
+
+
+-----------------------------------------------------------------------------
+14. EXPORT CONTROL
+-----------------------------------------------------------------------------
+
+You shall comply with all applicable export control, import and economic
+sanctions laws and regulations, including those of the Republic of Korea and
+the United States, in connection with your use and distribution of the
+Software. You shall not export, re-export or transfer the Software to any
+person, entity or destination prohibited under such laws.
+
+
+-----------------------------------------------------------------------------
+15. GENERAL
+-----------------------------------------------------------------------------
+
+15.1 Governing Law. This License is governed by and construed in accordance
+     with the laws of the Republic of Korea, without regard to its conflict of
+     law principles. The United Nations Convention on Contracts for the
+     International Sale of Goods does not apply.
+
+15.2 Jurisdiction. The parties submit to the exclusive jurisdiction of the
+     Seoul Central District Court, Republic of Korea, as the court of first
+     instance for any dispute arising out of or in connection with this
+     License.
+
+15.3 Assignment. You may not assign or transfer this License, in whole or in
+     part, without the prior written consent of Newracom, except to a
+     successor in interest to all or substantially all of your business to
+     which this License relates, provided that the successor agrees in writing
+     to be bound by this License.
+
+15.4 Severability. If any provision of this License is held to be invalid or
+     unenforceable, that provision shall be modified to the minimum extent
+     necessary to make it enforceable, and the remaining provisions shall
+     remain in full force and effect.
+
+15.5 No Waiver. A failure or delay by Newracom in exercising any right under
+     this License does not constitute a waiver of that right.
+
+15.6 Entire Agreement. This License constitutes the entire agreement between
+     the parties with respect to the Software and supersedes all prior or
+     contemporaneous communications and proposals regarding the same subject
+     matter. Where you and Newracom have entered into a separate written
+     agreement covering the Software, the terms of that agreement prevail to
+     the extent of any conflict with this License.
+
+15.7 Language. This License is written in English. Any translation is provided
+     for convenience only, and the English text governs.
+
+
+-----------------------------------------------------------------------------
+
+Newracom, Inc.
+https://www.newracom.com
+
+Questions regarding this License may be directed to Newracom through the
+contact information published at the address above.

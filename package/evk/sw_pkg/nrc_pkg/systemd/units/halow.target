@@ -1,0 +1,8 @@
+[Unit]
+Description=NRC HaLow stack (WLAN + optional hostapd member)
+# Member services attach via their [Install] WantedBy=halow.target
+# (systemctl enable) so a board can run without optional members
+# (e.g. WLAN-only by disabling the hostapd member).
+
+[Install]
+WantedBy=multi-user.target

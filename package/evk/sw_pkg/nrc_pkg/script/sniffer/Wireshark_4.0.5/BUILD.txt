@@ -1,0 +1,54 @@
+How the Wireshark 4.0.5 packages in deb/ were built
+====================================================
+
+This is the build configuration for the packages in deb/. Together with the
+unmodified upstream source tarball it is the complete corresponding source for
+those binaries. Newracom made no changes to the Wireshark source.
+
+Target platform
+---------------
+
+    Raspberry Pi 4
+    Raspbian 10 Buster (Debian 10, armhf), Linux kernel 5.10.17
+    Built on the target itself (native build, not a cross-compile)
+
+Source
+------
+
+    wireshark-4.0.5.tar.xz
+    https://2.na.dl.wireshark.org/src/wireshark-4.0.5.tar.xz
+
+Build
+-----
+
+    tar xf wireshark-4.0.5.tar.xz
+    cd wireshark-4.0.5
+    sudo apt update
+    sudo tools/debian-setup.sh --install-optional --install-deb-deps --install-test-deps -y
+    mkdir build
+    cd build
+    cmake ..
+    make
+
+    No WIRESHARK_VERSION_EXTRA was set: the package version string is the
+    plain upstream "4.0.5".
+
+Debian packages
+---------------
+
+    cd wireshark-4.0.5
+    ln -snf packaging/debian
+    export DEB_BUILD_OPTIONS="nocheck"
+    dpkg-buildpackage -b -us -uc -jauto
+
+    The resulting *.deb files one directory up are the packages in deb/.
+    Development, debug and documentation packages produced by the same build
+    (wireshark-dev, wireshark-dbg, wireshark-doc, lib*-dev) are not shipped;
+    they are not needed to run the sniffer.
+
+Reproducing
+-----------
+
+    The steps above, run on the platform above with the same tarball, produce
+    functionally identical packages. Byte-for-byte identity is not expected:
+    Debian packaging embeds build timestamps.

@@ -1,0 +1,42 @@
+[Unit]
+Description=NRC HaLow firmware log (firmware console over the host interface)
+# The firmware publishes its log as HIF_TYPE_LOG frames and the driver
+# republishes them on the "nrc-log" netlink group, so this is only useful
+# once the driver is loaded.
+#
+# Deliberately neither BindsTo= nor PartOf=halow.target. Those would stop
+# the follower whenever the stack is restarted, which is precisely when an
+# assert is most likely and least affordable to miss. The follower detects
+# the driver going away and rejoins by itself -- the group is reassigned a
+# new family id on reload, so a socket that merely stayed open would sit
+# there deaf. WantedBy= below still starts it along with the target.
+After=halow-wlan.service
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/halow/halow.conf
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# cli_app lives with the rest of the package scripts. Its output goes through
+# fwlog-store.py rather than straight to a file: that keeps a bounded, listed
+# set of logs under /var/log/halow/fwlog instead of one unbounded file, which
+# is both what the Web GUI offers for download and what stops a chatty debug
+# stream from filling the card. If either end dies the pipe collapses and
+# Restart= brings the pair back together.
+ExecStart=/bin/sh -c '"$NRC_SCRIPT_DIR/cli_app" -lf | /usr/lib/halow/fwlog-store.py'
+# The package's log defaults are applied by halow-wlan.service instead: the
+# firmware resets to its own defaults on every reload, and this unit stays
+# up across those, so applying them here would only ever have worked once.
+# The firmware default is flight-recorder mode: nothing is streamed until
+# somebody asks, so this costs no airtime or SPI bandwidth while idle. It
+# still has to be running to catch the assert dump, which is unsolicited.
+Restart=always
+RestartSec=5
+# The log file is written by fwlog-store.py, so nothing is redirected here;
+# whatever either process says about itself belongs in the journal.
+StandardOutput=journal
+StandardError=journal
+# Reading a netlink multicast group and writing under /var/log.
+User=root
+
+[Install]
+WantedBy=halow.target

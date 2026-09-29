@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2020-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+/*
  * MIT License
  *
  * Copyright (c) 2020 Newracom, Inc.
@@ -30,6 +36,7 @@
 #include "cli_util.h"
 #include "cli_config.h"
 #include "cli_history.h"
+#include "cli_netlink.h"
 
 #define ESCAPE 27
 #define UP_ARROW 65
@@ -54,6 +61,17 @@ int main(int argc, char* argv[])
 	char c;
 	cli_history_init(&history, CLI_BUFFER_CMD_NUM);
 #endif // ENABLE_CLI_HISTORY
+
+	/* Streaming mode, not a one-shot command: subscribe to the firmware
+	 * log and keep printing until killed. Checked before the one-shot
+	 * path because that one always exits after a single command. */
+	if (argc == 2 && (strcmp(argv[1], "-lf") == 0 ||
+				strcmp(argv[1], "--log-follow") == 0)) {
+#if ENABLE_CLI_HISTORY
+		cli_history_free(&history);
+#endif // ENABLE_CLI_HISTORY
+		return netlink_log_follow() < 0 ? 1 : 0;
+	}
 
 	if (argc > 1) {
 		cli_app_run_onetime(argc, argv);

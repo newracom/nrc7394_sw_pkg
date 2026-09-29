@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: 2016-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: ISC
+ */
 
 
 #ifndef _NRC_S1G_H_

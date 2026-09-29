@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2020-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+/*
  * MIT License
  *
  * Copyright (c) 2020 Newracom, Inc.
@@ -35,7 +41,7 @@
 
 /* show config */
 #define SHOW_CONFIG_DISP "%s,%s,%s,\
-%s,%s,%s,%d,%d,%s,\
+%s,%s,%s,%s,%d,%d,%s,\
 %d (%d),%d (%d),\
 %d,%s,%s,%s,%s,%s,\
 %s,%s,%s,%s,\
@@ -46,7 +52,7 @@
 
 
 #define SHOW_CONFIG_KEY_LIST "[MAC Configuration]\nBoot Mode,Device Mode,MAC Address,\
-Country,Bandwidth, - PRI CH BW, - PRI CH LO, - PRI CH NUM, - Center LO,\
+Country, - EN300_220,Bandwidth, - PRI CH BW, - PRI CH LO, - PRI CH NUM, - Center LO,\
 Frequency,MAC80211_freq,\
 Default MCS,Rate Control, - Mode, - Info, - MCS10(MGMT),Guard Interval,\
 Security,  - AKM,  - Cipher,  - Type,\
@@ -114,6 +120,9 @@ max mpdu_len,ampdu_len_exp,min mpdu_start_spacing,rx_s1gmcs_map,color"
  ndp_pspoll, traveling pilot, short gi\n  -1mhz,  -2mhz,  -4mhz,max mpdu_len,\
 ampdu_len_exp,min mpdu_start_spacing,rx_s1gmcs_map"
 
+/* set tpc show */
+#define SET_TPC_SHOW_KEY_LIST	"Role,TPC,Peer TPC"
+
 // set tx_time
 #define SET_TXTIME_KEY_DISP	"%ldus,%ldus,%ldus"
 #define SET_TXTIME_KEY_LIST	"CS time,Pause time,Resume time"
@@ -137,6 +146,10 @@ ampdu_len_exp,min mpdu_start_spacing,rx_s1gmcs_map"
 /* show duty */
 #define SHOW_DUTY_KEY_DISP	"%s,%lu,%lu,%lu,%lu"
 #define SHOW_DUTY_KEY_LIST	"Duty cycle,Duty window,Tx duration,Remain tx duration,Duty error"
+
+/* set en300_220 show */
+#define SET_EN300_220_KEY_LIST	"en300_220,100ms_pause,afa"
+#define SET_EN300_220_DISP	"%s,%s,%s"
 
 /* show autotxgain */
 #define SHOW_AUTOTXGAIN_KEY_DISP	"%s,%d,%d,%d,%d,%d,%d,%d,%d,%d"
@@ -168,8 +181,8 @@ Tx power index for MCS 6,Tx power index for MCS 7,Tx power index for MCS 10"
 #define SHOW_TX_TIME_KEY_LIST	"CS time,Pause time,Resume time"
 
 /* set txpwr */
-#define SET_TXPWR_KEY_DISP	"%s,%d"
-#define SET_TXPWR_KEY_LIST	"Type,Tx power"
+#define SET_TXPWR_KEY_DISP	"%d,%s,%d"
+#define SET_TXPWR_KEY_LIST	"vif_id,Type,Tx power"
 
 /* show wakeup_pin */
 #define SHOW_WAKEUP_PIN_DISP		"%s,%d"
@@ -210,6 +223,10 @@ Tx power index for MCS 6,Tx power index for MCS 7,Tx power index for MCS 10"
 /* show rc_param */
 #define SHOW_RC_PARAM_KEY_DISP	"%ld,%d,%d"
 #define SHOW_RC_PARAM_KEY_LIST	"EWMA(%),Update interval(ms),Probe interval(ms)"
+
+/* show rc_profile */
+#define SHOW_RC_PROFILE_KEY_DISP	"%s"
+#define SHOW_RC_PROFILE_KEY_LIST	"RC profile"
 
 /* show rxgain_table */
 #define SHOW_RXGAIN_TABLE_KEY_DISP	"%x"

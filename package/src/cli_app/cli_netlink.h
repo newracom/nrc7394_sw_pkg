@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2020-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+/*
  * MIT License
  *
  * Copyright (c) 2020 Newracom, Inc.
@@ -120,5 +126,9 @@ enum nrc_nl_multicast_grp {
 
 int netlink_send_data_with_retry(char cmd_type, char* param, char* response, int retry_count);
 int netlink_send_data(char cmd_type, char* param1, char* response);
+
+/* Subscribe to the driver's "nrc-log" multicast group and stream the
+ * firmware log to stdout until interrupted. Does not return in normal use. */
+int netlink_log_follow(void);
 
 #endif /* _CLI_NETLINK_H_ */

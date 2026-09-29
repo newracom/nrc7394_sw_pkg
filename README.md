@@ -17,6 +17,7 @@ Devices may be built using NRC7394 chipsets directly or by integrating pre-calib
 > For support regarding the SAE Hash-to-Element (H2E), please refer to https://github.com/newracom/nrc7394_sw_pkg/blob/master/README-H2E.md
 
 ### Release roadmap
+- (2026.09.29) v1.3.3
 - (2026.03.27) v1.3.2
 - (2025.08.08) v1.3.1
 - (2024.12.27) v1.3
@@ -28,7 +29,7 @@ Devices may be built using NRC7394 chipsets directly or by integrating pre-calib
 - (2023.04.05) v1.0 
 
 ### Latest stable release
-- [NRC7394_SW_PKG_v1.3.2](https://github.com/newracom/nrc7394_sw_pkg/releases/tag/v1.3.2)
+- [NRC7394_SW_PKG_v1.3.3](https://github.com/newracom/nrc7394_sw_pkg/releases/tag/v1.3.3)
 
 ### Release package contents
 - package: NRC7394 software package for global regulatory domains
@@ -45,6 +46,29 @@ Devices may be built using NRC7394 chipsets directly or by integrating pre-calib
       ├── nrc
       └── nrc_hspi_simple
 ```
+## License
+
+This repository contains components under several licenses. There is no single
+license that applies to the whole repository.
+
+| Component | License |
+| --- | --- |
+| Host driver (`package/src/nrc/`) | ISC |
+| CLI application (`package/src/cli_app/`) | MIT |
+| Channel manager daemon (`package/src/chmgrd/`) | ISC |
+| FT232H USB-SPI driver | GPL-2.0-only, (c) DENX Software Engineering |
+| CH347 USB-SPI driver | GPL-2.0-or-later, (c) Nanjing Qinheng (WCH) |
+| Firmware and board data | Newracom Firmware and Board Data Distribution License |
+| Documentation | Newracom Documentation License |
+| Bundled Wireshark packages | GPL-2.0-or-later |
+
+See [LICENSING.md](LICENSING.md) for the component-by-component explanation and
+[LICENSES/](LICENSES/) for the full texts. Third-party components retain their
+own licenses.
+
+`hostapd` and `wpa_supplicant` are **not** distributed in this repository; the
+setup scripts install them from the host distribution.
+
 ## NRC7394 Software Package User Guide
 ### Get NRC7394 Software Package
 NRC7394 Software package is provided in this repository. Please refer to the following git command to get it.

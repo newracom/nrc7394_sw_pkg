@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2016-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: ISC
+ */
+
+/*
  * Copyright (c) 2016-2019 Newracom, Inc.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
@@ -144,6 +150,7 @@ enum WIM_EVENT_ID {
 	WIM_EVENT_LBT_DISABLED,
 	WIN_EVENT_CLEAN_TXQ_STA,
 	WIM_EVENT_REQ_DEAUTH_BY_FORCE,
+	WIM_EVENT_DCS_SWITCH_REQ,
 	WIM_EVENT_MAX,
 };
 
@@ -237,6 +244,8 @@ enum WIM_TLV_ID {
 	WIM_TLV_TWT_GROUPING,
 	WIM_TLV_TX_STATS_RESP,
 	WIM_TLV_RETURN,
+	WIM_TLV_EU_EN300_220,
+	WIM_TLV_DCS_CHANNEL,
 	WIM_TLV_MAX,
 };
 
@@ -757,7 +766,8 @@ struct wim_drv_info_param {
 	uint32_t supported_ch_width	:2;
 	uint32_t ps_pretend_flag	:1;
 	uint32_t sub_xtal_bypass	:1;
-	uint32_t reserved			:10;
+	uint32_t raw				:1;
+	uint32_t reserved			:9;
 	uint32_t vendor_oui;
 	uint32_t deepsleep_gpio_dir;
 	uint32_t deepsleep_gpio_out;
@@ -772,6 +782,8 @@ struct wim_drv_info_param {
 	uint8_t auth_control_ti_min;
 	uint8_t auth_control_ti_max;
 	int8_t loc_1m_prim_ch;
+	int8_t bw_4m_2m_prim_loc;
+	bool tx_power_control;
 } __packed;
 WIM_DECLARE(wim_drv_info);
 

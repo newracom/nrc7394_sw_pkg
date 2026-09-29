@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2020-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+/*
  * MIT License
  *
  * Copyright (c) 2020 Newracom, Inc.
@@ -31,6 +37,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/time.h>
+#include <errno.h>
 #include <linux/genetlink.h>
 
 #include "cli_cmd.h"
@@ -297,6 +305,332 @@ int netlink_send_data(char cmd_type, char* param, char* response)
 	}
 
 	//Step 5. Close the socket and quit
+	close(nl_fd);
+	return 0;
+}
+
+/*******************************************************************************
+* Firmware log follower
+*
+* The firmware ships its console output to the host as HIF_TYPE_LOG frames,
+* which the driver republishes on the "nrc-log" generic-netlink multicast
+* group (nrc_netlink_rx()). Subscribing to that group is the only way to read
+* the firmware log on a production board, where the console UART is not
+* brought out.
+*******************************************************************************/
+
+#ifndef SOL_NETLINK
+#define SOL_NETLINK 270
+#endif
+
+/* HIF_LOG_SUB_* as the firmware stamps them on each frame. */
+static const char *hlog_severity(unsigned char sub)
+{
+	switch (sub) {
+	case 0:  return "VB";
+	case 1:  return "INFO";
+	case 2:  return "ERR";
+	case 3:  return "ASSERT";
+	case 4:  return "NONE";
+	default: return "?";
+	}
+}
+
+/*
+ * Resolve the family id and the id the kernel assigned to the "nrc-log"
+ * multicast group. netlink_send_data() above only needs the family id, so
+ * it stops before CTRL_ATTR_MCAST_GROUPS; we need both.
+ */
+static int hlog_resolve(int nl_fd, __u16 *family_id, __u32 *group_id)
+{
+	nl_msg_t req, resp;
+	struct sockaddr_nl addr;
+	struct nlattr *na;
+	int len, remain;
+
+	memset(&req, 0, sizeof(req));
+	memset(&resp, 0, sizeof(resp));
+
+	req.n.nlmsg_type = GENL_ID_CTRL;
+	req.n.nlmsg_flags = NLM_F_REQUEST;
+	req.n.nlmsg_seq = 0;
+	req.n.nlmsg_pid = getpid();
+	req.n.nlmsg_len = NLMSG_LENGTH(GENL_HDRLEN);
+	req.g.cmd = CTRL_CMD_GETFAMILY;
+	req.g.version = 1;
+
+	na = (struct nlattr *) GENLMSG_DATA(&req);
+	na->nla_type = CTRL_ATTR_FAMILY_NAME;
+	na->nla_len = strlen("NRC-NL-FAM") + 1 + NLA_HDRLEN;
+	strcpy(NLA_DATA(na), "NRC-NL-FAM");
+	req.n.nlmsg_len += NLMSG_ALIGN(na->nla_len);
+
+	memset(&addr, 0, sizeof(addr));
+	addr.nl_family = AF_NETLINK;
+
+	if (sendto(nl_fd, (char *) &req, req.n.nlmsg_len, 0,
+			(struct sockaddr *) &addr, sizeof(addr)) < 0) {
+		return -1;
+	}
+
+	len = recv(nl_fd, &resp, sizeof(resp), 0);
+	if (len < 0 || !NLMSG_OK(&resp.n, (unsigned int) len) ||
+			resp.n.nlmsg_type == NLMSG_ERROR) {
+		return -1;
+	}
+
+	*family_id = 0;
+	*group_id = 0;
+
+	na = (struct nlattr *) GENLMSG_DATA(&resp);
+	remain = GENLMSG_PAYLOAD(&resp.n);
+
+	while (remain > (int) NLA_HDRLEN) {
+		if (na->nla_len < NLA_HDRLEN || na->nla_len > remain)
+			break;
+
+		if (na->nla_type == CTRL_ATTR_FAMILY_ID) {
+			*family_id = *(__u16 *) NLA_DATA(na);
+		} else if (na->nla_type == CTRL_ATTR_MCAST_GROUPS) {
+			/* nested: one anonymous entry per group, each holding
+			 * a NAME and an ID attribute */
+			struct nlattr *grp = (struct nlattr *) NLA_DATA(na);
+			int grp_remain = na->nla_len - NLA_HDRLEN;
+
+			while (grp_remain > (int) NLA_HDRLEN) {
+				struct nlattr *f = (struct nlattr *) NLA_DATA(grp);
+				int f_remain = grp->nla_len - NLA_HDRLEN;
+				const char *name = NULL;
+				__u32 id = 0;
+
+				if (grp->nla_len < NLA_HDRLEN || grp->nla_len > grp_remain)
+					break;
+
+				while (f_remain > (int) NLA_HDRLEN) {
+					if (f->nla_len < NLA_HDRLEN || f->nla_len > f_remain)
+						break;
+					if (f->nla_type == CTRL_ATTR_MCAST_GRP_NAME)
+						name = (const char *) NLA_DATA(f);
+					else if (f->nla_type == CTRL_ATTR_MCAST_GRP_ID)
+						id = *(__u32 *) NLA_DATA(f);
+					f_remain -= NLA_ALIGN(f->nla_len);
+					f = (struct nlattr *) ((char *) f + NLA_ALIGN(f->nla_len));
+				}
+
+				if (name && strcmp(name, "nrc-log") == 0)
+					*group_id = id;
+
+				grp_remain -= NLA_ALIGN(grp->nla_len);
+				grp = (struct nlattr *) ((char *) grp + NLA_ALIGN(grp->nla_len));
+			}
+		}
+
+		remain -= NLA_ALIGN(na->nla_len);
+		na = (struct nlattr *) ((char *) na + NLA_ALIGN(na->nla_len));
+	}
+
+	return (*family_id && *group_id) ? 0 : -1;
+}
+
+/* Open a socket already joined to the nrc-log group. */
+static int hlog_open(__u16 *family_id, __u32 *group_id)
+{
+	struct sockaddr_nl addr;
+	int nl_fd;
+
+	nl_fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_GENERIC);
+	if (nl_fd < 0)
+		return -1;
+
+	memset(&addr, 0, sizeof(addr));
+	addr.nl_family = AF_NETLINK;
+	if (bind(nl_fd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+		close(nl_fd);
+		return -1;
+	}
+
+	if (hlog_resolve(nl_fd, family_id, group_id) < 0) {
+		close(nl_fd);
+		return -1;
+	}
+
+	if (setsockopt(nl_fd, SOL_NETLINK, NETLINK_ADD_MEMBERSHIP,
+			group_id, sizeof(*group_id)) < 0) {
+		close(nl_fd);
+		return -1;
+	}
+
+	return nl_fd;
+}
+
+int netlink_log_follow(void)
+{
+	int nl_fd = -1;
+	__u16 family_id = 0;
+	__u32 group_id = 0;
+	int announced = 0;
+	/*
+	 * A frame is a batch of bytes, not of lines: the firmware fills each
+	 * frame to its payload limit, so a log line can straddle a frame
+	 * boundary. Hold the tail back until its newline arrives, otherwise
+	 * long lines (a stack dump, say) come out chopped in two.
+	 */
+	static char pending[NL_MSG_MAX_RESPONSE_SIZE * 2];
+	size_t pending_len = 0;
+
+	setvbuf(stdout, NULL, _IOLBF, 0);
+
+	for (;;) {
+		char buf[NL_MSG_MAX_RESPONSE_SIZE * 2];
+		struct nlmsghdr *nh;
+		struct timeval tv;
+		int len;
+
+		/*
+		 * Reconnect rather than exit. This runs as a service, and
+		 * every `systemctl restart halow.target` rmmods the driver:
+		 * the family disappears and the group id is reassigned on
+		 * reload, so a socket joined to the old id goes quietly deaf
+		 * - the same failure mode that made the gateway stop hearing
+		 * the driver once before.
+		 */
+		if (nl_fd < 0) {
+			nl_fd = hlog_open(&family_id, &group_id);
+			if (nl_fd < 0) {
+				if (!announced) {
+					fprintf(stderr, "hlog: waiting for the "
+						"nrc driver (nrc-log group)\n");
+					announced = 1;
+				}
+				sleep(2);
+				continue;
+			}
+			fprintf(stderr, "hlog: following nrc-log "
+				"(family %u, group %u)\n",
+				(unsigned) family_id, (unsigned) group_id);
+			announced = 0;
+			pending_len = 0;
+		}
+
+		/* Wake up periodically even when idle, so a driver reload is
+		 * noticed instead of blocking in recv() forever. */
+		tv.tv_sec = 20;
+		tv.tv_usec = 0;
+		setsockopt(nl_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+
+		len = recv(nl_fd, buf, sizeof(buf), 0);
+		if (len < 0) {
+			__u16 f = 0;
+			__u32 g = 0;
+			int probe;
+
+			if (errno == EINTR)
+				continue;
+			if (errno != EAGAIN && errno != EWOULDBLOCK) {
+				fprintf(stderr, "hlog: recv(): %s\n", strerror(errno));
+				close(nl_fd);
+				nl_fd = -1;
+				continue;
+			}
+
+			/* Idle timeout: re-resolve on a throwaway socket (so a
+			 * queued log message is not consumed by the reply) and
+			 * rejoin if the driver came back as a different id. */
+			probe = socket(AF_NETLINK, SOCK_RAW, NETLINK_GENERIC);
+			if (probe >= 0) {
+				struct sockaddr_nl paddr;
+
+				memset(&paddr, 0, sizeof(paddr));
+				paddr.nl_family = AF_NETLINK;
+				if (bind(probe, (struct sockaddr *) &paddr,
+						sizeof(paddr)) == 0) {
+					if (hlog_resolve(probe, &f, &g) < 0 ||
+							f != family_id || g != group_id) {
+						close(nl_fd);
+						nl_fd = -1;
+					} else if (setsockopt(nl_fd, SOL_NETLINK,
+							NETLINK_ADD_MEMBERSHIP,
+							&group_id, sizeof(group_id)) < 0) {
+						/*
+						 * Same ids as before is not proof the
+						 * membership survived: an rmmod clears
+						 * every socket's group bit, and a reload
+						 * can be handed the same family id and
+						 * the same (first free) group id, leaving
+						 * this socket deaf with nothing to notice.
+						 * Re-adding is idempotent, so do it every
+						 * idle period; if even that fails, rejoin.
+						 */
+						close(nl_fd);
+						nl_fd = -1;
+					}
+				}
+				close(probe);
+			}
+			continue;
+		}
+
+		for (nh = (struct nlmsghdr *) buf; NLMSG_OK(nh, (unsigned int) len);
+				nh = NLMSG_NEXT(nh, len)) {
+			struct genlmsghdr *gh;
+			struct nlattr *na;
+			int remain;
+			const char *msg = NULL;
+			unsigned char sub = 255;
+			char *nl;
+
+			if (nh->nlmsg_type != family_id)
+				continue;
+
+			gh = (struct genlmsghdr *) NLMSG_DATA(nh);
+			if (gh->cmd != NL_CMD_LOG_EVENT)
+				continue;
+
+			na = (struct nlattr *) GENLMSG_DATA(nh);
+			remain = GENLMSG_PAYLOAD(nh);
+
+			while (remain > (int) NLA_HDRLEN) {
+				if (na->nla_len < NLA_HDRLEN || na->nla_len > remain)
+					break;
+				if (na->nla_type == NL_CMD_LOG_MSG)
+					msg = (const char *) NLA_DATA(na);
+				else if (na->nla_type == NL_CMD_LOG_TYPE)
+					sub = *(unsigned char *) NLA_DATA(na);
+				remain -= NLA_ALIGN(na->nla_len);
+				na = (struct nlattr *) ((char *) na + NLA_ALIGN(na->nla_len));
+			}
+
+			if (!msg)
+				continue;
+
+			if (pending_len + strlen(msg) < sizeof(pending)) {
+				strcpy(pending + pending_len, msg);
+				pending_len += strlen(msg);
+			} else {
+				/* A line this long is not a line; drop it and resync.
+				 * Say so in the stream - every other hole in this log
+				 * is marked, and a silent one would be the exception
+				 * a reader could not know about. */
+				printf("[FW/%s] [hlog-host] %zu bytes discarded: no line "
+					"end within the buffer\n", hlog_severity(sub),
+					pending_len + strlen(msg));
+				pending_len = 0;
+				continue;
+			}
+
+			while ((nl = memchr(pending, '\n', pending_len)) != NULL) {
+				*nl = '\0';
+				printf("[FW/%s] %s\n", hlog_severity(sub), pending);
+				/* an assert batch is the last thing the firmware
+				 * will ever say; do not let it sit in a buffer */
+				if (sub == 3)
+					fflush(stdout);
+				pending_len -= (nl + 1 - pending);
+				memmove(pending, nl + 1, pending_len);
+			}
+		}
+	}
+
 	close(nl_fd);
 	return 0;
 }

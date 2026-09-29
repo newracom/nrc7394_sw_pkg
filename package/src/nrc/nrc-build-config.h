@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2016-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: ISC
+ */
+
+/*
  * Copyright (c) 2016-2019 Newracom, Inc.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
@@ -93,10 +99,6 @@
 #undef CONFIG_S1G_CHANNEL
 #endif /* CONFIG_S1G_CHANNEL */
 #endif /* KERNEL_VERSION(5, 10, 0) <= NRC_TARGET_KERNEL_VERSION */
-
-#ifdef CONFIG_S1G_CHANNEL
-/* #define S1G_INCLUDE_4M_OP_2M_TX */
-#endif
 
 #if KERNEL_VERSION(4, 10, 0) <= NRC_TARGET_KERNEL_VERSION
 #define GENL_ID_GENERATE 0
@@ -234,7 +236,7 @@
 #endif
 
 /*
-this feature is disabled 
+this feature is disabled
 #if KERNEL_VERSION(5, 15, 56) <= NRC_TARGET_KERNEL_VERSION
 #define CONFIG_USE_KERNEL_S1G_TWT
 // To use this feature, some S1G capabilities patch is needed,
@@ -243,9 +245,8 @@ this feature is disabled
 
 #define CONFIG_QOS_NULL_OFFLOAD
 
-/* If this configuration is enabled, 
-   the function to wake up the target will be delayed 
+/* If this configuration is enabled,
+   the function to wake up the target will be delayed
    from the start of sleep up to TARGET_MAX_TIME_TO_FALL_ASLEEP. */
-#define CONFIG_DELAY_WAKE_TARGET  
-
+#define CONFIG_DELAY_WAKE_TARGET
 #endif

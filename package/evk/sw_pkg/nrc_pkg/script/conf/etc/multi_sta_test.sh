@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# SPDX-FileCopyrightText: 2023-2026 Newracom, Inc.
+#
+# SPDX-License-Identifier: ISC
+
 if [ $# -ne 2 ];
 then
  echo "Usage: ./multi_sta_test.sh STA_NUM INTERVAL (eg. ./test_multi_sta.sh 100 3 : connect 100 STA with interval 3s)"

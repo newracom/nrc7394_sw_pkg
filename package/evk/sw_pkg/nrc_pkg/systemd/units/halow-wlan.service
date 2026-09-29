@@ -1,0 +1,29 @@
+[Unit]
+Description=NRC HaLow WLAN stack (driver + FW + network; mode from STA_TYPE)
+# Bring-up may apt-install missing tools and needs NM running so the
+# unmanaged-device config reload in start_modular.py takes effect.
+After=network.target NetworkManager.service
+Wants=network.target
+# restart/stop of halow.target propagates here
+PartOf=halow.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=/etc/halow/halow.conf
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/usr/lib/halow/start-wlan.sh
+ExecStop=/usr/lib/halow/stop-wlan.sh
+# Firmware log defaults belong here, not on halow-fwlog.service: the firmware
+# comes back at its own compiled-in defaults every time this unit reloads it,
+# and the follower deliberately does not restart with the target - so hanging
+# them off the follower meant they were applied once and never again.
+# Backgrounded: it waits for the firmware to answer, and ExecStartPost holds
+# the unit "starting" until it exits.
+ExecStartPost=-/bin/sh -c '/usr/lib/halow/fwlog-defaults.sh &'
+# start_modular.py includes module load, FW boot and hostapd bring-up
+TimeoutStartSec=900
+TimeoutStopSec=180
+
+[Install]
+WantedBy=halow.target

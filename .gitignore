@@ -1,0 +1,18 @@
+# Build-time tooling and scan artefacts. Fetched or produced on demand, not
+# part of the release. Keeping them ignored also keeps them out of
+# `reuse lint` and out of the SPDX header pass - install_grype.sh in
+# particular is Anchore's installer and must not be stamped with our licence.
+/install_grype.sh
+/spdx-schema.json
+/SBOM_VULN.SHA256SUMS
+
+# Release tooling (SPDX header script, SBOM generator, curated component data).
+# Copied in from the maintainer's staging directory for each release and used
+# locally; the customer-facing results are LICENSES/, LICENSING.md, REUSE.toml
+# and sbom/. The tooling itself is not part of the package.
+/reuse/
+
+# Local scratch
+/tmp/
+*.orig
+*.rej

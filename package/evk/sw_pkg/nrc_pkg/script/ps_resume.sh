@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# SPDX-FileCopyrightText: 2023-2026 Newracom, Inc.
+#
+# SPDX-License-Identifier: ISC
+
 #get PM status from iwconfig
 ps=$(iwconfig wlan0| grep 'Power Management:' | awk '{print $2}' | cut -d':' -f2)
 if [ $ps = "on" ]

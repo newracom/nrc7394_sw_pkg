@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2016-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: ISC
+ */
+
+/*
  * Copyright (c) 2016-2019 Newracom, Inc.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
@@ -16,6 +22,8 @@
 #ifndef _NRC_STATS_H_
 #define _NRC_STATS_H_
 
+#include <linux/seq_file.h>
+
 #define MAX_SHOWN_RSSI		(-10)
 
 #define MAX_CHANNEL_NUM		40
@@ -25,6 +33,16 @@ struct stats_sta {
 	uint8_t macaddr[6];
 	struct moving_average *snr;
 	struct moving_average *rssi;
+
+	/* Modulation of the last frame we received from this station, straight
+	 * off the S1G SIG the firmware prepends. mac80211 has nowhere to get
+	 * this - the driver completes transmits without filling status.rates[]
+	 * and these kernels have no S1G rate-info flags - so it is kept here
+	 * and read back through the sta_rate debugfs file.
+	 * mcs is 0xff until a frame has been seen.
+	 */
+	uint8_t mcs;
+	uint8_t bw;
 
 	struct list_head list;
 };
@@ -53,7 +71,12 @@ int nrc_stats_get_mesh_rssi_threshold(void);
 
 int nrc_stats_init(void);
 void nrc_stats_deinit(void);
-int nrc_stats_update(uint8_t *macaddr, int8_t snr, int8_t rssi);
+/* @mcs is 0xff when the caller could not read one; the entry keeps its
+ * previous value in that case.
+ */
+int nrc_stats_update(uint8_t *macaddr, int8_t snr, int8_t rssi,
+		     uint8_t mcs, uint8_t bw);
+int nrc_stats_rate_dump(struct seq_file *m);
 int nrc_stats_add(uint8_t *macaddr, int count);
 int nrc_stats_del(uint8_t *macaddr);
 void nrc_stats_print(void);

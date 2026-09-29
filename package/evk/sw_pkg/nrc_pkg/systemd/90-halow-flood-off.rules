@@ -1,0 +1,7 @@
+# hostapd creates one WDS port (wlanX.staN) per 4addr station and enslaves
+# it into the bridge; bridge flooding must be disabled on each port as it
+# appears, or upstream-LAN chatter floods the HaLow air through it (see
+# halow_flood_off.sh). The helper waits for the enslavement; systemd-run
+# detaches it from the udev event so udev's worker reaping does not kill
+# that wait.
+ACTION=="add", SUBSYSTEM=="net", KERNEL=="wlan*.sta*", RUN+="/usr/bin/systemd-run --no-block --collect /usr/lib/halow/halow_flood_off.sh port %k"

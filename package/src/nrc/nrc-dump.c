@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2016-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: ISC
+ */
+
+/*
  * Copyright (c) 2016-2019 Newracom, Inc.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
@@ -20,6 +26,7 @@
 #include <linux/syscalls.h>
 #include <linux/fcntl.h>
 #include <linux/file.h>
+#include <linux/timekeeping.h>
 #include <asm/uaccess.h>
 #include "nrc-dump.h"
 #include "nrc.h"
@@ -47,7 +54,9 @@ static void write_file(char *filename, char *data, int len)
 	old_fs = force_uaccess_begin();
 #endif
 #endif /* if KERNEL_VERSION(5,18,0) < NRC_TARGET_KERNEL_VERSION */
-	filp = filp_open(filename, O_CREAT|O_RDWR, 0606);
+	/* O_TRUNC: without it a shorter dump written over a longer one leaves
+	 * the tail of the old dump behind, and the result parses as garbage. */
+	filp = filp_open(filename, O_CREAT|O_TRUNC|O_WRONLY, 0644);
 	if (IS_ERR(filp)) {
 		pr_err("[%s] error:%d", __func__, IS_ERR(filp));
 		return;
@@ -72,12 +81,25 @@ static void nrc_dump_init(void)
 {
 }
 #endif
-static int cnt;
+static char *dump_dir = "/var/log";
+module_param(dump_dir, charp, 0644);
+MODULE_PARM_DESC(dump_dir, "directory to write firmware core dumps into");
+
 void nrc_dump_store(char *src, int len)
 {
-	char str[32];
+	char path[128];
 
-	sprintf(str, "./host_core_dump_%d.bin", cnt);
-	write_file(str, src, len);
-	cnt++;
+	/*
+	 * The old name was "./host_core_dump_<n>.bin", which had two
+	 * problems in the field: a kernel thread's cwd is /, so dumps landed
+	 * in the filesystem root, and <n> restarted at 0 on every boot, so
+	 * the next crash silently overwrote the previous dump. Name them by
+	 * wall-clock second (unique across reboots, sorts chronologically)
+	 * under a directory the integrator can point at the log volume.
+	 */
+	snprintf(path, sizeof(path), "%s/nrc_core_dump_%llu.bin",
+		 dump_dir, (unsigned long long)ktime_get_real_seconds());
+
+	write_file(path, src, len);
+	pr_info("nrc: firmware core dump saved: %s (%d bytes)\n", path, len);
 }

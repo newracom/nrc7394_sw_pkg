@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2020-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+/*
  * MIT License
  *
  * Copyright (c) 2020 Newracom, Inc.
@@ -34,6 +40,9 @@
 #define DEFAULT_PRINT_LINE_LEN	52
 #define DISP_CMD_RESULT_BUF     1024
 #define COMMAND_DELAY_MS 50
+/* Upper bound for the "retry forever" form of netlink_send_data_with_retry();
+ * the driver's own WIM wait is several seconds, so allow a few of those. */
+#define NETLINK_RETRY_DEADLINE_MS 3000
 #define MAX_ADDR_SIZE 18
 
 #define IS_WHITESPACE(c) ((c) == ' ' || (c) == '\t' || (c) == '\n' || (c) == '\r' || (c) == '\v' || (c) == '\f')

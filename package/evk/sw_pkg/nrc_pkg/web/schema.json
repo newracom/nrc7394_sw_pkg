@@ -1,0 +1,1584 @@
+{
+  "operation_mode": {
+    "type": "enum",
+    "label": "Operation mode",
+    "values": [
+      "ap",
+      "sta",
+      "sniffer",
+      "relay",
+      "mesh"
+    ],
+    "default": "ap",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "conf_key": "STA_TYPE",
+    "conf_map": {
+      "ap": "1",
+      "sta": "0",
+      "sniffer": "2",
+      "relay": "3",
+      "mesh": "4"
+    },
+    "desc": "Operating mode. ap = HaLow AP; sta = station; sniffer = monitor; relay = AP + station on one radio; mesh = 802.11s.",
+    "section": "general"
+  },
+  "ssid": {
+    "type": "string",
+    "label": "SSID",
+    "default": "halow_demo",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "hostapd-restart",
+    "modes": [
+      "ap",
+      "relay",
+      "sta",
+      "mesh"
+    ],
+    "validate": {
+      "minlen": 1,
+      "maxlen": 32
+    },
+    "desc": "802.11ah network name. AP and RELAY advertise it, a station joins it, and in mesh mode it is the mesh ID - every node of one mesh must carry the same one, and a portal serves it on its AP side too.",
+    "section": "network"
+  },
+  "security": {
+    "type": "enum",
+    "label": "Security",
+    "values": [
+      "open",
+      "wpa2-psk",
+      "wpa3-owe",
+      "wpa3-sae"
+    ],
+    "values_modes": {
+      "wpa2-psk": [
+        "ap",
+        "relay",
+        "sta"
+      ],
+      "wpa3-owe": [
+        "ap",
+        "relay",
+        "sta"
+      ]
+    },
+    "default": "wpa3-sae",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "desc": "Authentication mode (changing this restarts the whole stack). Mesh peering is open or WPA3-SAE only.",
+    "section": "network"
+  },
+  "password": {
+    "type": "password",
+    "label": "Passphrase",
+    "default": "12345678",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "hostapd-restart",
+    "modes": [
+      "ap",
+      "relay",
+      "sta",
+      "mesh"
+    ],
+    "validate": {
+      "minlen": 8,
+      "maxlen": 63
+    },
+    "depends": {
+      "security": [
+        "wpa2-psk",
+        "wpa3-sae"
+      ]
+    },
+    "desc": "WPA passphrase (8-63 chars, used when security is not open). In mesh mode this is the SAE passphrase the peers authenticate with.",
+    "section": "network"
+  },
+  "uplink_ssid": {
+    "type": "string",
+    "label": "Uplink SSID (relay)",
+    "default": "",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "relay"
+    ],
+    "validate": {
+      "minlen": 1,
+      "maxlen": 32
+    },
+    "desc": "The network the RELAY joins on its RELAY_STA side. The SSID above is the one it serves on its RELAY_AP side; a RELAY runs both at once, so the two are set separately. Empty means it joins the same SSID it serves, which only works when another AP already carries that name.",
+    "section": "network"
+  },
+  "uplink_password": {
+    "type": "password",
+    "label": "Uplink password (relay)",
+    "default": "",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "relay"
+    ],
+    "validate": {
+      "minlen": 8,
+      "maxlen": 63
+    },
+    "desc": "Passphrase for the uplink network. Empty means the uplink uses the same passphrase as the RELAY_AP side.",
+    "section": "network"
+  },
+  "channel": {
+    "type": "int",
+    "label": "Channel",
+    "default": "",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "csa-or-restart",
+    "modes": [
+      "ap",
+      "sniffer",
+      "mesh",
+      "relay"
+    ],
+    "range": [
+      1,
+      200
+    ],
+    "values_from": "s1g_channels",
+    "desc": "S1G channel (the list follows the country's channel table). auto hands the choice to the channel manager: it sweeps at start, takes the quietest channel and keeps scoring afterwards. The manager's own settings sit right below and are editable only while auto is chosen. Naming a channel turns the manager off.",
+    "section": "network",
+    "desc_relay": "S1G channel (the list follows the country's channel table). RELAY does not support multi-channel operation, so set it to the same channel the upstream AP runs on.",
+    "desc_sta": "S1G channel (the list follows the country's channel table)."
+  },
+  "sta_static_ip": {
+    "type": "string",
+    "label": "Station static address (CIDR)",
+    "default": "",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "conf_key": "STA_STATIC_IP",
+    "section": "network",
+    "modes": [
+      "sta",
+      "relay"
+    ],
+    "desc": "Fixed IPv4 for the station side, e.g. 192.168.200.11/24. Empty = take an address from the AP by DHCP."
+  },
+  "sta_gateway": {
+    "type": "string",
+    "label": "Station gateway",
+    "default": "",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "conf_key": "STA_GATEWAY",
+    "section": "network",
+    "modes": [
+      "sta",
+      "relay"
+    ],
+    "desc": "Default gateway that goes with the station static address. Ignored while the station uses DHCP."
+  },
+  "ap_ip": {
+    "type": "string",
+    "label": "AP / portal address",
+    "default": "",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "conf_key": "AP_IP",
+    "section": "network",
+    "modes": [
+      "ap",
+      "relay",
+      "mesh"
+    ],
+    "validate": {
+      "regex": "^$|^(\\d{1,3}\\.){3}\\d{1,3}$",
+      "maxlen": 15,
+      "regex_hint": "not an IPv4 address"
+    },
+    "desc": "Address this board takes on the HaLow side, and the gateway its clients are given; the /24 around it is the network they join. Empty keeps the built-in default - 192.168.200.1 for an AP or a mesh portal, 192.168.150.1 for a relay, whose own AP must not sit in the network its uplink joined."
+  },
+  "dhcp_start": {
+    "type": "string",
+    "label": "DHCP pool start",
+    "default": "",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "conf_key": "DHCP_START",
+    "section": "network",
+    "modes": [
+      "ap",
+      "relay",
+      "mesh"
+    ],
+    "validate": {
+      "regex": "^$|^(\\d{1,3}\\.){3}\\d{1,3}$",
+      "maxlen": 15,
+      "regex_hint": "not an IPv4 address"
+    },
+    "desc": "First address handed out. Empty means .10 of the address above, so moving the address alone moves the pool with it. Must be in the same /24."
+  },
+  "dhcp_end": {
+    "type": "string",
+    "label": "DHCP pool end",
+    "default": "",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "conf_key": "DHCP_END",
+    "section": "network",
+    "modes": [
+      "ap",
+      "relay",
+      "mesh"
+    ],
+    "validate": {
+      "regex": "^$|^(\\d{1,3}\\.){3}\\d{1,3}$",
+      "maxlen": 15,
+      "regex_hint": "not an IPv4 address"
+    },
+    "desc": "Last address handed out. Empty means .50 of the address above. Must be in the same /24."
+  },
+  "sniffer_mode": {
+    "type": "enum",
+    "label": "Sniffer display",
+    "values": [
+      "web",
+      "local",
+      "remote"
+    ],
+    "default": "web",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "sniffer"
+    ],
+    "conf_key": "SNIFFER_MODE",
+    "conf_map": {
+      "web": "2",
+      "local": "0",
+      "remote": "1"
+    },
+    "desc": "web: live packet list + pcap download in this GUI (no X/VNC needed); local/remote: legacy wireshark window on the board's display",
+    "section": "network"
+  },
+  "mesh_mode": {
+    "type": "enum",
+    "label": "Mesh role",
+    "values": [
+      "portal",
+      "point",
+      "mesh-ap"
+    ],
+    "default": "mesh-ap",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "mesh"
+    ],
+    "conf_key": "MESH_MODE",
+    "conf_map": {
+      "portal": "0",
+      "point": "1",
+      "mesh-ap": "2"
+    },
+    "desc": "Mesh Portal (wired gateway), Mesh Point, or Mesh AP (mesh + local AP)",
+    "section": "network"
+  },
+  "mesh_peer": {
+    "type": "string",
+    "label": "Mesh peer MAC",
+    "default": "",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "mesh"
+    ],
+    "validate": {
+      "minlen": 0,
+      "maxlen": 17
+    },
+    "conf_key": "MESH_PEER",
+    "desc": "Manual peering target (empty = automatic peering)",
+    "section": "network"
+  },
+  "mesh_static_ip": {
+    "type": "string",
+    "label": "Mesh static IP",
+    "default": "",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "mesh"
+    ],
+    "group": "advanced",
+    "validate": {
+      "minlen": 0,
+      "maxlen": 15
+    },
+    "conf_key": "MESH_STATIC_IP",
+    "desc": "Static IP for the mesh interface (empty = DHCP)",
+    "section": "lan"
+  },
+  "mesh_batman": {
+    "type": "enum",
+    "label": "B.A.T.M.A.N. routing",
+    "values": [
+      "off",
+      "on"
+    ],
+    "default": "off",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "mesh"
+    ],
+    "group": "advanced",
+    "conf_key": "MESH_BATMAN",
+    "conf_map": {
+      "off": "0",
+      "on": "bat0"
+    },
+    "desc": "Route over bat0 (B.A.T.M.A.N. advanced) instead of plain mesh forwarding",
+    "section": "lan"
+  },
+  "bridge": {
+    "type": "enum",
+    "label": "Bridge mode",
+    "values": [
+      "off",
+      "on"
+    ],
+    "default": "off",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "ap",
+      "sta",
+      "relay"
+    ],
+    "desc": "L2-bridge the HaLow interface to the wired LAN (br0). The wired LAN and the air become one broadcast domain, so a station is addressed by whatever DHCP server already lives on that LAN. Off = NAT + a local DHCP server on the HaLow side, which is the setting that keeps the two networks apart.",
+    "section": "lan"
+  },
+  "bridge_eth_iface": {
+    "type": "enum",
+    "label": "Wired port for the bridge",
+    "values": [
+      "eth0"
+    ],
+    "values_from": "eth_ports",
+    "default": "eth0",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "ap",
+      "sta",
+      "relay",
+      "mesh"
+    ],
+    "conf_key": "BRIDGE_ETH_IFACE",
+    "desc": "Which wired port the bridge and NAT use. The list is this board's own wired ports; pick the one the HaLow network belongs to, so a second port stays the management port. WARNING: bridging the port this page is served on moves its address onto br0.",
+    "section": "lan"
+  },
+  "bridge_ip_mode": {
+    "type": "enum",
+    "label": "Bridge IP mode",
+    "values": [
+      "dhcp-client",
+      "static",
+      "dhcp-server"
+    ],
+    "default": "dhcp-client",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "ap",
+      "sta",
+      "relay"
+    ],
+    "conf_key": "BRIDGE_IP_MODE",
+    "conf_map": {
+      "static": "0",
+      "dhcp-client": "1",
+      "dhcp-server": "2"
+    },
+    "desc": "How br0 gets its IP when bridge mode is on. dhcp-client = the wired LAN's DHCP server addresses br0. dhcp-server = this board serves DHCP to the whole bridged segment, wired side included - use it only where nothing else serves DHCP there, or a station gets whichever of the two servers answers first.",
+    "section": "lan"
+  },
+  "bridge_flood_guard": {
+    "type": "enum",
+    "label": "Bridge air guard",
+    "values": [
+      "on",
+      "off"
+    ],
+    "default": "off",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "live",
+    "modes": [
+      "ap",
+      "sta",
+      "relay"
+    ],
+    "group": "advanced",
+    "desc": "Keep upstream-LAN flooding (unknown-unicast, multicast, broadcast) off the HaLow air; ARP for HaLow-side devices is answered by the bridge itself. Off (the default) = plain bridge flooding, as in v1.3.2. The uplink port keeps broadcast so a device behind this board can still reach a DHCP server, but a DHCP reply sent to the broadcast address is dropped - leave this off unless the HaLow side runs on static addresses. Applied live and kept across restarts.",
+    "section": "lan"
+  },
+  "country": {
+    "type": "enum",
+    "label": "Country",
+    "values": [
+      "US",
+      "JP",
+      "TW",
+      "AU",
+      "NZ",
+      "SG",
+      "K1",
+      "K2",
+      "T2",
+      "AT",
+      "BE",
+      "BG",
+      "CY",
+      "CZ",
+      "DE",
+      "DK",
+      "EE",
+      "ES",
+      "FI",
+      "FR",
+      "GB",
+      "GR",
+      "HR",
+      "HU",
+      "IE",
+      "IT",
+      "LT",
+      "LU",
+      "LV",
+      "MT",
+      "NL",
+      "PL",
+      "PT",
+      "RO",
+      "SA",
+      "SE",
+      "SI",
+      "SK"
+    ],
+    "default": "US",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "desc": "Regulatory domain. Selects the channel list, TX power limits and the hostapd/supplicant country profile - set it to the country of deployment, operating on the wrong domain is a regulatory violation. European countries (plus GB and SA) share the EU channel plan; pick the actual country, not 'EU'. Changing it restarts the whole stack and drops a channel override that the new domain does not allow.",
+    "section": "general"
+  },
+  "txpower": {
+    "type": "int",
+    "label": "TX power (dBm)",
+    "default": "auto",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "live",
+    "range": [
+      1,
+      24
+    ],
+    "dropdown": true,
+    "desc": "Transmit power: \"auto\" lets the board data file decide, a number caps it against the board data file.",
+    "section": "radio",
+    "conf_key": "MAX_TXPWR",
+    "desc_sta": "Transmit power: \"auto\" lets the board data file decide, a number caps it against the board data file. While TPC is on, the STA side power is TPC's to decide and this field is not editable.",
+    "auto_value": -1
+  },
+  "txpower_sta": {
+    "type": "int",
+    "label": "(RELAY_STA) TX power (dBm)",
+    "default": "auto",
+    "range": [
+      1,
+      24
+    ],
+    "hidden": false,
+    "modifiable": true,
+    "apply": "live",
+    "conf_key": "MAX_TXPWR_STA",
+    "section": "radio",
+    "modes": [
+      "relay"
+    ],
+    "desc": "Transmit power for the RELAY's STA side, separate from the AP side above. \"auto\" lets the board data file decide, a number caps it against the board data file. While TPC is on, the STA side power is TPC's to decide and this field is not editable. TPC is one setting for the whole board, so the AP side keeps its own number either way.",
+    "auto_value": -1
+  },
+  "guard_int": {
+    "type": "enum",
+    "label": "Guard interval",
+    "values": [
+      "auto",
+      "long",
+      "short"
+    ],
+    "default": "auto",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "live",
+    "conf_key": "GUARD_INT",
+    "desc": "PHY guard interval: auto (adaptive), long (LGI) or short (SGI); applied live",
+    "section": "radio"
+  },
+  "short_bcn_enable": {
+    "type": "enum",
+    "label": "S1G short beacon",
+    "values": [
+      "off",
+      "on"
+    ],
+    "default": "off",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "relay",
+      "mesh"
+    ],
+    "conf_key": "SHORT_BCN_ENABLE",
+    "conf_map": {
+      "on": "1",
+      "off": "0"
+    },
+    "desc": "Send S1G short beacons between long beacons (network efficiency)",
+    "section": "radio"
+  },
+  "bss_max_idle_enable": {
+    "type": "enum",
+    "label": "BSS max idle (keep-alive)",
+    "values": [
+      "on",
+      "off"
+    ],
+    "default": "on",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "relay"
+    ],
+    "conf_key": "BSS_MAX_IDLE_ENABLE",
+    "conf_map": {
+      "on": "1",
+      "off": "0"
+    },
+    "desc": "Drop stations that stay silent longer than the BSS max idle period",
+    "section": "power"
+  },
+  "bss_max_idle": {
+    "type": "int",
+    "label": "BSS max idle period (x1000 TU)",
+    "default": 1800,
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "relay"
+    ],
+    "range": [
+      1,
+      163830000
+    ],
+    "conf_key": "BSS_MAX_IDLE",
+    "desc": "Keep-alive period in 1000 TU units (1800 = ~1843 s); stations must send a frame within it",
+    "section": "power"
+  },
+  "ampdu_enable": {
+    "type": "enum",
+    "label": "AMPDU",
+    "values": [
+      "auto",
+      "manual",
+      "disable"
+    ],
+    "default": "auto",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "conf_key": "AMPDU_ENABLE",
+    "conf_map": {
+      "disable": "0",
+      "manual": "1",
+      "auto": "2"
+    },
+    "desc": "Frame aggregation: auto (BA session set up automatically), manual, or off",
+    "modes": [
+      "ap",
+      "sta",
+      "sniffer",
+      "relay",
+      "mesh"
+    ],
+    "section": "radio"
+  },
+  "cca_threshold": {
+    "type": "int",
+    "label": "CCA threshold (dBm)",
+    "default": -75,
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "range": [
+      -100,
+      -35
+    ],
+    "conf_key": "CCA_THRESHOLD",
+    "desc": "Clear-channel-assessment energy threshold",
+    "modes": [
+      "sta",
+      "sniffer",
+      "relay",
+      "mesh"
+    ],
+    "section": "radio"
+  },
+  "channel_manager": {
+    "type": "enum",
+    "label": "Channel manager",
+    "values": [
+      "off",
+      "auto",
+      "monitor"
+    ],
+    "conf_map": {
+      "off": "0",
+      "auto": "1",
+      "monitor": "2"
+    },
+    "default": "off",
+    "hidden": true,
+    "modifiable": true,
+    "apply": "full-restart",
+    "conf_key": "CHANNEL_MANAGER",
+    "modes": [
+      "ap"
+    ],
+    "desc": "Automatic channel selection. auto = sweep at start, take the quietest channel, and keep scoring afterwards so a channel that goes bad is left in service. monitor = score and report but never switch. Mutually exclusive with a fixed Channel, and the firmware owns the choice in relay mode and in country K2.",
+    "section": "network"
+  },
+  "channel_manager_profile": {
+    "type": "enum",
+    "label": "Channel manager profile",
+    "values": [
+      "conservative",
+      "normal",
+      "aggressive"
+    ],
+    "conf_map": {
+      "conservative": "0",
+      "normal": "1",
+      "aggressive": "2"
+    },
+    "default": "normal",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "live",
+    "conf_key": "CHANNEL_MANAGER_PROFILE",
+    "modes": [
+      "ap"
+    ],
+    "desc": "How readily it switches: the profile sets the consecutive-sample streak required, the margin over ambient, the hold-down after a switch and the smoothing of the busy measurement.",
+    "section": "network"
+  },
+  "channel_manager_prefer_bw": {
+    "type": "enum",
+    "label": "Start-up scan bandwidth",
+    "values": [
+      "1M",
+      "2M",
+      "4M"
+    ],
+    "conf_map": {
+      "1M": "1",
+      "2M": "2",
+      "4M": "4"
+    },
+    "default": "2M",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "conf_key": "CHANNEL_MANAGER_PREFER_BW",
+    "modes": [
+      "ap"
+    ],
+    "desc": "Which bandwidth the start-up sweep measures candidates at. Asked because \"auto\" names no channel, and a named channel already carries its own bandwidth. Changing it re-runs the sweep, so the AP is off the air for its duration.",
+    "section": "network"
+  },
+  "channel_manager_dwell": {
+    "type": "int",
+    "label": "Start-up scan dwell (ms)",
+    "range": [
+      100,
+      1000
+    ],
+    "default": 300,
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "conf_key": "CHANNEL_MANAGER_DWELL",
+    "modes": [
+      "ap"
+    ],
+    "desc": "Start-up channel selection (ACS) only: how long each candidate is measured during that one sweep, before the AP goes on the air. Longer is steadier and slower to start.",
+    "section": "network"
+  },
+  "channel_manager_exclude": {
+    "type": "str",
+    "label": "Channel manager exclusions",
+    "default": "",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "conf_key": "CHANNEL_MANAGER_EXCLUDE",
+    "modes": [
+      "ap"
+    ],
+    "desc": "Candidates to keep out of the sweep, as comma-separated S1G frequencies in units of 100 kHz (e.g. 9025,9035). Empty considers them all.",
+    "section": "network"
+  },
+  "power_save": {
+    "type": "enum",
+    "label": "Power save",
+    "values": [
+      "off",
+      "deepsleep-tim",
+      "deepsleep-nontim"
+    ],
+    "default": "off",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "sta"
+    ],
+    "conf_key": "POWER_SAVE",
+    "conf_map": {
+      "off": "0",
+      "deepsleep-tim": "2",
+      "deepsleep-nontim": "3"
+    },
+    "desc": "STA power save: off (always on), deep sleep checking beacons (TIM) or without beacons (nonTIM: wakes only on TX or external interrupt)",
+    "section": "power"
+  },
+  "listen_interval": {
+    "type": "int",
+    "label": "Listen interval (BI)",
+    "default": 1000,
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "sta"
+    ],
+    "range": [
+      0,
+      65530
+    ],
+    "conf_key": "LISTEN_INTERVAL",
+    "desc": "Beacon-interval multiples between wakeups; must stay below the AP's BSS max idle time or association is rejected",
+    "section": "power"
+  },
+  "ps_timeout": {
+    "type": "string",
+    "label": "PS timeout",
+    "default": "3s",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "sta"
+    ],
+    "group": "advanced",
+    "validate": {
+      "minlen": 2,
+      "maxlen": 8
+    },
+    "conf_key": "PS_TIMEOUT",
+    "desc": "Idle time before entering power save (e.g. 3s; min 1000ms)",
+    "section": "power"
+  },
+  "sleep_duration": {
+    "type": "string",
+    "label": "Sleep duration (nonTIM)",
+    "default": "3s",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "sta"
+    ],
+    "group": "advanced",
+    "validate": {
+      "minlen": 2,
+      "maxlen": 8
+    },
+    "conf_key": "SLEEP_DURATION",
+    "desc": "Sleep length for nonTIM deep sleep (e.g. 3s; min 1000ms)",
+    "section": "power"
+  },
+  "idle_mode": {
+    "type": "enum",
+    "label": "Idle mode",
+    "values": [
+      "off",
+      "on"
+    ],
+    "default": "off",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "sta"
+    ],
+    "group": "advanced",
+    "conf_key": "IDLE_MODE",
+    "conf_map": {
+      "on": "1",
+      "off": "0"
+    },
+    "desc": "Enter nonTIM deep sleep automatically when the device is idle",
+    "section": "power"
+  },
+  "cqm_enable": {
+    "type": "enum",
+    "label": "Channel quality manager",
+    "values": [
+      "on",
+      "off"
+    ],
+    "default": "on",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "sta"
+    ],
+    "group": "advanced",
+    "conf_key": "CQM_ENABLE",
+    "conf_map": {
+      "on": "1",
+      "off": "0"
+    },
+    "desc": "Disconnect on poor channel quality (beacon loss / weak signal); off keeps the connection regardless",
+    "section": "power"
+  },
+  "beacon_bypass_enable": {
+    "type": "enum",
+    "label": "Beacon bypass",
+    "values": [
+      "off",
+      "on"
+    ],
+    "default": "off",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "sta"
+    ],
+    "group": "advanced",
+    "conf_key": "BEACON_BYPASS_ENABLE",
+    "conf_map": {
+      "on": "1",
+      "off": "0"
+    },
+    "desc": "Also receive beacons from other APs while connected",
+    "section": "power"
+  },
+  "sched_scan_enable": {
+    "type": "enum",
+    "label": "Scheduled scan",
+    "values": [
+      "off",
+      "on"
+    ],
+    "default": "off",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "sta"
+    ],
+    "group": "advanced",
+    "conf_key": "SCHED_SCAN_ENABLE",
+    "conf_map": {
+      "on": "1",
+      "off": "0"
+    },
+    "desc": "Use scheduled scan while looking for the network",
+    "section": "power"
+  },
+  "support_ch_width": {
+    "type": "enum",
+    "label": "Supported channel width",
+    "values": [
+      "1/2/4MHz",
+      "1/2MHz"
+    ],
+    "default": "1/2/4MHz",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "sta"
+    ],
+    "group": "advanced",
+    "conf_key": "SUPPORT_CH_WIDTH",
+    "conf_map": {
+      "1/2MHz": "0",
+      "1/2/4MHz": "1"
+    },
+    "desc": "Channel widths the STA advertises",
+    "section": "power"
+  },
+  "ndp_preq": {
+    "type": "enum",
+    "label": "NDP probe request",
+    "values": [
+      "off",
+      "on"
+    ],
+    "default": "off",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "sta"
+    ],
+    "group": "advanced",
+    "conf_key": "NDP_PREQ",
+    "conf_map": {
+      "on": "1",
+      "off": "0"
+    },
+    "desc": "NDP probe request for the station's scan. It carries a compressed SSID, so turning it on also switches the supplicant to a directed scan (scan_ssid=1) - one without the other does nothing. An AP always accepts NDP probe requests, whatever this says.",
+    "section": "radio"
+  },
+  "admin_password": {
+    "type": "password",
+    "label": "Admin password",
+    "default": "",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "none",
+    "validate": {
+      "minlen": 5,
+      "maxlen": 64
+    },
+    "desc": "Web GUI login password (min 5 chars)",
+    "section": "system"
+  },
+  "radio_autostart": {
+    "type": "enum",
+    "label": "Start radio at boot",
+    "values": [
+      "off",
+      "on"
+    ],
+    "default": "off",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "autostart",
+    "desc": "Whether the radio comes up on its own when the board is powered on. off leaves wlan0 down after a boot and only the Web GUI runs, so the board is reachable without transmitting; turn the stack on from the dashboard when it is needed. on restores the earlier behaviour. Either way the stack can be started and stopped at any time - this only decides what happens at power-on.",
+    "section": "system"
+  },
+  "macaddr": {
+    "type": "string",
+    "label": "MAC address override",
+    "default": "",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "group": "advanced",
+    "validate": {
+      "minlen": 0,
+      "maxlen": 17
+    },
+    "conf_key": "MACADDR",
+    "desc": "Override the flash MAC at driver load (empty = use the device's own MAC).",
+    "modes": [
+      "sta",
+      "sniffer",
+      "relay",
+      "mesh"
+    ],
+    "section": "system"
+  },
+  "relay_type": {
+    "type": "enum",
+    "label": "Relay interface roles",
+    "values": [
+      "wlan0-ap",
+      "wlan0-sta"
+    ],
+    "default": "wlan0-ap",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "relay"
+    ],
+    "conf_key": "RELAY_TYPE",
+    "conf_map": {
+      "wlan0-sta": "0",
+      "wlan0-ap": "1"
+    },
+    "desc": "Which interface plays AP: wlan0-ap (wlan0 AP / wlan1 STA) or wlan0-sta (reverse)",
+    "section": "lan"
+  },
+  "relay_nat": {
+    "type": "enum",
+    "label": "Relay NAT",
+    "values": [
+      "on",
+      "off"
+    ],
+    "default": "on",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "relay"
+    ],
+    "conf_key": "RELAY_NAT",
+    "conf_map": {
+      "on": "1",
+      "off": "0"
+    },
+    "desc": "NAT between the relay legs (off needs manual routing entries)",
+    "section": "lan"
+  },
+  "legacy_ack_enable": {
+    "type": "enum",
+    "label": "ACK mode",
+    "values": [
+      "ndp",
+      "legacy"
+    ],
+    "default": "ndp",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "group": "advanced",
+    "conf_key": "LEGACY_ACK_ENABLE",
+    "conf_map": {
+      "ndp": "0",
+      "legacy": "1"
+    },
+    "desc": "NDP ack (recommended) or legacy ack frames",
+    "modes": [
+      "sta",
+      "sniffer",
+      "relay",
+      "mesh"
+    ],
+    "section": "radio"
+  },
+  "ndp_ack_1m": {
+    "type": "enum",
+    "label": "1M NDP ACK",
+    "values": [
+      "off",
+      "on"
+    ],
+    "default": "off",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "group": "advanced",
+    "conf_key": "NDP_ACK_1M",
+    "conf_map": {
+      "on": "1",
+      "off": "0"
+    },
+    "desc": "Use 1 MHz NDP ACK on 2/4 MHz BW (throughput can drop at high MCS)",
+    "modes": [
+      "sta",
+      "sniffer",
+      "relay",
+      "mesh"
+    ],
+    "section": "radio"
+  },
+  "power_save_pretend": {
+    "type": "enum",
+    "label": "PS pretend",
+    "values": [
+      "off",
+      "on"
+    ],
+    "default": "off",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "relay"
+    ],
+    "group": "advanced",
+    "conf_key": "POWER_SAVE_PRETEND",
+    "conf_map": {
+      "on": "1",
+      "off": "0"
+    },
+    "desc": "Treat unresponsive stations as power-saving instead of dropping their frames",
+    "section": "power"
+  },
+  "eth_ip_mode": {
+    "type": "enum",
+    "label": "Ethernet IP mode",
+    "values": [
+      "dhcp",
+      "static"
+    ],
+    "default": "dhcp",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "eth-config",
+    "conf_key": "ETH_IP_MODE",
+    "group": "advanced",
+    "desc": "IPv4 of the wired management port (eth0/end0), applied via NetworkManager (dhcpcd fallback) - independent of the HaLow stack, survives reboots. WARNING: a wrong static address cuts this GUI and ssh; recovery is the serial console or DHCP re-plug. Not touched while bridge mode owns the port (use Bridge IP mode there).",
+    "section": "lan"
+  },
+  "eth_static_ip": {
+    "type": "string",
+    "label": "Ethernet static address (CIDR)",
+    "default": "",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "eth-config",
+    "conf_key": "ETH_STATIC_IP",
+    "group": "advanced",
+    "validate": {
+      "maxlen": 18
+    },
+    "desc": "e.g. 192.168.1.91/24 - used when Ethernet IP mode is static",
+    "section": "lan"
+  },
+  "eth_gateway": {
+    "type": "string",
+    "label": "Ethernet gateway",
+    "default": "",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "eth-config",
+    "conf_key": "ETH_GATEWAY",
+    "group": "advanced",
+    "validate": {
+      "maxlen": 15
+    },
+    "desc": "Default gateway for static mode (empty = no default route via ethernet)",
+    "section": "lan"
+  },
+  "eth_dns": {
+    "type": "string",
+    "label": "Ethernet DNS servers",
+    "default": "",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "eth-config",
+    "conf_key": "ETH_DNS",
+    "group": "advanced",
+    "validate": {
+      "maxlen": 64
+    },
+    "desc": "DNS for static mode, space-separated (e.g. 168.126.63.1 8.8.8.8; empty = none)",
+    "section": "lan"
+  },
+  "halow_iface": {
+    "type": "string",
+    "label": "HaLow interface",
+    "default": "auto",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "group": "advanced",
+    "validate": {
+      "minlen": 1,
+      "maxlen": 15
+    },
+    "conf_key": "HALOW_IFACE",
+    "desc": "NRC HaLow netdev: 'auto' (discovered from the driver) or an explicit name (modular stack / Unified AP only)",
+    "modes": [],
+    "section": "system"
+  },
+  "hostapd_debug": {
+    "type": "enum",
+    "label": "hostapd debug log",
+    "values": [
+      "off",
+      "on"
+    ],
+    "default": "off",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "hostapd-restart",
+    "modes": [
+      "relay"
+    ],
+    "group": "advanced",
+    "conf_key": "HOSTAPD_DEBUG",
+    "conf_map": {
+      "on": "1",
+      "off": "0"
+    },
+    "desc": "Run hostapd with -dd verbose logging",
+    "section": "system"
+  },
+  "max_cpuclock": {
+    "type": "enum",
+    "label": "Max CPU clock",
+    "values": [
+      "on",
+      "off"
+    ],
+    "default": "on",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "group": "advanced",
+    "conf_key": "MAX_CPUCLOCK",
+    "conf_map": {
+      "on": "1",
+      "off": "0"
+    },
+    "desc": "Pin the host CPU minimum clock to its maximum while the HaLow stack runs (per cpufreq policy, board-agnostic; restored on stop)",
+    "modes": [
+      "sta",
+      "sniffer",
+      "relay",
+      "mesh"
+    ],
+    "section": "system"
+  },
+  "use_eeprom_config": {
+    "type": "enum",
+    "label": "Sysconfig source",
+    "values": [
+      "flash",
+      "eeprom"
+    ],
+    "default": "flash",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "group": "advanced",
+    "conf_key": "USE_EEPROM_CONFIG",
+    "conf_map": {
+      "flash": "0",
+      "eeprom": "1"
+    },
+    "desc": "Where sysconfig & RF calibration are read from",
+    "modes": [
+      "sta",
+      "sniffer",
+      "relay",
+      "mesh"
+    ],
+    "section": "system"
+  },
+  "fw_name": {
+    "type": "string",
+    "label": "Firmware file",
+    "default": "",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "group": "advanced",
+    "validate": {
+      "minlen": 0,
+      "maxlen": 64
+    },
+    "conf_key": "FW_NAME",
+    "desc": "Firmware binary in sw/firmware/ (empty = package default uni_s1g.bin). Checked against the files present on the board.",
+    "modes": [
+      "sta",
+      "sniffer",
+      "relay",
+      "mesh"
+    ],
+    "section": "system"
+  },
+  "bd_name": {
+    "type": "string",
+    "label": "Board data file",
+    "default": "",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "group": "advanced",
+    "validate": {
+      "minlen": 0,
+      "maxlen": 64
+    },
+    "conf_key": "BD_NAME",
+    "desc": "Board data (per CH/MCS/CC TX power limits) in sw/firmware/ (empty = naming-rule default). Checked against the files present on the board.",
+    "modes": [
+      "sta",
+      "sniffer",
+      "relay",
+      "mesh"
+    ],
+    "section": "system"
+  },
+  "twt_int": {
+    "type": "int",
+    "label": "TWT wake interval (us)",
+    "default": 0,
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "ap",
+      "sta"
+    ],
+    "group": "advanced",
+    "range": [
+      0,
+      2000000000
+    ],
+    "conf_key": "TWT_INT",
+    "desc": "Target Wake Time wake interval in usec (0 = TWT off). On an AP this is the schedule it advertises to stations; on a STA it is what the station asks for. Interval, number and period are set together - leave all three at 0 to disable TWT.",
+    "section": "power"
+  },
+  "twt_num": {
+    "type": "int",
+    "label": "TWT service number",
+    "default": 0,
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "ap",
+      "sta"
+    ],
+    "group": "advanced",
+    "range": [
+      0,
+      100000
+    ],
+    "conf_key": "TWT_NUM",
+    "desc": "Number of TWT service slots in one interval (0 = TWT off). On an AP this is how many slots the scheduler divides the interval into.",
+    "section": "power"
+  },
+  "twt_sp": {
+    "type": "int",
+    "label": "TWT service period (us)",
+    "default": 0,
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "ap",
+      "sta"
+    ],
+    "group": "advanced",
+    "range": [
+      0,
+      2000000000
+    ],
+    "conf_key": "TWT_SP",
+    "desc": "Length of one TWT service period in usec (0 = TWT off) - how long a station is awake in its slot.",
+    "section": "power"
+  },
+  "twt_force_sleep": {
+    "type": "enum",
+    "label": "TWT force sleep",
+    "values": [
+      "off",
+      "on"
+    ],
+    "default": "off",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "sta"
+    ],
+    "group": "advanced",
+    "conf_key": "TWT_FORCE_SLEEP",
+    "conf_map": {
+      "on": "1",
+      "off": "0"
+    },
+    "desc": "Force sleep at the end of each TWT service period",
+    "section": "power"
+  },
+  "twt_num_in_group": {
+    "type": "int",
+    "label": "TWT max STAs per slot",
+    "default": 1,
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "ap"
+    ],
+    "group": "advanced",
+    "range": [
+      1,
+      1000
+    ],
+    "conf_key": "TWT_NUM_IN_GROUP",
+    "desc": "Maximum stations the AP schedules into a single TWT slot. Only takes effect once interval/number/period are set.",
+    "section": "power"
+  },
+  "twt_algo": {
+    "type": "enum",
+    "label": "TWT scheduler",
+    "values": [
+      "balanced",
+      "fcfs"
+    ],
+    "default": "balanced",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "modes": [
+      "ap"
+    ],
+    "group": "advanced",
+    "conf_key": "TWT_ALGO",
+    "conf_map": {
+      "balanced": "0",
+      "fcfs": "1"
+    },
+    "desc": "How the AP assigns stations to TWT slots: balanced spreads them evenly, fcfs fills each slot in arrival order. Only takes effect once interval/number/period are set.",
+    "section": "power"
+  },
+  "beacon_int": {
+    "type": "int",
+    "label": "Beacon interval (TU)",
+    "default": 100,
+    "hidden": false,
+    "modifiable": true,
+    "apply": "hostapd-restart",
+    "modes": [
+      "ap",
+      "relay"
+    ],
+    "range": [
+      15,
+      1000
+    ],
+    "desc": "802.11ah beacon interval in TU. Longer intervals save station power but slow discovery and re-sync.",
+    "section": "network"
+  },
+  "http_port": {
+    "type": "int",
+    "label": "GUI port",
+    "default": 8080,
+    "hidden": true,
+    "modifiable": true,
+    "apply": "none",
+    "range": [
+      1024,
+      65535
+    ],
+    "desc": "halow-webd HTTP redirect port (restart halow-webd.service to apply)",
+    "section": "system"
+  },
+  "https_port": {
+    "type": "int",
+    "label": "GUI HTTPS port",
+    "default": 8443,
+    "hidden": true,
+    "modifiable": true,
+    "apply": "none",
+    "range": [
+      1024,
+      65535
+    ],
+    "desc": "halow-webd HTTPS port (restart halow-webd.service to apply)",
+    "section": "system"
+  },
+  "tpc": {
+    "type": "enum",
+    "label": "Transmit power control",
+    "values": [
+      "off",
+      "on"
+    ],
+    "conf_map": {
+      "off": "0",
+      "on": "1"
+    },
+    "default": "off",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "conf_key": "TPC",
+    "desc": "An AP only reports the feedback it measures. A station with TPC on acts on that feedback and moves its own transmit power.",
+    "section": "radio",
+    "modes": [
+      "ap",
+      "sta",
+      "relay",
+      "mesh"
+    ]
+  },
+  "eu_en_300_220": {
+    "type": "enum",
+    "label": "EU EN 300 220 pause",
+    "values": [
+      "off",
+      "on"
+    ],
+    "conf_map": {
+      "off": "0",
+      "on": "1"
+    },
+    "default": "off",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "conf_key": "EU_EN_300_220",
+    "desc": "Insert the 100 ms pause before transmit that EN 300 220 asks for. It costs throughput, so it is off unless the deployment is certified against that standard.",
+    "section": "radio"
+  },
+  "bw_4m_2m_prim_loc": {
+    "type": "enum",
+    "label": "4M operation, 2M primary",
+    "values": [
+      "off",
+      "lower",
+      "upper"
+    ],
+    "conf_map": {
+      "off": "-1",
+      "lower": "0",
+      "upper": "1"
+    },
+    "default": "off",
+    "hidden": false,
+    "modifiable": true,
+    "apply": "full-restart",
+    "conf_key": "BW_4M_2M_PRIM_LOC",
+    "desc": "Run a 4 MHz BSS with a 2 MHz primary and no 1 MHz frames. Set the same value on the AP and on every station, or they will not hear each other.",
+    "section": "radio"
+  }
+}

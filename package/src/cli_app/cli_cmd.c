@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2020-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+/*
  * MIT License
  *
  * Copyright (c) 2020 Newracom, Inc.
@@ -50,6 +56,8 @@ static int cmd_show(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_test(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_gpio(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_hlog(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_dump(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_exit(cmd_tbl_t *t, int argc, char *argv[]);
 
 /*******************************************************************************
@@ -66,6 +74,7 @@ static int cmd_show_mac(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_signal(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_maxagg(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_duty(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_self_configuration(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_autotxgain(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_cal_use(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_recovery(cmd_tbl_t *t, int argc, char *argv[]);
@@ -77,15 +86,16 @@ static int cmd_show_sta(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_ap(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_tx_time(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_cca_thresh(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_show_cca(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_app_version(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_xtal_status(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_clock_count(cmd_tbl_t *t, int argc, char *argv[]);
-static int cmd_optimal_channel(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_sysconfig(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_bcn_mcs(cmd_tbl_t *t, int argc, char *argv[]);
 
 static int cmd_show_rc(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_show_rc_param(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_show_rc_profile(cmd_tbl_t *t, int argc, char *argv[]);
 
 /* 2nd sub commands on show */
 static int cmd_show_stats_simple_rx(cmd_tbl_t *t, int argc, char *argv[]);
@@ -110,8 +120,10 @@ static int cmd_set_guard_interval(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_max_aggregation(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_ackmode(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_rate_control(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_set_rc_profile(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_duty(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_duty_debug(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_set_en300_220(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_txpwr(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_wakeup_pin(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_wakeup_source(cmd_tbl_t *t, int argc, char *argv[]);
@@ -139,24 +151,28 @@ static int cmd_set_scan_period(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_mesh_rssi_threshold(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_mgmt_mcs10_permit(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_1m_prim_loc(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_set_tpc(cmd_tbl_t *t, int argc, char *argv[]);
 
 
 /*******************************************************************************
 * sub commands on set and show
 *******************************************************************************/
-static int cmd_self_configuration(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_raw_tunnel(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_chmgr(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_set_rc_param(cmd_tbl_t *t, int argc, char *argv[]);
 
 /*******************************************************************************
 * sub commands on test
 *******************************************************************************/
 /* 1st sub commands on test */
+static int cmd_test_crash(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_test_mcs(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_test_country(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_test_cont_tx(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_test_freq_bw(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_test_single_tx(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_test_length(cmd_tbl_t *t, int argc, char *argv[]);
+static int cmd_test_scrambler(cmd_tbl_t *t, int argc, char *argv[]);
 static int cmd_test_sine_tx(cmd_tbl_t *t, int argc, char *argv[]);
 
 /*******************************************************************************
@@ -200,13 +216,11 @@ static int count[MAX_CONECTION_NUM];
 static int show_signal_periodic_timer;
 static int show_signal_try_number;
 const char response_timeout_str[] = "Failed";
+const char no_channel_msg[] = "There are no channels available";
 const char no_self_conf_str[] = "no_self_conf";
 const char not_matched_cc_str[] = "not_matched_country";
 const char not_matched_cc_msg[] = "is not the currently set country";
-const char not_supported_cc_str[] = "not_supported_country";
-const char not_supported_cc_msg[] = "is not supported country";
 const char no_channel_cc_str[] = "no_channels_available";
-const char no_channel_msg[] = "There are no channels available";
 
 /*******************************************************************************
 * command list
@@ -220,6 +234,9 @@ cmd_tbl_t cli_list[] = {
 	{ "set", cmd_set, "set command","set subcommand [value1]",  "", 1},
 	{ "test", cmd_test, "test command","test subcommand [value1]",  "", 1},
 	{ "gpio", cmd_gpio, "gpio command","gpio subcommand [value1]",  "", 1},
+	{ "hlog", cmd_hlog, "firmware log delivered to the host (no UART needed)",
+		"hlog {show|dump|reset|mode <off|flight|stream>|level <lvl>|cli <on|off>}",  "", 0},
+	{ "dump", cmd_dump, "take a firmware core dump (no crash)", "dump run",  "", 0},
 	{ "exit", cmd_exit, "exit program", "exit",  "", 0},
 };
 
@@ -235,7 +252,8 @@ cmd_tbl_t show_sub_list[] = {
 	{ "signal", cmd_show_signal, "show rssi/snr, {options} are only valid in cli_app prompt", "show signal {start|stop} [interval] [number]",  SHOW_SIGNAL_KEY_LIST, 0},
 	{ "maxagg", cmd_show_maxagg, "show max aggregation", "show maxagg",  "", 0},
 	{ "duty", cmd_show_duty, "show duty cycle", "show duty",  SHOW_DUTY_KEY_LIST, 0},
-	{ "autotxgain", cmd_show_autotxgain, "show autotxgain", "show autotxgain",  SHOW_AUTOTXGAIN_KEY_LIST, 0},
+	{ "self_config", cmd_self_configuration, "show self_config", "show self_config {Country(KR,US...)} {BW} {dwell time}", "", 0},
+	{ "autotxgain", cmd_show_autotxgain, "show autotxgain", "show autotxgain or show autotxgain {vif_id}",  SHOW_AUTOTXGAIN_KEY_LIST, 0},
 	{ "cal_use", cmd_show_cal_use, "show cal_use", "show cal_use",  SHOW_CAL_USE_KEY_LIST, 0},
 	{ "recovery", cmd_show_recovery, "show recovery", "show recovery stats",  "", 0},
 	{ "detection", cmd_show_detection, "show detection", "show detection stats",  "", 0},
@@ -246,12 +264,14 @@ cmd_tbl_t show_sub_list[] = {
 	{ "ap", cmd_show_ap, "show ap information", "show ap [vif_id]",  "", 0},
 	{ "tx_time", cmd_show_tx_time, "show tx_time about {CS time} {Blank time}", "show tx_time", SHOW_TX_TIME_KEY_LIST, 0},
 	{ "cca_thresh", cmd_show_cca_thresh, "show cca_thresh(unit: dBm)", "show cca_thresh", "", 0},
-	{ "self_config", cmd_self_configuration, "show self_config", "show self_config {Country(KR,US...)} {BW} {dwell time}", "", 0},
-	{ "optimal_channel", cmd_optimal_channel, "show optimal_channel", "show optimal_channel {Country(US,NZ...)} {BW} {dwell time}", "", 0},
+	{ "cca", cmd_show_cca, "read channel CCA busy ratio(%)", "show cca [s1g_ch_index] (no arg: current ch; dwell fixed 300 ms)", "", 0},
+	{ "chmgr", cmd_chmgr, "show channel manager status", "show chmgr", "", 0},
+	{ "raw", cmd_raw_tunnel, "show RAW status", "show raw [vif_id]", "", 0},
 	{ "app_version", cmd_show_app_version, "show app version", "show app_version",  "", 0},
 	{ "sysconfig", cmd_show_sysconfig, "show sysconfig", "show sysconfig",  "", 0},
 	{ "rc", cmd_show_rc, "show tx's retry mcs info, maxtp/tp2/maxp/lowest","show rc [vif_id] [aid]", SHOW_RC_KEY_LIST, 0},
 	{ "rc_param", cmd_show_rc_param, "show configured rate control parameter", "show rc_param", SHOW_RC_PARAM_KEY_LIST, 0},
+	{ "rc_profile", cmd_show_rc_profile, "show rate control profile", "show rc_profile", SHOW_RC_PROFILE_KEY_LIST, 0},
 	{ "xtal_status", cmd_show_xtal_status, "show xtal_status", "show xtal_status",  SHOW_XTAL_STATUS_LIST, 0},
 	{ "clock_count", cmd_show_clock_count, "modem get_clock_count {xtal|lpo}", "show clock_count {xtal|lpo}",  SHOW_CLOCK_COUNT_LIST, 0},
 	{ "bcn_mcs", cmd_show_bcn_mcs, "show beacon mcs", "show bcn_mcs [vif_id]",  "", 0},
@@ -261,13 +281,17 @@ cmd_tbl_t show_sub_list[] = {
 
 /* sub command list on set */
 cmd_tbl_t set_sub_list[] = {
+	{ "chmgr", cmd_chmgr, "set channel manager (boot ACS + DCS)", "set chmgr {off|auto|monitor} [profile=0|1|2]\n          [cc=CC] [bw=1|2|4] [dwell=<ms>] [exclude=<s1g,..>]\nset chmgr log {0|1}", "", 0},
+	{ "raw", cmd_raw_tunnel, "set RAW (on/off/force/group)", "set raw {on|off|force <us>} [group=<start>,<end>]", "", 0},
 	{ "gi", cmd_set_guard_interval, "set guard interval", "set gi {auto|short|long} {vif_id(0|1)}", "", 0},
 	{ "maxagg", cmd_set_max_aggregation, "set aggregation", "set maxagg {AC(0-3)} {Max(0-8(1Mhz),0-16(2,4Mhz),0:off)} {size:default=0}", SET_MAXAGG_KEY_LIST, 0},
 	{ "ack_mode", cmd_set_ackmode, "set ack mode", "set ack_mode {no|ndp|normal|show}", SET_ACK_MODE_LIST, 0},
 	{ "rc", cmd_set_rate_control, "set rate control", "set rc {on|off} [vif_id] [mode]", SET_RC_KEY_LIST, 0},
+	{ "rc_profile", cmd_set_rc_profile, "set rate control profile", "set rc_profile {default|stable}", "", 0},
 	{ "duty", cmd_set_duty, "set duty cycle", "set duty {on|off} {duty window} {tx duration}", SET_DUTY_KEY_LIST, 0},
 	{ "duty_debug", cmd_set_duty_debug, "set debug mode for duty cycle", "set duty_debug {on|off}", "",0},
-	{ "txpwr", cmd_set_txpwr, "set tx power and type", "set txpwr {auto|limit|fixed} {value} ", SET_TXPWR_KEY_LIST, 0},
+	{ "en300_220", cmd_set_en300_220, "set EU EN 300 220 feature", "set en300_220 {show | pause {on|off} | afa {on|off}}", SET_EN300_220_KEY_LIST, 0},
+	{ "txpwr", cmd_set_txpwr, "set tx power and type", "set txpwr {auto|limit|fixed} {value} or set txpwr {vif_id} {auto|limit|fixed} {value} ", SET_TXPWR_KEY_LIST, 0},
 	{ "wakeup_pin", cmd_set_wakeup_pin, "set wakeup pin for deepsleep", "set wakeup_pin {Debounce(on|off)} {PIN Number(0~31)}", SET_WAKEUP_PIN_KEY_LIST, 0},
 	{ "wakeup_source", cmd_set_wakeup_source, "set wakeup source for deepsleep", "set wakeup_source rtc gpio hspi", SET_WAKEUP_SOURCE_KEY_LIST, 0},
 	{ "addba", cmd_set_addba, "set addba tid / send addba with mac address", "set addba [tid] {mac address}", "", 0},
@@ -276,7 +300,6 @@ cmd_tbl_t set_sub_list[] = {
 	{ "cts", cmd_set_cts, "set cts on/off", "set cts {adaptive cts:on, legacy cts:off}", "", 0},
 	{ "tx_time", cmd_set_tx_time, "set tx_time about {CS time} {Blank time}", "set tx_time {CS time} {Blank time}", SET_TXTIME_KEY_LIST, 0},
 	{ "drop", cmd_set_drop_frame, "set drop frames from configured mac address", "set drop [vif id] [mac address] {on|off}", SET_DROP_KEY_LIST, 0},
-	{ "self_config", cmd_self_configuration, "set self_config", "set self_config {Country(KR,US...)} {BW} {dwell time}", "", 0},
 	{ "tsensor", cmd_set_temp_sensor, "set temperature sensor scl, sda", "set tsensor [GPIO for SCL] [GPIO for SDA]", "", 0},
 	{ "cca_thresh", cmd_set_cca_thresh, "set cca threshold", "set cca_thresh {CCA threshold(unit:dBm, -100~-35)}", "", 0},
 	{ "color", cmd_set_color, "set color", "set color {value}", "", 0},
@@ -295,18 +318,22 @@ cmd_tbl_t set_sub_list[] = {
 	{ "scan_period", cmd_set_scan_period, "set scan_period", "set scan_period [dwell time (min 20ms)]", "", 0},
 	{ "mesh_rssi_threshold", cmd_set_mesh_rssi_threshold, "set mesh_rssi_threshold ", "set mesh_rssi_threshold {-120~-10dBm}", "", 0},
 	{ "prim_loc", cmd_set_1m_prim_loc, "set 1M primary location for sniffer ", "set prim_loc [0|1|2|3]", "", 0},
+	{ "tpc", cmd_set_tpc, "set tpc  ", "set tpc {on [-f]|off|show|stats [clear|on|off]}", "", 0},
 
 	{ "mgmt_mcs10_permit", cmd_set_mgmt_mcs10_permit, "set mgmt_mcs10_permit", "set mgmt_mcs10_permit {on/off}", "", 2},
 };
 
 /* sub command list on test */
 cmd_tbl_t test_sub_list[] = {
+	{ "crash", cmd_test_crash, "crash on purpose, to test crash reporting",
+	  "test crash {assert|undef|badptr}", "", 0},
 	{ "mcs", cmd_test_mcs, "test mcs", "test mcs [mcs index]", "", 0},
 	{ "country", cmd_test_country, "test country", "test country [country code]", "", 0},
 	{ "cont_tx", cmd_test_cont_tx, "test continuous tx", "test cont_tx {stop} | {freq(in MHz)} {bw(1m|2m|4m)} {mcs} {txpwr} {wave type: 0(cont)|1(duty 99%)}", "", 0},
 	{ "freq_bw", cmd_test_freq_bw, "test freq_bw", "test freq_bw {freq(in MHz)} {bw(1m|2m|4m)}", "", 0},
 	{ "single_tx", cmd_test_single_tx, "test single tx", "test single_tx {remaining} | {stop} | {freq(in MHz)} {bw(1m|2m|4m)} {mcs} {txpwr} {packet count}", "", 0},
 	{ "length", cmd_test_length, "test length", "test length [length]", "", 0},
+	{ "scrambler", cmd_test_scrambler, "test scrambler", "test scrambler {show|0|1} (1=force seed 0 for M2B)", "", 2},
 	{ "sine_tx", cmd_test_sine_tx, "test sine wave tx", "test sine_tx {stop} | {freq(MHz)} {bw(1m|2m|4m)} {txpwr}", "", 0},
 };
 
@@ -586,6 +613,46 @@ static int cmd_memory(cmd_tbl_t *t, int argc, char *argv[])
 		}
 	}else{
 		ret = CMD_RET_FAILURE;
+	}
+	return ret;
+}
+
+/*******************************************************************************
+* hlog command (firmware log delivered to the host over the host interface)
+*******************************************************************************/
+static int cmd_dump(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret;
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	char param[NRC_MAX_CMDLINE_SIZE];
+
+	snprintf(param, sizeof(param), "dump %s", argv[1]);
+	ret = run_shell_cmd(t, argc, argv, param, response, sizeof(response));
+	if (ret == CMD_RET_SUCCESS) {
+		printf("%s", response);
+	}
+	return ret;
+}
+
+static int cmd_hlog(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_FAILURE;
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	char param[NRC_MAX_CMDLINE_SIZE];
+
+	/*
+	 * The firmware side is a single command with its own verb dispatcher,
+	 * so pass the line through as typed instead of modelling every verb
+	 * in a sub-list here. run_shell_cmd() appends from argv[2] onwards,
+	 * so argv[1] has to be folded into the base string; argv[] is padded
+	 * with empty strings past argc, which leaves a bare "hlog" for the
+	 * firmware to answer with its usage.
+	 */
+	snprintf(param, sizeof(param), "hlog %s", argv[1]);
+
+	ret = run_shell_cmd(t, argc, argv, param, response, sizeof(response));
+	if (ret == CMD_RET_SUCCESS) {
+		printf("%s", response);
 	}
 	return ret;
 }
@@ -1023,6 +1090,103 @@ static int cmd_show_duty(cmd_tbl_t *t, int argc, char *argv[])
 	return ret;
 }
 
+static int cmd_self_configuration(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_SUCCESS;
+	char param[NRC_MAX_CMDLINE_SIZE];
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	int netlink_ret = 0;
+	unsigned short best_freq = 0;
+	unsigned short best_cca = 0;
+	unsigned short best_nons1g_freq_idx = 0;
+	char best_bw=0;
+	int result_idx_ptr =0;
+
+	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
+	memset(param, 0x0, sizeof(param));
+
+	if(argc == 5) {
+		if (atoi(argv[3]) && atoi(argv[3]) != 1 &&
+			atoi(argv[3]) != 2 && atoi(argv[3]) != 4) {
+			printf("BW should be one of 0, 1, 2 or 4.\n");
+			return CMD_RET_FAILURE;
+		} else {
+			sprintf(param, "show self_config %s %s %s -sr", argv[2], argv[3], argv[4]);
+		}
+	} else
+		return CMD_RET_FAILURE;
+
+	netlink_ret = netlink_send_data(NL_SHELL_RUN_RAW, param, response);
+
+	if (!netlink_ret) {
+		if (strcmp(response, response_timeout_str) == 0) {
+			ret = CMD_RET_RESPONSE_TIMEOUT;
+		} else if (strcmp(response, no_self_conf_str) == 0) {
+			printf("%s\n", no_self_conf_str);
+			ret = CMD_RET_FAILURE;
+		} else if (strcmp(response, not_matched_cc_str) == 0) {
+			printf("[%s] %s\n", argv[2], not_matched_cc_msg);
+			ret = CMD_RET_FAILURE;
+		} else if (strcmp(response, no_channel_cc_str) == 0) {
+			printf("%s\n", no_channel_msg);
+			ret = CMD_RET_FAILURE;
+		} else {
+			printf("\tFrequency\tCCA\tbandwidth\n");
+			memcpy(&best_freq, &response[result_idx_ptr], sizeof(best_freq));
+			result_idx_ptr+=2;
+			memcpy(&best_cca, &response[result_idx_ptr], sizeof(best_cca));
+			result_idx_ptr+=2;
+			memcpy(&best_bw, &response[result_idx_ptr], sizeof(best_bw));
+			result_idx_ptr+=1;
+			memcpy(&best_nons1g_freq_idx, &response[result_idx_ptr], sizeof(best_nons1g_freq_idx));
+			result_idx_ptr+=2;
+
+			for ( ; result_idx_ptr< NL_MSG_MAX_RESPONSE_SIZE ; ) {
+				unsigned short freq =0 ;
+				unsigned short cca =0 ;
+				char bw=0;
+
+				if (!response[result_idx_ptr])
+					break;
+
+				memcpy(&freq, &response[result_idx_ptr], sizeof(freq));
+				result_idx_ptr+=2;
+
+				memcpy(&cca, &response[result_idx_ptr], sizeof(cca));
+				result_idx_ptr+=2;
+
+				memcpy(&bw, &response[result_idx_ptr], sizeof(bw));
+				result_idx_ptr+=1;
+
+				// Outputs only the results for the preferred bandwidth.
+				if (atoi(argv[3]) == 1) {
+					if (bw == 0)
+						printf("--\t%4.1f MHz\t%3.1f%%\t%dM\n", freq/10.0, cca/10.0, (bw == 0)?1:(bw == 1)?2:4);
+				} else if (atoi(argv[3]) == 2) {
+					if (bw == 1)
+						printf("--\t%4.1f MHz\t%3.1f%%\t%dM\n", freq/10.0, cca/10.0, (bw == 0)?1:(bw == 1)?2:4);
+				} else if (atoi(argv[3]) == 4) {
+					if (bw == 2)
+						printf("--\t%4.1f MHz\t%3.1f%%\t%dM\n", freq/10.0, cca/10.0, (bw == 0)?1:(bw == 1)?2:4);
+				} else {
+					printf("--\t%4.1f MHz\t%3.1f%%\t%dM\n", freq/10.0, cca/10.0, (bw == 0)?1:(bw == 1)?2:4);
+				}
+			}
+
+			printf("[Optimal freq.]\t%4.1f MHz (CCA:%3.1f%%, BW:%dM)\n", \
+				best_freq/10.0, best_cca/10.0,
+				(best_bw == 0) ? 1 : (best_bw == 1) ? 2 : 4);
+			printf("[*]ch_num:%d\n",best_nons1g_freq_idx );
+
+			ret = CMD_RET_SUCCESS;
+		}
+	} else {
+		ret = CMD_RET_FAILURE;
+	}
+	return ret;
+}
+
+
 static int cmd_show_autotxgain(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_SUCCESS;
@@ -1393,6 +1557,23 @@ static int cmd_show_cca_thresh(cmd_tbl_t *t, int argc, char *argv[])
 	return ret;
 }
 
+static int cmd_show_cca(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_SUCCESS;
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+
+	if (argc < 2 || argc > 3) {
+		printf("Usage: %s\n", t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	ret = run_shell_cmd(t, argc, argv, "show cca", response, sizeof(response));
+	if (ret == CMD_RET_SUCCESS) {
+		printf("%s\n", response);
+	}
+	return ret;
+}
+
 static int cmd_show_rc(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_SUCCESS;
@@ -1425,6 +1606,21 @@ static int cmd_show_rc_param(cmd_tbl_t *t, int argc, char *argv[])
 	ret = run_shell_cmd(t, argc, argv, "show rc_param", response, sizeof(response));
 	if(ret == CMD_RET_SUCCESS){
 		cmd_result_parse((char*)t->key_list, response, display_per_line);
+	}
+	return ret;
+}
+
+static int cmd_show_rc_profile(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_SUCCESS;
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	const int display_per_line= 1;
+
+	ret = run_shell_cmd(t, argc, argv, "show rc_profile", response, sizeof(response));
+	if(ret == CMD_RET_SUCCESS){
+		cmd_result_parse((char*)t->key_list, response, display_per_line);
+	} else if(ret == CMD_RET_FAILURE){
+		printf("rc profile: not supported by this FW\n");
 	}
 	return ret;
 }
@@ -1684,168 +1880,74 @@ static void cmd_show_mac_result_display(char *response, int dir, int type)
 		free(key_list_temp);
 }
 
-static int cmd_self_configuration(cmd_tbl_t *t, int argc, char *argv[])
+static int cmd_chmgr(cmd_tbl_t *t, int argc, char *argv[])
 {
-	int ret = CMD_RET_SUCCESS;
 	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-	unsigned short best_freq = 0;
-	unsigned short best_cca = 0;
-	unsigned short best_nons1g_freq_idx = 0;
-	char best_bw=0;
-	int result_idx_ptr =0;
+	int i, netlink_ret;
+	size_t len = 0;
+
+	if (argc < 2)
+		return CMD_RET_FAILURE;
 
 	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
 	memset(param, 0x0, sizeof(param));
 
-	if(argc == 5) {
-		if (atoi(argv[3]) && atoi(argv[3]) != 1 &&
-			atoi(argv[3]) != 2 && atoi(argv[3]) != 4) {
-			printf("BW should be one of 0, 1, 2 or 4.\n");
+	for (i = 0; i < argc; i++) {
+		len += snprintf(param + len, sizeof(param) - len, "%s%s",
+				i ? " " : "", argv[i]);
+		if (len >= sizeof(param) - 1)
 			return CMD_RET_FAILURE;
-		} else {
-			sprintf(param, "show self_config %s %s %s -sr", argv[2], argv[3], argv[4]);
-		}
-	} else
-		return CMD_RET_FAILURE;
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN_RAW, param, response);
-
-	if (!netlink_ret) {
-		if (strcmp(response, response_timeout_str) == 0) {
-			ret = CMD_RET_RESPONSE_TIMEOUT;
-		} else if (strcmp(response, no_self_conf_str) == 0) {
-			printf("%s\n", no_self_conf_str);
-			ret = CMD_RET_FAILURE;
-		} else if (strcmp(response, not_matched_cc_str) == 0) {
-			printf("[%s] %s\n", argv[2], not_matched_cc_msg);
-			ret = CMD_RET_FAILURE;
-		} else if (strcmp(response, no_channel_cc_str) == 0) {
-			printf("%s\n", no_channel_msg);
-			ret = CMD_RET_FAILURE;
-		} else {
-			printf("\tFrequency\tCCA\tbandwidth\n");
-			memcpy(&best_freq, &response[result_idx_ptr], sizeof(best_freq));
-			result_idx_ptr+=2;
-			memcpy(&best_cca, &response[result_idx_ptr], sizeof(best_cca));
-			result_idx_ptr+=2;
-			memcpy(&best_bw, &response[result_idx_ptr], sizeof(best_bw));
-			result_idx_ptr+=1;
-			memcpy(&best_nons1g_freq_idx, &response[result_idx_ptr], sizeof(best_nons1g_freq_idx));
-			result_idx_ptr+=2;
-
-			for ( ; result_idx_ptr< NL_MSG_MAX_RESPONSE_SIZE ; ) {
-				unsigned short freq =0 ;
-				unsigned short cca =0 ;
-				char bw=0;
-
-				if (!response[result_idx_ptr])
-					break;
-
-				memcpy(&freq, &response[result_idx_ptr], sizeof(freq));
-				result_idx_ptr+=2;
-
-				memcpy(&cca, &response[result_idx_ptr], sizeof(cca));
-				result_idx_ptr+=2;
-
-				memcpy(&bw, &response[result_idx_ptr], sizeof(bw));
-				result_idx_ptr+=1;
-
-				// Outputs only the results for the preferred bandwidth.
-				if (atoi(argv[3]) == 1) {
-					if (bw == 0)
-						printf("--\t%4.1f MHz\t%3.1f%%\t%dM\n", freq/10.0, cca/10.0, (bw == 0)?1:(bw == 1)?2:4);
-				} else if (atoi(argv[3]) == 2) {
-					if (bw == 1)
-						printf("--\t%4.1f MHz\t%3.1f%%\t%dM\n", freq/10.0, cca/10.0, (bw == 0)?1:(bw == 1)?2:4);
-				} else if (atoi(argv[3]) == 4) {
-					if (bw == 2)
-						printf("--\t%4.1f MHz\t%3.1f%%\t%dM\n", freq/10.0, cca/10.0, (bw == 0)?1:(bw == 1)?2:4);
-				} else {
-					printf("--\t%4.1f MHz\t%3.1f%%\t%dM\n", freq/10.0, cca/10.0, (bw == 0)?1:(bw == 1)?2:4);
-				}
-			}
-
-			printf("[Optimal freq.]\t%4.1f MHz (CCA:%3.1f%%, BW:%dM)\n", \
-				best_freq/10.0, best_cca/10.0,
-				(best_bw == 0) ? 1 : (best_bw == 1) ? 2 : 4);
-			printf("[*]ch_num:%d\n",best_nons1g_freq_idx );
-
-			ret = CMD_RET_SUCCESS;
-		}
-	} else {
-		ret = CMD_RET_FAILURE;
 	}
-	return ret;
+
+	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
+	if (netlink_ret)
+		return CMD_RET_FAILURE;
+	if (strcmp(response, response_timeout_str) == 0)
+		return CMD_RET_RESPONSE_TIMEOUT;
+
+	printf("%s\n", response);
+	/* "n/a" is a build without the manager, "fail(n)" a refused set. */
+	if (strstr(response, "chmgr: n/a") || strstr(response, "chmgr: fail("))
+		return CMD_RET_FAILURE;
+	/* `set` answers "chmgr: ...", `show` a bare status or param line: the
+	 * status reply spends every byte on the score table, so it has no tag. */
+	if (strstr(response, "chmgr: ") || strstr(response, "state=") ||
+	    strstr(response, "param profile="))
+		return CMD_RET_SUCCESS;
+	return CMD_RET_FAILURE;
 }
 
-static int cmd_optimal_channel(cmd_tbl_t *t, int argc, char *argv[])
+static int cmd_raw_tunnel(cmd_tbl_t *t, int argc, char *argv[])
 {
-	int ret = CMD_RET_SUCCESS;
 	char param[NRC_MAX_CMDLINE_SIZE];
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
-	int netlink_ret = 0;
-	unsigned short best_freq = 0;
-	unsigned short best_cca = 0;
-	unsigned short best_nons1g_freq_idx = 0;
-	char best_bw=0;
-	int result_idx_ptr =0;
+	int i, netlink_ret;
+	size_t len = 0;
+
+	if (argc < 2)
+		return CMD_RET_FAILURE;
 
 	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
 	memset(param, 0x0, sizeof(param));
 
-	if (argc == 5) {
-		if (!strcmp(argv[2], "CN")) {
-			printf("CN is not supported.\n");
+	for (i = 0; i < argc; i++) {
+		len += snprintf(param + len, sizeof(param) - len, "%s%s",
+				i ? " " : "", argv[i]);
+		if (len >= sizeof(param) - 1)
 			return CMD_RET_FAILURE;
-		} else if (atoi(argv[3]) != 1 &&
-			atoi(argv[3]) != 2 &&
-			atoi(argv[3]) != 4) {
-			printf("BW should be one of 1, 2 or 4.\n");
-			return CMD_RET_FAILURE;
-		} else {
-			sprintf(param, "show optimal_channel %s %s %s -sr", argv[2], argv[3], argv[4]);
-		}
-	} else
-		return CMD_RET_FAILURE;
-
-	netlink_ret = netlink_send_data(NL_SHELL_RUN_RAW, param, response);
-
-	if (!netlink_ret) {
-		if (strcmp(response, response_timeout_str) == 0) {
-			ret = CMD_RET_RESPONSE_TIMEOUT;
-		} else if (strcmp(response, no_self_conf_str) == 0) {
-			printf("%s\n", no_self_conf_str);
-			ret = CMD_RET_FAILURE;
-		} else if (strcmp(response, not_matched_cc_str) == 0) {
-			printf("[%s] %s\n", argv[2], not_matched_cc_msg);
-			ret = CMD_RET_FAILURE;
-		} else if (strcmp(response, not_supported_cc_str) == 0) {
-			printf("[%s] %s\n", argv[2], not_supported_cc_msg);
-			ret = CMD_RET_FAILURE;
-		} else if (strcmp(response, no_channel_cc_str) == 0) {
-			printf("%s\n", no_channel_msg);
-			ret = CMD_RET_FAILURE;
-		} else {
-			memcpy(&best_freq, &response[result_idx_ptr], sizeof(best_freq));
-			result_idx_ptr+=2;
-			memcpy(&best_cca, &response[result_idx_ptr], sizeof(best_cca));
-			result_idx_ptr+=2;
-			memcpy(&best_bw, &response[result_idx_ptr], sizeof(best_bw));
-			result_idx_ptr+=1;
-			memcpy(&best_nons1g_freq_idx, &response[result_idx_ptr], sizeof(best_nons1g_freq_idx));
-			result_idx_ptr+=2;
-
-			printf("[Optimal freq.]\t%4.1f MHz (CCA:%3.1f%%, BW:%dM, Legacy channel number:%d)\n", \
-				best_freq/10.0, best_cca/10.0, (best_bw == 0)?1:(best_bw == 1)?2:4, best_nons1g_freq_idx);
-
-			ret = CMD_RET_SUCCESS;
-		}
-	} else {
-		ret = CMD_RET_FAILURE;
 	}
-	return ret;
+
+	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
+	if (netlink_ret)
+		return CMD_RET_FAILURE;
+	if (strcmp(response, response_timeout_str) == 0)
+		return CMD_RET_RESPONSE_TIMEOUT;
+
+	printf("%s\n", response);
+	if (strstr(response, "raw:") == NULL)
+		return CMD_RET_FAILURE;      /* FW without RAW support */
+	return CMD_RET_SUCCESS;
 }
 
 static int cmd_show_app_version(cmd_tbl_t *t, int argc, char *argv[])
@@ -2037,6 +2139,45 @@ static int cmd_set_ackmode(cmd_tbl_t *t, int argc, char *argv[])
 	return ret;
 }
 
+/* 'set rc profile <v>' and 'set rc_profile <v>' both land here: show spells it
+ * as one token, so users type that form for set too */
+static int set_rc_profile(const char *val)
+{
+	char param[NRC_MAX_CMDLINE_SIZE];
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	int netlink_ret;
+
+	if (!val || (strcmp(val, "default") != 0 && strcmp(val, "stable") != 0)) {
+		printf("usage : set rc_profile {default|stable}\n");
+		return CMD_RET_FAILURE;
+	}
+	memset(response, 0x0, NL_MSG_MAX_RESPONSE_SIZE);
+	memset(param, 0x0, sizeof(param));
+	sprintf(param, "set rc profile %s -sr", val);
+	netlink_ret = netlink_send_data(NL_SHELL_RUN, param, response);
+	/* report what actually failed: the FW answers "fail" for its own
+	 * argument check too, so it is not proof of an old FW */
+	if (netlink_ret) {
+		printf("rc profile: netlink error %d\n", netlink_ret);
+		return CMD_RET_FAILURE;
+	}
+	if (strcmp(response, response_timeout_str) == 0) {
+		printf("rc profile: no response from FW\n");
+		return CMD_RET_RESPONSE_TIMEOUT;
+	}
+	if (strcmp(response, "fail") == 0) {
+		printf("rc profile: FW rejected '%s'\n", param);
+		return CMD_RET_FAILURE;
+	}
+	printf("rc profile: %s\n", response);
+	return CMD_RET_SUCCESS;
+}
+
+static int cmd_set_rc_profile(cmd_tbl_t *t, int argc, char *argv[])
+{
+	return set_rc_profile(argc > 2 ? argv[2] : NULL);
+}
+
 static int cmd_set_rate_control(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
@@ -2047,6 +2188,12 @@ static int cmd_set_rate_control(cmd_tbl_t *t, int argc, char *argv[])
 	int mode = 0;
 	int display_per_line = 3;
 	int print_line_len = 72;
+
+	/* moved to its own command so it matches 'show rc_profile' */
+	if (argc > 2 && strcmp(argv[2], "profile") == 0) {
+		printf("use : set rc_profile {default|stable}\n");
+		return CMD_RET_FAILURE;
+	}
 
 	if (strcmp(argv[2], "on") != 0 && strcmp(argv[2], "off") != 0) {
 		printf("usage : %s\n", (char*)t->usage);
@@ -2323,14 +2470,65 @@ static int cmd_set_duty_debug(cmd_tbl_t *t, int argc, char *argv[])
 	return ret;
 }
 
+static int cmd_set_en300_220(cmd_tbl_t *t, int argc, char *argv[])
+{
+	int ret = CMD_RET_SUCCESS;
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	const int display_per_line = 1;
+
+	if (argc > 2 && strcmp(argv[2], "show") == 0) {
+		ret = run_shell_cmd(t, argc, argv, "set en300_220", response, sizeof(response));
+		if (ret == CMD_RET_SUCCESS) {
+			cmd_result_parse((char*)t->key_list, response, display_per_line);
+		}
+		return ret;
+	}
+
+	if (argc < 4 ||
+		(strcmp(argv[2], "pause") != 0 && strcmp(argv[2], "afa") != 0) ||
+		(strcmp(argv[3], "on") != 0 && strcmp(argv[3], "off") != 0)) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	ret = run_shell_cmd(t, argc, argv, "set en300_220", response, sizeof(response));
+	if (ret == CMD_RET_SUCCESS) {
+		if (strcmp(argv[2], "pause") == 0)
+			printf("EN 300 220 pause (100ms pre-TX) : %s\n", argv[3]);
+		else
+			printf("EN 300 220 AFA (not implemented) : %s\n", argv[3]);
+	} else {
+		/* only failure path on target: master is off */
+		printf("failed: en300_220 must be on (module param eu_en_300_220)\n");
+	}
+	return ret;
+}
+
 static int cmd_set_txpwr(cmd_tbl_t *t, int argc, char *argv[])
 {
 	int ret = CMD_RET_FAILURE;
 	char response[NL_MSG_MAX_RESPONSE_SIZE];
 	const int display_per_line= 3;
-	int type = 0, txpwr = 0;
+	int vif_id = 0;
+	int type = 3;
+	bool old_cli = false;
 
-	if (strcmp(argv[2], "limit") != 0 && strcmp(argv[2], "fixed") != 0 && strcmp(argv[2], "auto") != 0) {
+	if (strcmp(argv[2], "0") != 0 && strcmp(argv[2], "1") != 0) {
+		/* backward compatibility */
+		/* set txpwr [fixed|limit|auto] [value] */
+		old_cli = true;
+		type = 2;
+	} else {
+		/* set txpwr [vif_id] [fixed|limit|auto] [value] */
+		vif_id = atoi(argv[2]);
+	}
+
+	if(vif_id != 0 && vif_id != 1) {
+		printf("Usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	if (strcmp(argv[type], "limit") != 0 && strcmp(argv[type], "fixed") != 0 && strcmp(argv[type], "auto") != 0) {
 		printf("usage : %s\n", (char*)t->usage);
 		return CMD_RET_FAILURE;
 	}
@@ -2604,11 +2802,81 @@ static int cmd_set_1m_prim_loc(cmd_tbl_t *t, int argc, char *argv[])
 	return run_shell_cmd(t, argc, argv, "set prim_loc", NULL, 0);
 }
 
+/* 'set tpc stats': the FW dump does not fit one WIM response (452 B), so
+ * fetch it page by page like show mac stats does and print each as it comes.
+ * The FW answers a page past the end with plain "success". */
+static int cmd_set_tpc_stats_show(void)
+{
+	char param[NRC_MAX_CMDLINE_SIZE];
+	char response[NL_MSG_MAX_RESPONSE_SIZE];
+	int page, nTry;
+
+	for (page = 0; page < 8; page++) {
+		snprintf(param, sizeof(param), "set tpc stats -sr %d", page);
+		nTry = 100;
+		while (nTry--) {
+			memset(response, 0x0, sizeof(response));
+			if (netlink_send_data(NL_SHELL_RUN, param, response) == 0 &&
+			    strcmp(response, response_timeout_str) != 0)
+				break;
+			cli_delay_ms(COMMAND_DELAY_MS);
+		}
+		if (nTry < 0 || strcmp(response, "fail") == 0)
+			return CMD_RET_FAILURE;
+		if (response[0] == '\0' || strcmp(response, "success") == 0)
+			break;			/* no more pages */
+		printf("%s", response);
+	}
+	return CMD_RET_SUCCESS;
+}
+
+static int cmd_set_tpc(cmd_tbl_t *t, int argc, char *argv[])
+{
+	if (argc < 3) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	if (strcmp(argv[2], "stats") == 0) {
+		if (argc > 3)		/* clear | on | off */
+			return run_shell_cmd(t, argc, argv, "set tpc", NULL, 0);
+		return cmd_set_tpc_stats_show();
+	}
+
+	if (strcmp(argv[2], "show") == 0) {
+		char response[NL_MSG_MAX_RESPONSE_SIZE];
+		int ret = run_shell_cmd(t, argc, argv, "set tpc", response,
+					sizeof(response));
+		if (ret == CMD_RET_SUCCESS)
+			cmd_result_parse(SET_TPC_SHOW_KEY_LIST, response, 1);
+		return ret;
+	}
+
+	if (strcmp(argv[2], "on") != 0 && strcmp(argv[2], "off") != 0) {
+		printf("usage : %s\n", (char*)t->usage);
+		return CMD_RET_FAILURE;
+	}
+
+	return run_shell_cmd(t, argc, argv, "set tpc", NULL, 0);
+}
 
 
 /*******************************************************************************
 * sub commands on test
 *******************************************************************************/
+static int cmd_test_crash(cmd_tbl_t *t, int argc, char *argv[])
+{
+	/* The firmware stops answering the moment this lands, so the usual
+	 * request/response is bound to time out. Say what to expect rather
+	 * than let it look like the command failed. */
+	printf("crashing the firmware on purpose (%s). It will stop responding;\n"
+	       "the log and the core dump are delivered on the way down.\n"
+	       "Reload the firmware afterwards to bring the link back.\n",
+	       argv[2]);
+
+	return run_shell_direct_cmd("test crash %s", argv[2]);
+}
+
 static int cmd_test_mcs(cmd_tbl_t *t, int argc, char *argv[])
 {
 	return run_shell_direct_cmd("test mcs %s", argv[2]);
@@ -2757,6 +3025,11 @@ static int cmd_show_rx_cnt_clear(cmd_tbl_t *t, int argc, char *argv[])
 	return ret;
 }
 
+
+static int cmd_test_scrambler(cmd_tbl_t *t, int argc, char *argv[])
+{
+	return run_shell_direct_cmd("test scrambler %s", argv[2]);
+}
 
 /*******************************************************************************
 * sub commands on gpio

@@ -1,0 +1,17 @@
+[Unit]
+Description=HaLow hostapd (supervised, conf rendered by halow-wlan.service)
+After=halow-wlan.service
+BindsTo=halow-wlan.service
+PartOf=halow.target
+
+[Service]
+Type=exec
+EnvironmentFile=/etc/halow/halow.conf
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/usr/lib/halow/hostapd-run.sh
+ExecStartPost=/usr/lib/halow/gen-ap-env.sh
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=halow.target

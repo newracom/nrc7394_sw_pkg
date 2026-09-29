@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2016-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: ISC
+ */
+
+/*
  * Copyright (c) 2016-2019 Newracom, Inc.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
@@ -220,7 +226,7 @@ static struct ieee80211_channel nrc_channels_5ghz[] = {
 #endif /* CONFIG_S1G_CHANNEL */
 
 #if !defined(CONFIG_S1G_CHANNEL)
-static struct ieee80211_rate nrc_rates[] = {
+static struct ieee80211_rate nrc_rates_2ghz[] = {
 	/* 11b rates */
 	{ .bitrate = 10 },
 	{ .bitrate = 20, .flags = IEEE80211_RATE_SHORT_PREAMBLE },
@@ -235,6 +241,17 @@ static struct ieee80211_rate nrc_rates[] = {
 	{ .bitrate = 240 },
 
 	/* README it is removed for 11N Certification 5.2.34 */
+	{ .bitrate = 360 },
+	{ .bitrate = 480 },
+	{ .bitrate = 540 }
+};
+
+static struct ieee80211_rate nrc_rates_5ghz[] = {
+	{ .bitrate = 60 },
+	{ .bitrate = 90 },
+	{ .bitrate = 120 },
+	{ .bitrate = 180 },
+	{ .bitrate = 240 },
 	{ .bitrate = 360 },
 	{ .bitrate = 480 },
 	{ .bitrate = 540 }
@@ -811,12 +828,15 @@ void nrc_assoc_h_phymode(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 {
 	enum { PHY_HT_NONE = 0, PHY_11B = 1, PHY_HT_MF = 3};
 	static char * const phymodestr[] = {"HT-none", "11b", "", "HT"};
+	struct nrc *nw = hw->priv;
 	u8 phymode;
 
 #ifdef CONFIG_SUPPORT_LINK_STA
 	/* HT_MF, non-HT, 11b */
 	if (sta->deflink.ht_cap.ht_supported)
 		phymode = PHY_HT_MF;
+	else if (nw->band == NL80211_BAND_5GHZ)
+		phymode = PHY_HT_NONE;
 	else if (sta->deflink.supp_rates[NL80211_BAND_2GHZ] >> 4)
 		phymode = PHY_HT_NONE;
 	else
@@ -825,6 +845,8 @@ void nrc_assoc_h_phymode(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 	/* HT_MF, non-HT, 11b */
 	if (sta->ht_cap.ht_supported)
 		phymode = PHY_HT_MF;
+	else if (nw->band == NL80211_BAND_5GHZ)
+		phymode = PHY_HT_NONE;
 	else if (sta->supp_rates[NL80211_BAND_2GHZ] >> 4)
 		phymode = PHY_HT_NONE;
 	else
@@ -1137,8 +1159,7 @@ static int nrc_mac_add_interface(struct ieee80211_hw *hw,
 	u64 now = 0, diff = 0;
 
 #ifdef CONFIG_SUPPORT_AFTER_KERNEL_3_0_36
-	/* 20190724, jmjang, CB#8781, Gerrit #2200
-	 *	This feature is opposite to legacy power save in host mode and
+	/*	This feature is opposite to legacy power save in host mode and
 	 *  so this feature is blocked.
 	 *	Consideration: There is an WFA test case about WMM-PS but
 	 *  it will be related to Wi-Fi P2P
@@ -3906,7 +3927,8 @@ static u32 nrc_get_expected_throughput(struct ieee80211_sta *sta)
 		struct wim *wim = (struct wim *)skb_resp->data;
 		struct wim_tlv *tlv = (struct wim_tlv *)(wim + 1);
 		struct nrc_tx_stats* tx_stats = (struct nrc_tx_stats*) tlv->v;
-		nrc_common_dbg("mcs:%d bw:%d gi:%d", tx_stats->mcs, tx_stats->bw, tx_stats->gi);
+		/* mac dbg: called per sinfo query, too noisy for the default mask */
+		nrc_mac_dbg("mcs:%d bw:%d gi:%d", tx_stats->mcs, tx_stats->bw, tx_stats->gi);
 		if (tx_stats->bw < 3 && tx_stats->mcs < 11) {
 			nrc_stats_update_tx_stats(tx_stats);
 		}
@@ -5485,8 +5507,8 @@ int nrc_register_hw(struct nrc *nw)
 				continue;
 			sband->channels = nrc_channels_5ghz;
 			sband->n_channels = ARRAY_SIZE(nrc_channels_5ghz);
-			sband->bitrates = nrc_rates + 4;
-			sband->n_bitrates = ARRAY_SIZE(nrc_rates) - 4;
+			sband->bitrates = nrc_rates_5ghz;
+			sband->n_bitrates = ARRAY_SIZE(nrc_rates_5ghz);
 			sband->band = NL80211_BAND_5GHZ;
 			sband->ht_cap.ht_supported = true;
 			sband->ht_cap.cap = IEEE80211_HT_CAP_SGI_20;
@@ -5513,8 +5535,8 @@ int nrc_register_hw(struct nrc *nw)
 				continue;
 			sband->channels = nrc_channels_2ghz;
 			sband->n_channels = ARRAY_SIZE(nrc_channels_2ghz);
-			sband->bitrates = nrc_rates;
-			sband->n_bitrates = ARRAY_SIZE(nrc_rates);
+			sband->bitrates = nrc_rates_2ghz;
+			sband->n_bitrates = ARRAY_SIZE(nrc_rates_2ghz);
 			sband->band = NL80211_BAND_2GHZ;
 			sband->ht_cap.ht_supported = true;
 			sband->ht_cap.cap = IEEE80211_HT_CAP_SGI_20;
@@ -5610,16 +5632,24 @@ int nrc_register_hw(struct nrc *nw)
 	/* REGULATORY_WIPHY_SELF_MANAGED requires explicitly setting the
 	 * regulatory domain after hw registration. Without this,
 	 * nl80211_get_reg_do() triggers a WARN_ON due to NULL regdomain.
-	 * Use _sync_rtnl version so channels are available immediately when
+	 * Use sync version so channels are available immediately when
 	 * hostapd queries hw_features — the async version schedules a
 	 * workqueue that may run after hostapd has already started.
-	 * _sync_rtnl requires the caller to hold the RTNL lock. */
+	 * Before kernel 5.12: _sync_rtnl requires the caller to hold RTNL.
+	 * From kernel 5.12: renamed to _sync, acquires RTNL internally. */
+#if KERNEL_VERSION(5, 12, 0) <= NRC_TARGET_KERNEL_VERSION
+	ret = regulatory_set_wiphy_regd_sync(hw->wiphy,
+		(struct ieee80211_regdomain *)&mac80211_regdom);
+	if (ret)
+		dev_warn(nw->dev, "regulatory_set_wiphy_regd_sync failed (%d)\n", ret);
+#else
 	rtnl_lock();
 	ret = regulatory_set_wiphy_regd_sync_rtnl(hw->wiphy,
 		(struct ieee80211_regdomain *)&mac80211_regdom);
 	rtnl_unlock();
 	if (ret)
 		dev_warn(nw->dev, "regulatory_set_wiphy_regd_sync_rtnl failed (%d)\n", ret);
+#endif
 
 	dev_info(nw->dev, "registered network device %s\n", wiphy_name(hw->wiphy));
 

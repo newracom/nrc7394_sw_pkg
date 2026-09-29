@@ -1,7 +1,13 @@
+/*
+ * SPDX-FileCopyrightText: 2023-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: ISC
+ */
+
 /dts-v1/;
 /plugin/;
 / {
-	compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709", "brcm,bcm2837", "brcm,bcm2711"; /* RPI3, 4 */
+	compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709", "brcm,bcm2837", "brcm,bcm2711", "brcm,bcm2712"; /* RPI3, 4, 5 */
 
 	fragment@0 {
 		target = <&spidev0>; /* or &spi0 */
@@ -20,8 +26,30 @@
 				reg = <0>;  				/* CS Number */
 				interrupt-parent = <&gpio>;
 				interrupts = <5 4>;  			/* GPIO Number */ /* IRQ_TYPE_LEVEL_HIGH */
+				pinctrl-names = "default";
+				pinctrl-0 = <&nrc_irq_pins>;
 				spi-max-frequency = <20000000>;		/* Max Freq */
 				reset-gpios = <&gpio 6 1>;      /* Reset GPIO Number */ /* GPIO_ACTIVE_LOW */
+			};
+		};
+	};
+	fragment@2 {
+		/*
+		 * Claim the EIRQ GPIO as an input pin at probe time. On the
+		 * Pi 5 (RP1) each pad has an Input Enable bit that is OFF by
+		 * default; without this claim the IRQ logic reads the pin as
+		 * a constant 0, so a LEVEL_HIGH trigger never fires. Applying
+		 * this pinctrl state turns Input Enable on. Pull-down keeps the
+		 * active-high line low while it floats (e.g. during chip reset)
+		 * to avoid spurious interrupts. Harmless on Pi 3/4 (BCM283x),
+		 * where brcm,function/brcm,pull use the same encoding.
+		 */
+		target = <&gpio>;
+		__overlay__ {
+			nrc_irq_pins: nrc_irq_pins {
+				brcm,pins = <5>;	/* GPIO Number */
+				brcm,function = <0>;	/* input */
+				brcm,pull = <1>;	/* pull-down */
 			};
 		};
 	};

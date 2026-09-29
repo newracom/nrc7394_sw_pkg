@@ -1,0 +1,168 @@
+# SPDX-FileCopyrightText: Copyright (c) 2016-2026 Newracom, Inc.
+# SPDX-License-Identifier: ISC
+#
+# Licensing for files that cannot contain a comment header.
+# Files that CAN hold a header are governed by the header inside them
+# (precedence = "closest" is the default and is not overridden here).
+version = 1
+
+# Firmware images.
+# Proprietary binaries executed by the NRC7394 device, not by the host kernel.
+# Newracom code is under LicenseRef-NewracomFirmware; the statically linked
+# third-party components keep their own licenses, so the expression is a
+# conjunction. Composition was established from the linker map of the firmware
+# build - see LICENSING.md section 3.1 and the SBOM under sbom/.
+[[annotations]]
+path = ["**/*.bin"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = [
+  "Copyright (c) 2016-2026 Newracom, Inc.",
+  "Copyright (C) 2017 Amazon.com, Inc. or its affiliates.",
+  "Copyright (c) 2009-2020 Arm Limited.",
+  "Copyright (c) 2014-2019 Marco Paland, PALANDesign Hannover",
+  "Copyright (c) 2009 Jouni Malinen <j@w1.fi>",
+  "Copyright (c) 1994-2009 Red Hat, Inc. and other newlib contributors",
+  "Copyright (C) Free Software Foundation, Inc.",
+]
+SPDX-License-Identifier = "LicenseRef-NewracomFirmware AND MIT AND Apache-2.0 AND BSD-3-Clause AND LicenseRef-Newlib AND (GPL-3.0-or-later WITH GCC-exception-3.1)"
+
+# Board data. Newracom-generated RF calibration and regulatory tables.
+# No third-party content.
+[[annotations]]
+path = ["**/*.dat"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright (c) 2016-2026 Newracom, Inc."
+SPDX-License-Identifier = "LicenseRef-NewracomFirmware"
+
+# Prebuilt kernel module - compiled form of package/src/nrc/ (ISC).
+[[annotations]]
+path = "**/*.ko"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright (c) 2016-2026 Newracom, Inc."
+SPDX-License-Identifier = "ISC"
+
+# Prebuilt CLI application - compiled form of package/src/cli_app/ (MIT).
+# The package ships the same binary twice (md5 identical); both copies must
+# carry the licence of their source, not the ISC of the scripts around them.
+[[annotations]]
+path = [
+  "package/evk/binary/cli_app",
+  "package/evk/sw_pkg/nrc_pkg/script/cli_app",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright (c) 2020-2026 Newracom, Inc."
+SPDX-License-Identifier = "MIT"
+
+# Prebuilt channel manager daemon - compiled form of package/src/chmgrd/ (ISC).
+# New in v1.3.3, also shipped twice.
+[[annotations]]
+path = [
+  "package/evk/binary/chmgrd",
+  "package/evk/sw_pkg/nrc_pkg/script/chmgrd",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright (c) 2023-2026 Newracom, Inc."
+SPDX-License-Identifier = "ISC"
+
+# Documentation.
+[[annotations]]
+path = ["package/doc/**", "release_note/**", "**/*.pdf"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright (c) 2016-2026 Newracom, Inc."
+SPDX-License-Identifier = "LicenseRef-NewracomDoc"
+
+# Bundled Wireshark packages. Corresponding source is published with the
+# release; see the sniffer README.
+[[annotations]]
+path = "**/*.deb"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright (c) The Wireshark developers"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+# Third-party drivers. Declared here rather than by editing the files, so that
+# the upstream copyright notices are left exactly as received.
+[[annotations]]
+path = "package/src/ft232h-usb-spi/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright (C) 2017-2018 DENX Software Engineering, Anatolij Gustschin"
+SPDX-License-Identifier = "GPL-2.0-only"
+
+[[annotations]]
+path = "package/src/ch347-usb-spi/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright (C) 2023 Nanjing Qinheng Microelectronics Co., Ltd. (WCH)"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+# Repository-level documentation and metadata.
+[[annotations]]
+path = ["README.md", "README-H2E.md", "LICENSE", "LICENSING.md", ".gitignore"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright (c) 2016-2026 Newracom, Inc."
+SPDX-License-Identifier = "LicenseRef-NewracomDoc"
+
+# Configuration files, plain-text notes and build metadata.
+# precedence = "closest" so that any file which already carries its own SPDX
+# header keeps it (for example package/src/nrc/Makefile); this block only fills
+# in the files that have none.
+[[annotations]]
+path = [
+  "**/*.conf",
+  "**/*.txt",
+  "**/*.lds",
+  "**/README",
+  "**/VERSION-SDK",
+  "**/CONFIG_IP",
+  "**/Makefile",
+  "**/Kconfig",
+  "package/ChangeLog",
+]
+precedence = "closest"
+SPDX-FileCopyrightText = "Copyright (c) 2023-2026 Newracom, Inc."
+SPDX-License-Identifier = "ISC"
+
+# Prebuilt rpcapd - the remote capture daemon from libpcap, shipped beside the
+# NewraPeek sniffer helper. Third-party, distributed as an ARM binary only.
+# Identified from the strings in the binary ("libpcap version 1.0.0",
+# "libpcap/pcap-remote.c").
+[[annotations]]
+path = "**/rpcapd"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright (c) The Tcpdump Group; Copyright (c) 1993-1997 The Regents of the University of California"
+SPDX-License-Identifier = "BSD-3-Clause"
+
+# Channel manager daemon and firmware updater: sources, prebuilt binaries and
+# their sample configuration. Added in v1.3.3.
+# precedence = "closest" so a source file that carries its own header keeps it.
+[[annotations]]
+path = ["package/src/chmgrd/**", "package/src/nrc_fw_updater/**"]
+precedence = "closest"
+SPDX-FileCopyrightText = "Copyright (c) 2023-2026 Newracom, Inc."
+SPDX-License-Identifier = "ISC"
+
+# systemd units and udev rules, web UI assets, log helper, and the remaining
+# repository metadata. Added in v1.3.3.
+[[annotations]]
+path = [
+  "package/evk/sw_pkg/nrc_pkg/systemd/**",
+  "package/evk/sw_pkg/nrc_pkg/web/**",
+  "package/evk/sw_pkg/nrc_pkg/loghub/**",
+  "package/evk/sw_pkg/INSTALL.md",
+  "package/src/nrc/.gitignore",
+  "package/src/nrc-dkms/newracom.env",
+]
+precedence = "closest"
+SPDX-FileCopyrightText = "Copyright (c) 2023-2026 Newracom, Inc."
+SPDX-License-Identifier = "ISC"
+
+# Generated SBOM artefacts. Factual compliance data - kept permissive so that
+# customers can redistribute it inside their own compliance documentation.
+# precedence = "override", not "closest": the generated SBOM files carry the
+# copyright and licence of every component as DATA (CycloneDX "copyright" and
+# "expression" fields). With "closest" the scanner reads those as the file's own
+# tags, finds a copyright but no licence, and reports the SBOM itself as
+# unlicensed (measured 2026-09-24: 404/405).
+[[annotations]]
+path = "sbom/**"
+precedence = "override"
+SPDX-FileCopyrightText = "Copyright (c) 2023-2026 Newracom, Inc."
+SPDX-License-Identifier = "ISC"

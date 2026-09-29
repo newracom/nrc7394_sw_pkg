@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: 2016-2026 Newracom, Inc.
+ *
+ * SPDX-License-Identifier: ISC
+ */
+
+/*
  * Copyright (c) 2016-2019 Newracom, Inc.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
@@ -216,6 +222,13 @@ module_param(ndp_ack_1m, bool, 0600);
 MODULE_PARM_DESC(ndp_ack_1m, "Enable 1M NDP ACK");
 
 /**
+ * Set EU EN 300 220 mode (100ms pre-TX pause, EU country only)
+ */
+int eu_en_300_220 = 0;
+module_param(eu_en_300_220, int, 0600);
+MODULE_PARM_DESC(eu_en_300_220, "Enable EU EN 300 220 mode");
+
+/**
  * Enable HSPI init
  */
 bool enable_hspi_init = false;
@@ -336,6 +349,13 @@ module_param(support_ch_width, int, 0600);
 MODULE_PARM_DESC(support_ch_width, "Supported CH width (0:1/2MHz Support, 1:1/2/4Mhz Support");
 
 /**
+ * TPC (Transmit Power Control) (0:disable 1:enable)
+ */
+bool tx_power_control = 0;
+module_param(tx_power_control, bool, 0600);
+MODULE_PARM_DESC(tx_power_control, "Support TX Power Control");
+
+/**
  * Set rate control mode
  */
 uint8_t ap_rc_mode = 0xff;
@@ -395,6 +415,11 @@ int loc_1m_primary_ch = -1;
 module_param(loc_1m_primary_ch, int, 0600);
 MODULE_PARM_DESC(loc_1m_primary_ch, "Set location of 1MHz primary channel");
 
+/* 4M op as 2M primary, forbid 1M frames (-1:off, 0:lower 2M, 1:upper 2M) */
+int bw_4m_2m_prim_loc = -1;
+module_param(bw_4m_2m_prim_loc, int, 0600);
+MODULE_PARM_DESC(bw_4m_2m_prim_loc, "4M op as 2M primary, no 1M (-1:off, 0:lower, 1:upper)");
+
 /**
  * TWT 
  */
@@ -426,6 +451,13 @@ MODULE_PARM_DESC(twt_num_in_group, "TWT Max STA Number in a Group (only AP)");
 uint8_t twt_algo;
 module_param(twt_algo, byte, S_IRUSR | S_IWUSR);
 MODULE_PARM_DESC(twt_algo, "TWT scheduling algorithm (only AP, 0:Balanced, 1:FCFS)");
+
+/**
+ * RAW enable (AP only)
+ */
+bool raw = 0;
+module_param(raw, bool, S_IRUSR | S_IWUSR);
+MODULE_PARM_DESC(raw, "RAW Enable (AP only)");
 
 static bool has_macaddr_param(uint8_t *dev_mac)
 {
@@ -640,6 +672,7 @@ static int nrc_fw_start(struct nrc *nw)
 	} else {
 		p->twt_wake_interval = 0;
 	}
+	p->raw = raw;
 
 	p->auth_control_enable = set_auth_control[0]?true:false;
 	p->auth_control_slot = set_auth_control[1];
@@ -647,9 +680,13 @@ static int nrc_fw_start(struct nrc *nw)
 	p->auth_control_ti_min = set_auth_control[2] |(set_auth_control[4] == 10? 1<<7:0);
 	p->auth_control_ti_max = set_auth_control[3];
 	p->sub_xtal_bypass = sub_xtal_bypass;
+	p->tx_power_control = tx_power_control;
 
 	// location of 1MHz primary channel for AP
 	p->loc_1m_prim_ch = loc_1m_primary_ch;
+
+	// 4M op as 2M primary, no 1M (-1:off)
+	p->bw_4m_2m_prim_loc = bw_4m_2m_prim_loc;
 
 	skb_resp = nrc_xmit_wim_request_wait(nw, skb_req, (WIM_RESP_TIMEOUT * 70));
 	if (skb_resp)

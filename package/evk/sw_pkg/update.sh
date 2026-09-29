@@ -1,7 +1,16 @@
 #!/bin/bash
 
-# Get the login ID
-login_id=$(whoami)
+# SPDX-FileCopyrightText: 2023-2026 Newracom, Inc.
+#
+# SPDX-License-Identifier: ISC
+
+# Everything below addresses files relative to this script (./nrc_pkg,
+# ../../src) - anchor there first so invoking it from any directory works.
+cd "$(dirname "$0")" || exit 1
+
+# Get the login ID - under sudo the package belongs to the invoking user,
+# not root (install.sh resolves it the same way)
+login_id=${SUDO_USER:-$(whoami)}
 
 # Determine the user's home directory
 user_home=$(getent passwd "$login_id" | cut -d: -f6)
@@ -52,10 +61,12 @@ backup_pkg() {
 
 # Function to perform copy new package
 copy_pkg() {
-    # Copy new package
+    # Copy new package. -T so an existing target directory (an old install
+    # without VERSION-SDK, which backup_pkg does not move away) is overlaid
+    # in place instead of gaining a nested nrc_pkg/nrc_pkg copy.
     echo "Copy new package"
     echo "apply nrc_pkg"
-    cp -r ./nrc_pkg/ "$user_home/nrc_pkg/"
+    cp -rT ./nrc_pkg "$user_home/nrc_pkg" || display_error "package copy failed"
 }
 
 # Function to check and build nrc.ko and cli_app
@@ -80,19 +91,22 @@ check_and_build_driver() {
     elif [ "$model_number" == "7394" ] && [ "$kernel_version" == "5.10.17" ]; then
         echo "Model is nrc7394 and kernel version is 5.10.17. No need to build nrc.ko and cli_app."
     else
-        # Build nrc.ko
+        # Build nrc.ko. Every cd/make/cp is checked: an unguarded cd here
+        # used to make the builds run in whatever directory we happened to
+        # be in, and a failed build was reported as a successful update
+        # while the stale binary stayed behind.
         echo "Building nrc.ko"
-        cd ../../src/nrc
+        cd ../../src/nrc || display_error "driver source not found"
         make clean
-        make
-        cp nrc.ko "$user_home/nrc_pkg/sw/driver/"
+        make || display_error "nrc.ko build failed"
+        cp nrc.ko "$user_home/nrc_pkg/sw/driver/" || display_error "nrc.ko copy failed"
 
         # Build cli_app
         echo "Building cli_app"
-        cd ../../src/cli_app
+        cd ../../src/cli_app || display_error "cli_app source not found"
         make clean
-        make
-        cp cli_app "$user_home/nrc_pkg/script/"
+        make || display_error "cli_app build failed"
+        cp cli_app "$user_home/nrc_pkg/script/" || display_error "cli_app copy failed"
     fi
 }
 
