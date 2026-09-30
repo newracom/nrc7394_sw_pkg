@@ -1,0 +1,452 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "creationInfo": {
+    "created": "2026-09-30T00:08:29Z",
+    "creators": [
+      "Organization: Anchore, Inc",
+      "Tool: syft-1.23.1"
+    ],
+    "licenseListVersion": "3.25"
+  },
+  "dataLicense": "CC0-1.0",
+  "documentNamespace": "https://anchore.com/syft/unknown-source-type/unknown-b901da98-7761-482c-bda5-1926d7a23eaf",
+  "hasExtractedLicensingInfos": [
+    {
+      "extractedText": "newlib-multiple",
+      "licenseId": "LicenseRef-newlib-multiple"
+    }
+  ],
+  "name": "unknown",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-Package-UnknownPackage-ch347-usb-spi-3d7e17c73256ef91",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:generic/ch347-usb-spi@1.0",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "GPL-2.0-or-later",
+      "name": "ch347-usb-spi",
+      "sourceInfo": "acquired package info from the following paths: ",
+      "supplier": "NOASSERTION",
+      "versionInfo": "1.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-UnknownPackage-chmgrd-0cf176ad0fe07ae3",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:generic/newracom/chmgrd@1.3.3",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "ISC",
+      "name": "chmgrd",
+      "sourceInfo": "acquired package info from the following paths: ",
+      "supplier": "NOASSERTION",
+      "versionInfo": "1.3.3"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-UnknownPackage-cli-app-b8b6726fc82a38cd",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:generic/newracom/cli_app@1.3.3",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "name": "cli_app",
+      "sourceInfo": "acquired package info from the following paths: ",
+      "supplier": "NOASSERTION",
+      "versionInfo": "1.3.3"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-UnknownPackage-cmsis-core-a81c3159d9515c2e",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:generic/arm/cmsis-core",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "Apache-2.0",
+      "name": "cmsis-core",
+      "sourceInfo": "acquired package info from the following paths: ",
+      "supplier": "NOASSERTION",
+      "versionInfo": "5.x"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-UnknownPackage-freertos-kernel-d765bbc411277628",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:generic/amazon/freertos-kernel@10.0.0",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "name": "freertos-kernel",
+      "sourceInfo": "acquired package info from the following paths: ",
+      "supplier": "NOASSERTION",
+      "versionInfo": "10.0.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-UnknownPackage-ft232h-usb-spi-8c709086b7c17db5",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:generic/ft232h-usb-spi",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "GPL-2.0-only",
+      "name": "ft232h-usb-spi",
+      "sourceInfo": "acquired package info from the following paths: ",
+      "supplier": "NOASSERTION",
+      "versionInfo": "unknown"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-UnknownPackage-libgcc-e2918fb623b97d39",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:generic/gnu/libgcc@10.3.1",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "(GPL-3.0-or-later WITH GCC-exception-3.1)",
+      "name": "libgcc",
+      "sourceInfo": "acquired package info from the following paths: ",
+      "supplier": "NOASSERTION",
+      "versionInfo": "10.3.1"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-UnknownPackage-mpaland-printf-4f4a14250354dca9",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:github/mpaland/printf",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "name": "mpaland-printf",
+      "sourceInfo": "acquired package info from the following paths: ",
+      "supplier": "NOASSERTION",
+      "versionInfo": "unknown"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-UnknownPackage-newlib-a7814e367b9a0b9a",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:generic/newlib",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-2-Clause AND BSD-3-Clause AND LicenseRef-newlib-multiple",
+      "name": "newlib",
+      "sourceInfo": "acquired package info from the following paths: ",
+      "supplier": "NOASSERTION",
+      "versionInfo": "gcc-arm-none-eabi-10.3-2021.10"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-UnknownPackage-nrc-924d3bc17aa0c2da",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:generic/newracom/nrc@1.3.3",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "ISC",
+      "name": "nrc",
+      "sourceInfo": "acquired package info from the following paths: ",
+      "supplier": "NOASSERTION",
+      "versionInfo": "1.3.3"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-UnknownPackage-nrc7394-sw-pkg-d73dfcef7702bb81",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:generic/nrc7394_sw_pkg@1.3.3",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "name": "nrc7394_sw_pkg",
+      "sourceInfo": "acquired package info from the following paths: ",
+      "supplier": "NOASSERTION",
+      "versionInfo": "1.3.3"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-UnknownPackage-nrc-hspi-simple-98da6405910cc638",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:generic/newracom/nrc_hspi_simple@1.3.3",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "ISC",
+      "name": "nrc_hspi_simple",
+      "sourceInfo": "acquired package info from the following paths: ",
+      "supplier": "NOASSERTION",
+      "versionInfo": "1.3.3"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-tshark-e251294e1ae321d7",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark:wireshark:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/debian/tshark@4.0.5?arch=armhf",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "GPL-2.0-or-later",
+      "name": "tshark",
+      "sourceInfo": "acquired package info from DPKG DB: ",
+      "supplier": "NOASSERTION",
+      "versionInfo": "4.0.5"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-deb-wireshark-f61ce38895b991b9",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:wireshark:wireshark:4.0.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:deb/debian/wireshark@4.0.5?arch=armhf",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "GPL-2.0-or-later",
+      "name": "wireshark",
+      "sourceInfo": "acquired package info from DPKG DB: ",
+      "supplier": "NOASSERTION",
+      "versionInfo": "4.0.5"
+    },
+    {
+      "SPDXID": "SPDXRef-DocumentRoot-Unknown-",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "name": "",
+      "primaryPackagePurpose": "OTHER",
+      "supplier": "NOASSERTION"
+    }
+  ],
+  "relationships": [
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-nrc7394-sw-pkg-d73dfcef7702bb81",
+      "relationshipType": "DEPENDENCY_OF",
+      "spdxElementId": "SPDXRef-Package-UnknownPackage-chmgrd-0cf176ad0fe07ae3"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-nrc7394-sw-pkg-d73dfcef7702bb81",
+      "relationshipType": "DEPENDENCY_OF",
+      "spdxElementId": "SPDXRef-Package-UnknownPackage-ch347-usb-spi-3d7e17c73256ef91"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-nrc7394-sw-pkg-d73dfcef7702bb81",
+      "relationshipType": "DEPENDENCY_OF",
+      "spdxElementId": "SPDXRef-Package-UnknownPackage-mpaland-printf-4f4a14250354dca9"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-nrc7394-sw-pkg-d73dfcef7702bb81",
+      "relationshipType": "DEPENDENCY_OF",
+      "spdxElementId": "SPDXRef-Package-UnknownPackage-ft232h-usb-spi-8c709086b7c17db5"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-nrc7394-sw-pkg-d73dfcef7702bb81",
+      "relationshipType": "DEPENDENCY_OF",
+      "spdxElementId": "SPDXRef-Package-UnknownPackage-nrc-924d3bc17aa0c2da"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-nrc7394-sw-pkg-d73dfcef7702bb81",
+      "relationshipType": "DEPENDENCY_OF",
+      "spdxElementId": "SPDXRef-Package-UnknownPackage-nrc-hspi-simple-98da6405910cc638"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-nrc7394-sw-pkg-d73dfcef7702bb81",
+      "relationshipType": "DEPENDENCY_OF",
+      "spdxElementId": "SPDXRef-Package-UnknownPackage-newlib-a7814e367b9a0b9a"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-nrc7394-sw-pkg-d73dfcef7702bb81",
+      "relationshipType": "DEPENDENCY_OF",
+      "spdxElementId": "SPDXRef-Package-UnknownPackage-cmsis-core-a81c3159d9515c2e"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-nrc7394-sw-pkg-d73dfcef7702bb81",
+      "relationshipType": "DEPENDENCY_OF",
+      "spdxElementId": "SPDXRef-Package-UnknownPackage-cli-app-b8b6726fc82a38cd"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-nrc7394-sw-pkg-d73dfcef7702bb81",
+      "relationshipType": "DEPENDENCY_OF",
+      "spdxElementId": "SPDXRef-Package-UnknownPackage-freertos-kernel-d765bbc411277628"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-nrc7394-sw-pkg-d73dfcef7702bb81",
+      "relationshipType": "DEPENDENCY_OF",
+      "spdxElementId": "SPDXRef-Package-deb-tshark-e251294e1ae321d7"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-nrc7394-sw-pkg-d73dfcef7702bb81",
+      "relationshipType": "DEPENDENCY_OF",
+      "spdxElementId": "SPDXRef-Package-UnknownPackage-libgcc-e2918fb623b97d39"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-nrc7394-sw-pkg-d73dfcef7702bb81",
+      "relationshipType": "DEPENDENCY_OF",
+      "spdxElementId": "SPDXRef-Package-deb-wireshark-f61ce38895b991b9"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-ch347-usb-spi-3d7e17c73256ef91",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Unknown-"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-chmgrd-0cf176ad0fe07ae3",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Unknown-"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-cli-app-b8b6726fc82a38cd",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Unknown-"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-cmsis-core-a81c3159d9515c2e",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Unknown-"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-freertos-kernel-d765bbc411277628",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Unknown-"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-ft232h-usb-spi-8c709086b7c17db5",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Unknown-"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-libgcc-e2918fb623b97d39",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Unknown-"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-mpaland-printf-4f4a14250354dca9",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Unknown-"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-newlib-a7814e367b9a0b9a",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Unknown-"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-nrc-924d3bc17aa0c2da",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Unknown-"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-nrc7394-sw-pkg-d73dfcef7702bb81",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Unknown-"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-UnknownPackage-nrc-hspi-simple-98da6405910cc638",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Unknown-"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-tshark-e251294e1ae321d7",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Unknown-"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-deb-wireshark-f61ce38895b991b9",
+      "relationshipType": "CONTAINS",
+      "spdxElementId": "SPDXRef-DocumentRoot-Unknown-"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-DocumentRoot-Unknown-",
+      "relationshipType": "DESCRIBES",
+      "spdxElementId": "SPDXRef-DOCUMENT"
+    }
+  ],
+  "spdxVersion": "SPDX-2.3"
+}

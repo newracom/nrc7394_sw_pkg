@@ -1,0 +1,46 @@
+SBOM provenance for nrc7394_sw_pkg v1.3.3
+================================================================
+generated_at        : 2026-09-30T00:08:33Z
+generated_by        : generate_sbom.py 1.0.0
+sbom_author         : Newracom SW Quality Verification (Newracom, Inc.)
+
+-- tools ---------------------------------------------------------
+syft                : 1.23.1
+grype               : 0.116.0
+grype_db_built      : 2026-09-29T06:32:31Z
+cyclonedx-cli       : 0.29.0+df96070c950bcdc85977eba56283f2a5d60fe7c4
+cosign              : v2.5.3
+python              : 3.12.3
+
+-- source --------------------------------------------------------
+scan_root           : .
+git_commit          : 1cd720630f1b18b0c8218f10c48a3c1af7592f55
+git_describe        : v1.3.2-1-g1cd7206
+git_worktree_clean  : yes
+
+-- scope ---------------------------------------------------------
+excluded paths (not shipped to the customer):
+  - **/.git/**   # Version control metadata; not distributed as part of the product.
+  - **/.github/**   # Upstream CI workflow definitions. These are GitHub Actions references, not software that is built into or executed by the product.
+  - **/.gitlab-ci.yml   # Upstream CI configuration; not shipped.
+  - **/docs/**   # Upstream documentation build toolchains (Sphinx/Doxygen Python requirements). Not cross-compiled, not installed on the host, not executed on the device.
+  - **/doc/requirements*.txt   # Documentation build dependencies only.
+  - **/tools/release/**   # Upstream maintainer release scripts; not part of the distributed package.
+  - **/ci/**   # Continuous integration helpers; not shipped.
+  - **/test/**   # Unit test sources and fixtures; not built into the release image.
+  - **/tests/**   # Unit test sources and fixtures; not built into the release image.
+  - ./sbom/**   # This tool's own output.
+  - **/sniffer/**/deb/**   # Bundled Wireshark/tshark .deb archives. A directory scan cannot read the package metadata inside them and would list each archive by file name with no version or licence. The packages are shipped and are in this SBOM: they are listed by hand as wireshark and tshark 4.0.5 with an upstream CPE so that CVE matching works.
+
+-- result --------------------------------------------------------
+components_total    : 15
+components_curated  : 15
+cyclonedx_spec      : 1.6
+spdx_spec           : 2.3
+grype_distro        : debian:10
+vulnerabilities     : critical=0, high=5, medium=2, low=0, negligible=2
+
+-- warnings ------------------------------------------------------
+  - cyclonedx-cli has no --fail-on-errors flag; a validation failure may not set a non-zero exit code
+  - no SPDX validator installed.  Install with:  pipx install spdx-tools
+  - 2 component(s) have a placeholder version such as 'main': ['ft232h-usb-spi', 'mpaland-printf'].  These cannot be matched against CVE data.

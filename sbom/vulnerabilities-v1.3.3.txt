@@ -1,0 +1,10 @@
+NAME       INSTALLED  FIXED IN     TYPE  VULNERABILITY  SEVERITY    EPSS         RISK   
+wireshark  4.0.5      (won't fix)  deb   CVE-2023-0667  Medium      2.0% (80th)  1.2    
+wireshark  4.0.5      (won't fix)  deb   CVE-2024-2955  High        1.4% (71st)  1.1    
+wireshark  4.0.5      (won't fix)  deb   CVE-2024-4854  High        0.8% (55th)  0.6    
+wireshark  4.0.5      (won't fix)  deb   CVE-2024-0209  High        0.6% (45th)  0.4    
+wireshark  4.0.5      (won't fix)  deb   CVE-2024-0211  High        0.5% (43rd)  0.4    
+wireshark  4.0.5      (won't fix)  deb   CVE-2023-4512  High        0.5% (41st)  0.4    
+wireshark  4.0.5      (won't fix)  deb   CVE-2023-3649  Medium      0.2% (13th)  0.1    
+wireshark  4.0.5                   deb   CVE-2024-4853  Negligible  0.4% (33rd)  < 0.1  
+wireshark  4.0.5                   deb   CVE-2024-4855  Negligible  0.4% (28th)  < 0.1

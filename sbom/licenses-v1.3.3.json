@@ -1,0 +1,149 @@
+{
+  "components": [
+    {
+      "curated": true,
+      "licenses": [
+        "GPL-2.0-or-later"
+      ],
+      "name": "ch347-usb-spi",
+      "purl": "pkg:generic/ch347-usb-spi@1.0",
+      "version": "1.0"
+    },
+    {
+      "curated": true,
+      "licenses": [
+        "ISC"
+      ],
+      "name": "chmgrd",
+      "purl": "pkg:generic/newracom/chmgrd@1.3.3",
+      "version": "1.3.3"
+    },
+    {
+      "curated": true,
+      "licenses": [
+        "MIT"
+      ],
+      "name": "cli_app",
+      "purl": "pkg:generic/newracom/cli_app@1.3.3",
+      "version": "1.3.3"
+    },
+    {
+      "curated": true,
+      "licenses": [
+        "Apache-2.0"
+      ],
+      "name": "cmsis-core",
+      "purl": "pkg:generic/arm/cmsis-core",
+      "version": "5.x"
+    },
+    {
+      "curated": true,
+      "licenses": [
+        "MIT"
+      ],
+      "name": "freertos-kernel",
+      "purl": "pkg:generic/amazon/freertos-kernel@10.0.0",
+      "version": "10.0.0"
+    },
+    {
+      "curated": true,
+      "licenses": [
+        "GPL-2.0-only"
+      ],
+      "name": "ft232h-usb-spi",
+      "purl": "pkg:generic/ft232h-usb-spi",
+      "version": "unknown"
+    },
+    {
+      "curated": true,
+      "licenses": [
+        "GPL-3.0-or-later WITH GCC-exception-3.1"
+      ],
+      "name": "libgcc",
+      "purl": "pkg:generic/gnu/libgcc@10.3.1",
+      "version": "10.3.1"
+    },
+    {
+      "curated": true,
+      "licenses": [
+        "MIT"
+      ],
+      "name": "mpaland-printf",
+      "purl": "pkg:github/mpaland/printf",
+      "version": "unknown"
+    },
+    {
+      "curated": true,
+      "licenses": [
+        "BSD-3-Clause",
+        "BSD-2-Clause",
+        "LicenseRef-newlib-multiple"
+      ],
+      "name": "newlib",
+      "purl": "pkg:generic/newlib",
+      "version": "gcc-arm-none-eabi-10.3-2021.10"
+    },
+    {
+      "curated": true,
+      "licenses": [
+        "ISC"
+      ],
+      "name": "nrc",
+      "purl": "pkg:generic/newracom/nrc@1.3.3",
+      "version": "1.3.3"
+    },
+    {
+      "curated": true,
+      "licenses": [
+        "LicenseRef-NewracomFirmware"
+      ],
+      "name": "nrc7394_bd",
+      "purl": "pkg:generic/newracom/nrc7394-board-data@1.3.3",
+      "version": "1.3.3"
+    },
+    {
+      "curated": true,
+      "licenses": [
+        "ISC"
+      ],
+      "name": "nrc_hspi_simple",
+      "purl": "pkg:generic/newracom/nrc_hspi_simple@1.3.3",
+      "version": "1.3.3"
+    },
+    {
+      "curated": true,
+      "licenses": [
+        "GPL-2.0-or-later"
+      ],
+      "name": "tshark",
+      "purl": "pkg:deb/debian/tshark@4.0.5?arch=armhf",
+      "version": "4.0.5"
+    },
+    {
+      "curated": true,
+      "licenses": [
+        "LicenseRef-NewracomFirmware"
+      ],
+      "name": "uni_s1g",
+      "purl": "pkg:generic/newracom/nrc7394-firmware@1.3.3",
+      "version": "1.3.3"
+    },
+    {
+      "curated": true,
+      "licenses": [
+        "GPL-2.0-or-later"
+      ],
+      "name": "wireshark",
+      "purl": "pkg:deb/debian/wireshark@4.0.5?arch=armhf",
+      "version": "4.0.5"
+    }
+  ],
+  "components_without_license": 0,
+  "copyleft_licenses_present": [
+    "GPL-2.0-only",
+    "GPL-2.0-or-later",
+    "GPL-3.0-or-later WITH GCC-exception-3.1"
+  ],
+  "generated": "2026-09-30T00:08:33Z",
+  "total_components": 15
+}

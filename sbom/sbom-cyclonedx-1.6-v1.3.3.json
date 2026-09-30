@@ -1,0 +1,791 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
+  "bomFormat": "CycloneDX",
+  "components": [
+    {
+      "bom-ref": "newracom-curated:ch347-usb-spi@1.0",
+      "description": "WCH CH347 USB to SPI/I2C/GPIO bridge driver, modified for NRC7394",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "http://wch.cn"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/WCHSoftGroup/ch34x_mphsi_master_linux"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-or-later"
+          }
+        }
+      ],
+      "name": "ch347-usb-spi",
+      "properties": [
+        {
+          "name": "newracom:source",
+          "value": "curated"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/src/ch347-usb-spi"
+        },
+        {
+          "name": "newracom:shipped",
+          "value": "true"
+        },
+        {
+          "name": "newracom:notes",
+          "value": "Original (c) 2023 Nanjing Qinheng Microelectronics (WCH) <tech@wch.cn>. Upstream: the vendor's public repository WCHSoftGroup/ch34x_mphsi_master_linux (GPL-2.0-or-later headers; verified 2026-09-24); this copy corresponds to the v1.0 (2023.03) revision recorded in the source change log. Introduced in v1.3.2. Modified by Newracom; the complete modified source is distributed."
+        }
+      ],
+      "purl": "pkg:generic/ch347-usb-spi@1.0",
+      "supplier": {
+        "name": "Nanjing Qinheng Microelectronics Co., Ltd. (WCH)"
+      },
+      "type": "library",
+      "version": "1.0"
+    },
+    {
+      "bom-ref": "newracom-curated:chmgrd@1.3.3",
+      "description": "NRC7394 channel manager daemon",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "name": "chmgrd",
+      "properties": [
+        {
+          "name": "newracom:source",
+          "value": "curated"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/src/chmgrd"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/binary/chmgrd"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/sw_pkg/nrc_pkg/script/chmgrd"
+        },
+        {
+          "name": "newracom:shipped",
+          "value": "true"
+        },
+        {
+          "name": "newracom:notes",
+          "value": "New in v1.3.3. Licence as declared in REUSE.toml (ISC, compiled form of package/src/chmgrd/). Prebuilt ARM binary, dynamically linked against libc only; not stripped and contains debug_info."
+        }
+      ],
+      "purl": "pkg:generic/newracom/chmgrd@1.3.3",
+      "supplier": {
+        "name": "Newracom, Inc.",
+        "url": [
+          "https://www.newracom.com"
+        ]
+      },
+      "type": "application",
+      "version": "1.3.3"
+    },
+    {
+      "bom-ref": "newracom-curated:cli_app@1.3.3",
+      "description": "NRC7394 command line utility",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "cli_app",
+      "properties": [
+        {
+          "name": "newracom:source",
+          "value": "curated"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/src/cli_app"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/binary/cli_app"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/sw_pkg/nrc_pkg/script/cli_app"
+        },
+        {
+          "name": "newracom:shipped",
+          "value": "true"
+        },
+        {
+          "name": "newracom:notes",
+          "value": "12 source files carry the MIT notice (c) 2020. The prebuilt ARM binary is not stripped and contains debug_info - strip before release."
+        }
+      ],
+      "purl": "pkg:generic/newracom/cli_app@1.3.3",
+      "supplier": {
+        "name": "Newracom, Inc."
+      },
+      "type": "application",
+      "version": "1.3.3"
+    },
+    {
+      "bom-ref": "newracom-curated:cmsis-core@5.x",
+      "description": "Arm CMSIS Core (Cortex-M) headers - core_cm3.h, cmsis_gcc.h, cmsis_compiler.h, cmsis_version.h, mpu_armv7.h. Header-only, inlined into the firmware.",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "cmsis-core",
+      "properties": [
+        {
+          "name": "newracom:source",
+          "value": "curated"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/binary/nrc7394_cspi.bin"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/binary/nrc7394_cspi_eeprom.bin"
+        },
+        {
+          "name": "newracom:shipped",
+          "value": "true"
+        },
+        {
+          "name": "newracom:notes",
+          "value": "Lives at fdk/lib/soc/CMSIS/Core/Include/ and declares SPDX-License-Identifier: Apache-2.0. Being header-only it produces no linker symbols, which is why a symbol-prefix probe reported CMSIS as absent; the code is nevertheless compiled into the image. Apache-2.0 requires the notice to be retained in redistribution."
+        }
+      ],
+      "purl": "pkg:generic/arm/cmsis-core",
+      "supplier": {
+        "name": "Arm Limited"
+      },
+      "type": "library",
+      "version": "5.x"
+    },
+    {
+      "bom-ref": "newracom-curated:freertos-kernel@10.0.0",
+      "description": "FreeRTOS real-time kernel, statically linked into the NRC7394 firmware (tasks, queue, list, timers, event_groups, ARM_CM3 port, heap_4). Modified by Newracom.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "freertos-kernel",
+      "properties": [
+        {
+          "name": "newracom:source",
+          "value": "curated"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/binary/nrc7394_cspi.bin"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/binary/nrc7394_cspi_eeprom.bin"
+        },
+        {
+          "name": "newracom:shipped",
+          "value": "true"
+        },
+        {
+          "name": "newracom:notes",
+          "value": "License determined from the source banners in lib/FreeRTOS/Source/ (FreeRTOS Kernel V10.0.0, Copyright (C) 2017 Amazon.com, MIT). The tskKERNEL_VERSION_NUMBER macro in task.h still reads V9.0.0, which is a stale leftover and was the reason an earlier review wrongly classified this as GPL-2.0 WITH freertos-exception-2.0. The GPL banner survives only in lib/FreeRTOS/Config/*/FreeRTOSConfig.h, which is Newracom-authored configuration. Kernel sources are modified (65 commits); mark as modified in the SBOM."
+        }
+      ],
+      "purl": "pkg:generic/amazon/freertos-kernel@10.0.0",
+      "supplier": {
+        "name": "Amazon.com, Inc. or its affiliates"
+      },
+      "type": "library",
+      "version": "10.0.0"
+    },
+    {
+      "bom-ref": "newracom-curated:ft232h-usb-spi@unknown",
+      "description": "FTDI FT232H MPSSE USB-SPI bridge driver, modified for NRC7394",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://www.denx.de"
+        },
+        {
+          "type": "distribution",
+          "url": "https://lkml.iu.edu/1902.2/05398.html"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-only"
+          }
+        }
+      ],
+      "name": "ft232h-usb-spi",
+      "properties": [
+        {
+          "name": "newracom:source",
+          "value": "curated"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/src/ft232h-usb-spi"
+        },
+        {
+          "name": "newracom:shipped",
+          "value": "true"
+        },
+        {
+          "name": "newracom:notes",
+          "value": "Original (c) 2017-2018 DENX Software Engineering, Anatolij Gustschin <agust@denx.de>. File headers record the original file name as spi_ftdi_mpsse.c. Upstream: the \"spi: add FTDI MPSSE SPI controller driver\" patch series posted to the Linux kernel mailing list, v4, February 2019 (see download reference; verified 2026-09-24). Copyright and licence headers are preserved as received. Modified by Newracom; the complete modified source is distributed. teledatics/ftdi-spi-linux is NOT the source (different file names and authors)."
+        }
+      ],
+      "purl": "pkg:generic/ft232h-usb-spi",
+      "supplier": {
+        "name": "DENX Software Engineering (Anatolij Gustschin)"
+      },
+      "type": "library",
+      "version": "unknown"
+    },
+    {
+      "bom-ref": "newracom-curated:libgcc@10.3.1",
+      "description": "GCC low-level runtime support (integer/float helpers) statically linked from the ARM toolchain.",
+      "licenses": [
+        {
+          "expression": "GPL-3.0-or-later WITH GCC-exception-3.1"
+        }
+      ],
+      "name": "libgcc",
+      "properties": [
+        {
+          "name": "newracom:source",
+          "value": "curated"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/binary/nrc7394_cspi.bin"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/binary/nrc7394_cspi_eeprom.bin"
+        },
+        {
+          "name": "newracom:shipped",
+          "value": "true"
+        },
+        {
+          "name": "newracom:notes",
+          "value": "24 archive members linked. The GCC Runtime Library Exception keeps GPL from propagating to the combined work for an ordinary GCC compilation, so there is no source-disclosure obligation for our code - but the component must still be declared. Not previously listed anywhere."
+        }
+      ],
+      "purl": "pkg:generic/gnu/libgcc@10.3.1",
+      "supplier": {
+        "name": "Free Software Foundation, Inc."
+      },
+      "type": "library",
+      "version": "10.3.1"
+    },
+    {
+      "bom-ref": "newracom-curated:mpaland-printf@unknown",
+      "description": "Tiny printf/sprintf/(v)snprintf implementation for embedded systems, vendored as system/system_new_printf.c.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "mpaland-printf",
+      "properties": [
+        {
+          "name": "newracom:source",
+          "value": "curated"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/binary/nrc7394_cspi.bin"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/binary/nrc7394_cspi_eeprom.bin"
+        },
+        {
+          "name": "newracom:shipped",
+          "value": "true"
+        },
+        {
+          "name": "newracom:notes",
+          "value": "Found 2026-09-23 via the snprintf_/vsnprintf_ symbols. It sits under system/ rather than lib/, so a survey that assumes third-party code lives in lib/ misses it. The vendored file carries no upstream version string - record the upstream commit if it can be established."
+        }
+      ],
+      "purl": "pkg:github/mpaland/printf",
+      "supplier": {
+        "name": "Marco Paland, PALANDesign Hannover"
+      },
+      "type": "library",
+      "version": "unknown"
+    },
+    {
+      "bom-ref": "newracom-curated:newlib@gcc-arm-none-eabi-10.3-2021.10",
+      "description": "C runtime library (libg.a, libm.a, libnosys.a) statically linked from the ARM toolchain.",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        },
+        {
+          "license": {
+            "id": "BSD-2-Clause"
+          }
+        },
+        {
+          "license": {
+            "name": "LicenseRef-newlib-multiple"
+          }
+        }
+      ],
+      "name": "newlib",
+      "properties": [
+        {
+          "name": "newracom:source",
+          "value": "curated"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/binary/nrc7394_cspi.bin"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/binary/nrc7394_cspi_eeprom.bin"
+        },
+        {
+          "name": "newracom:shipped",
+          "value": "true"
+        },
+        {
+          "name": "newracom:notes",
+          "value": "178 archive members linked (libg.a 144, libm.a 24, libnosys.a 10) per the cspi.map Archive member section. newlib is under a collection of BSD-style licenses; ship the COPYING.NEWLIB notice from the toolchain."
+        }
+      ],
+      "purl": "pkg:generic/newlib",
+      "supplier": {
+        "name": "Red Hat, Inc. and others"
+      },
+      "type": "library",
+      "version": "gcc-arm-none-eabi-10.3-2021.10"
+    },
+    {
+      "bom-ref": "newracom-curated:nrc@1.3.3",
+      "description": "NRC7394 mac80211 host driver (nrc.ko)",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "name": "nrc",
+      "properties": [
+        {
+          "name": "newracom:source",
+          "value": "curated"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/src/nrc"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/binary/nrc.ko"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/sw_pkg/nrc_pkg/sw/driver/nrc.ko"
+        },
+        {
+          "name": "newracom:shipped",
+          "value": "true"
+        },
+        {
+          "name": "newracom:notes",
+          "value": "44 source files carry the ISC notice, unchanged since v1.0 (2023-04-05). MODULE_LICENSE is \"Dual BSD/GPL\", the kernel's runtime declaration, which is consistent with ISC. The Makefile SPDX tag was aligned to ISC in v1.3.3 (it previously read GPL-2.0-only by kernel-module convention). Prebuilt nrc.ko has vermagic 5.10.17-v7l+ (Raspberry Pi kernel)."
+        }
+      ],
+      "purl": "pkg:generic/newracom/nrc@1.3.3",
+      "supplier": {
+        "name": "Newracom, Inc.",
+        "url": [
+          "https://www.newracom.com"
+        ]
+      },
+      "type": "library",
+      "version": "1.3.3"
+    },
+    {
+      "bom-ref": "newracom-curated:nrc7394_bd@1.3.3",
+      "description": "Board data - transmit power tables and regulatory domain parameters",
+      "licenses": [
+        {
+          "license": {
+            "name": "LicenseRef-NewracomFirmware"
+          }
+        }
+      ],
+      "name": "nrc7394_bd",
+      "properties": [
+        {
+          "name": "newracom:source",
+          "value": "curated"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/binary/nrc7394_bd.dat"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/sw_pkg/nrc_pkg/sw/firmware/nrc7394_bd.dat"
+        },
+        {
+          "name": "newracom:shipped",
+          "value": "true"
+        },
+        {
+          "name": "newracom:notes",
+          "value": "Configuration data, not executable software. Generated with the Board Data Tool, which is provided to module partners under a separate agreement."
+        }
+      ],
+      "purl": "pkg:generic/newracom/nrc7394-board-data@1.3.3",
+      "supplier": {
+        "name": "Newracom, Inc."
+      },
+      "type": "data",
+      "version": "1.3.3"
+    },
+    {
+      "bom-ref": "newracom-curated:nrc_hspi_simple@1.3.3",
+      "description": "HSPI transport helper module",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "name": "nrc_hspi_simple",
+      "properties": [
+        {
+          "name": "newracom:source",
+          "value": "curated"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/src/nrc_hspi_simple"
+        },
+        {
+          "name": "newracom:shipped",
+          "value": "true"
+        },
+        {
+          "name": "newracom:notes",
+          "value": "MODULE_LICENSE is \"Dual BSD/GPL\". Makefile SPDX tag aligned to ISC in v1.3.3, matching the sources."
+        }
+      ],
+      "purl": "pkg:generic/newracom/nrc_hspi_simple@1.3.3",
+      "supplier": {
+        "name": "Newracom, Inc."
+      },
+      "type": "library",
+      "version": "1.3.3"
+    },
+    {
+      "bom-ref": "newracom-curated:tshark@4.0.5",
+      "cpe": "cpe:2.3:a:wireshark:wireshark:4.0.5:*:*:*:*:*:*:*",
+      "description": "Wireshark command line interface, armhf build",
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-or-later"
+          }
+        }
+      ],
+      "name": "tshark",
+      "properties": [
+        {
+          "name": "newracom:source",
+          "value": "curated"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/"
+        },
+        {
+          "name": "newracom:shipped",
+          "value": "true"
+        },
+        {
+          "name": "newracom:notes",
+          "value": "Same source package as wireshark 4.0.5."
+        }
+      ],
+      "purl": "pkg:deb/debian/tshark@4.0.5?arch=armhf",
+      "supplier": {
+        "name": "The Wireshark Foundation",
+        "url": [
+          "https://www.wireshark.org"
+        ]
+      },
+      "type": "application",
+      "version": "4.0.5"
+    },
+    {
+      "bom-ref": "newracom-curated:uni_s1g@1.3.3",
+      "description": "NRC7394 device firmware (CSPI image)",
+      "licenses": [
+        {
+          "license": {
+            "name": "LicenseRef-NewracomFirmware"
+          }
+        }
+      ],
+      "name": "uni_s1g",
+      "properties": [
+        {
+          "name": "newracom:source",
+          "value": "curated"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/binary/nrc7394_cspi.bin"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/binary/nrc7394_cspi_eeprom.bin"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/sw_pkg/nrc_pkg/sw/firmware/nrc7394_cspi.bin"
+        },
+        {
+          "name": "newracom:shipped",
+          "value": "true"
+        },
+        {
+          "name": "newracom:notes",
+          "value": "Composition established 2026-09-23 from the link map and dependency files of NRC_MACSW@223b4ae (target nrc7394.cspi+sdk+). 128 project objects are linked flat; the only archives are toolchain ones. Third-party content is the five components listed below (freertos-kernel, newlib, libgcc, cmsis-core, mpaland-printf) plus the BSD dl_list header in util/util_list.h. No cryptographic library is linked - AES/SHA/MD5 constant tables are absent and ciphering is done by the MAC hardware key engine. No outbound network capability: no URL, domain or telemetry strings. Version reported by the image is the SDK version (VERSION-SDK); the internal firmware VERSION file reads 6.2.0. The image embeds __DATE__/__TIME__, so builds are not bit-reproducible and hash comparison cannot be used to verify a release. nrc7394_cspi_eeprom.bin has an identical source composition and is covered by the same component list. Composition re-verified on the v1.3.3 release build (firmware commit 993f213, built 2026-09-24): identical 128 objects, the same 7 FreeRTOS files, no cryptographic constant tables, no network endpoint strings."
+        }
+      ],
+      "purl": "pkg:generic/newracom/nrc7394-firmware@1.3.3",
+      "supplier": {
+        "name": "Newracom, Inc."
+      },
+      "type": "firmware",
+      "version": "1.3.3"
+    },
+    {
+      "bom-ref": "newracom-curated:wireshark@4.0.5",
+      "cpe": "cpe:2.3:a:wireshark:wireshark:4.0.5:*:*:*:*:*:*:*",
+      "description": "Network protocol analyser, armhf build bundled for HaLow packet capture",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://www.wireshark.org"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-or-later"
+          }
+        }
+      ],
+      "name": "wireshark",
+      "properties": [
+        {
+          "name": "newracom:source",
+          "value": "curated"
+        },
+        {
+          "name": "newracom:location",
+          "value": "package/evk/sw_pkg/nrc_pkg/script/sniffer/Wireshark_4.0.5/deb/"
+        },
+        {
+          "name": "newracom:shipped",
+          "value": "true"
+        },
+        {
+          "name": "newracom:notes",
+          "value": "Built by Newracom from the upstream tarball wireshark-4.0.5.tar.xz (see the sniffer README). The upstream CPE is supplied here so that NVD matching works without a distro hint - the .deb packages alone matched zero advisories in previous releases. Wireshark 4.0.6 fixed nine security issues, so findings against 4.0.5 are expected; either upgrade the bundle or file a VEX statement. The libwireshark/libwiretap/libwsutil/wireshark-common packages in the same directory are built from this same source and share its vulnerabilities. Newracom made no source changes; the build procedure is in BUILD.txt beside the packages."
+        }
+      ],
+      "purl": "pkg:deb/debian/wireshark@4.0.5?arch=armhf",
+      "supplier": {
+        "name": "The Wireshark Foundation",
+        "url": [
+          "https://www.wireshark.org"
+        ]
+      },
+      "type": "application",
+      "version": "4.0.5"
+    }
+  ],
+  "dependencies": [
+    {
+      "dependsOn": [
+        "newracom-curated:ch347-usb-spi@1.0",
+        "newracom-curated:chmgrd@1.3.3",
+        "newracom-curated:cli_app@1.3.3",
+        "newracom-curated:cmsis-core@5.x",
+        "newracom-curated:freertos-kernel@10.0.0",
+        "newracom-curated:ft232h-usb-spi@unknown",
+        "newracom-curated:libgcc@10.3.1",
+        "newracom-curated:mpaland-printf@unknown",
+        "newracom-curated:newlib@gcc-arm-none-eabi-10.3-2021.10",
+        "newracom-curated:nrc7394_bd@1.3.3",
+        "newracom-curated:nrc@1.3.3",
+        "newracom-curated:nrc_hspi_simple@1.3.3",
+        "newracom-curated:tshark@4.0.5",
+        "newracom-curated:uni_s1g@1.3.3",
+        "newracom-curated:wireshark@4.0.5"
+      ],
+      "ref": "pkg:generic/nrc7394_sw_pkg@1.3.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "newracom-curated:ch347-usb-spi@1.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "newracom-curated:chmgrd@1.3.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "newracom-curated:cli_app@1.3.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "newracom-curated:cmsis-core@5.x"
+    },
+    {
+      "dependsOn": [],
+      "ref": "newracom-curated:freertos-kernel@10.0.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "newracom-curated:ft232h-usb-spi@unknown"
+    },
+    {
+      "dependsOn": [],
+      "ref": "newracom-curated:libgcc@10.3.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "newracom-curated:mpaland-printf@unknown"
+    },
+    {
+      "dependsOn": [],
+      "ref": "newracom-curated:newlib@gcc-arm-none-eabi-10.3-2021.10"
+    },
+    {
+      "dependsOn": [],
+      "ref": "newracom-curated:nrc7394_bd@1.3.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "newracom-curated:nrc@1.3.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "newracom-curated:nrc_hspi_simple@1.3.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "newracom-curated:tshark@4.0.5"
+    },
+    {
+      "dependsOn": [],
+      "ref": "newracom-curated:uni_s1g@1.3.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "newracom-curated:wireshark@4.0.5"
+    }
+  ],
+  "metadata": {
+    "authors": [
+      {
+        "name": "Newracom SW Quality Verification"
+      }
+    ],
+    "component": {
+      "bom-ref": "pkg:generic/nrc7394_sw_pkg@1.3.3",
+      "description": "NRC7394 Software Package for Host mode (Linux OS)",
+      "name": "nrc7394_sw_pkg",
+      "publisher": "Newracom, Inc.",
+      "purl": "pkg:generic/nrc7394_sw_pkg@1.3.3",
+      "supplier": {
+        "name": "Newracom, Inc.",
+        "url": [
+          "https://www.newracom.com"
+        ]
+      },
+      "type": "application",
+      "version": "1.3.3"
+    },
+    "lifecycles": [
+      {
+        "phase": "build"
+      }
+    ],
+    "manufacturer": {
+      "name": "Newracom, Inc.",
+      "url": [
+        "https://www.newracom.com"
+      ]
+    },
+    "supplier": {
+      "name": "Newracom, Inc.",
+      "url": [
+        "https://www.newracom.com"
+      ]
+    },
+    "timestamp": "2026-09-30T00:08:29Z",
+    "tools": {
+      "components": [
+        {
+          "author": "anchore",
+          "name": "syft",
+          "type": "application",
+          "version": "1.23.1"
+        },
+        {
+          "author": "Newracom, Inc.",
+          "name": "generate_sbom.py",
+          "type": "application",
+          "version": "1.0.0"
+        }
+      ]
+    }
+  },
+  "serialNumber": "urn:uuid:55404d07-32dd-4d2f-baac-6259dca6b082",
+  "specVersion": "1.6",
+  "version": 1
+}

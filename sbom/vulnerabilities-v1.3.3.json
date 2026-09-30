@@ -1,0 +1,2189 @@
+{
+  "alertsByPackage": [
+    {
+      "alerts": [
+        {
+          "message": "Package is from end-of-life distro: debian 10",
+          "metadata": {
+            "name": "debian",
+            "version": "10"
+          },
+          "type": "distro-eol"
+        }
+      ],
+      "package": {
+        "cpes": [
+          "cpe:2.3:a:ch347-usb-spi:ch347-usb-spi:1.0:*:*:*:*:*:*:*",
+          "cpe:2.3:a:ch347-usb-spi:ch347_usb_spi:1.0:*:*:*:*:*:*:*",
+          "cpe:2.3:a:ch347_usb_spi:ch347-usb-spi:1.0:*:*:*:*:*:*:*",
+          "cpe:2.3:a:ch347_usb_spi:ch347_usb_spi:1.0:*:*:*:*:*:*:*",
+          "cpe:2.3:a:ch347-usb:ch347-usb-spi:1.0:*:*:*:*:*:*:*",
+          "cpe:2.3:a:ch347-usb:ch347_usb_spi:1.0:*:*:*:*:*:*:*",
+          "cpe:2.3:a:ch347_usb:ch347-usb-spi:1.0:*:*:*:*:*:*:*",
+          "cpe:2.3:a:ch347_usb:ch347_usb_spi:1.0:*:*:*:*:*:*:*",
+          "cpe:2.3:a:ch347:ch347-usb-spi:1.0:*:*:*:*:*:*:*",
+          "cpe:2.3:a:ch347:ch347_usb_spi:1.0:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:ch347-usb-spi@1.0",
+        "language": "",
+        "licenses": [
+          "GPL-2.0-or-later"
+        ],
+        "locations": null,
+        "name": "ch347-usb-spi",
+        "purl": "pkg:generic/ch347-usb-spi@1.0",
+        "type": "UnknownPackage",
+        "upstreams": [],
+        "version": "1.0"
+      }
+    },
+    {
+      "alerts": [
+        {
+          "message": "Package is from end-of-life distro: debian 10",
+          "metadata": {
+            "name": "debian",
+            "version": "10"
+          },
+          "type": "distro-eol"
+        }
+      ],
+      "package": {
+        "cpes": [
+          "cpe:2.3:a:chmgrd:chmgrd:1.3.3:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:chmgrd@1.3.3",
+        "language": "",
+        "licenses": [
+          "ISC"
+        ],
+        "locations": null,
+        "name": "chmgrd",
+        "purl": "pkg:generic/newracom/chmgrd@1.3.3",
+        "type": "UnknownPackage",
+        "upstreams": [],
+        "version": "1.3.3"
+      }
+    },
+    {
+      "alerts": [
+        {
+          "message": "Package is from end-of-life distro: debian 10",
+          "metadata": {
+            "name": "debian",
+            "version": "10"
+          },
+          "type": "distro-eol"
+        }
+      ],
+      "package": {
+        "cpes": [
+          "cpe:2.3:a:cli-app:cli-app:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:cli-app:cli_app:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:cli_app:cli-app:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:cli_app:cli_app:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:cli:cli-app:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:cli:cli_app:1.3.3:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:cli_app@1.3.3",
+        "language": "",
+        "licenses": [
+          "MIT"
+        ],
+        "locations": null,
+        "name": "cli_app",
+        "purl": "pkg:generic/newracom/cli_app@1.3.3",
+        "type": "UnknownPackage",
+        "upstreams": [],
+        "version": "1.3.3"
+      }
+    },
+    {
+      "alerts": [
+        {
+          "message": "Package is from end-of-life distro: debian 10",
+          "metadata": {
+            "name": "debian",
+            "version": "10"
+          },
+          "type": "distro-eol"
+        }
+      ],
+      "package": {
+        "cpes": [
+          "cpe:2.3:a:cmsis-core:cmsis-core:5.x:*:*:*:*:*:*:*",
+          "cpe:2.3:a:cmsis-core:cmsis_core:5.x:*:*:*:*:*:*:*",
+          "cpe:2.3:a:cmsis_core:cmsis-core:5.x:*:*:*:*:*:*:*",
+          "cpe:2.3:a:cmsis_core:cmsis_core:5.x:*:*:*:*:*:*:*",
+          "cpe:2.3:a:cmsis:cmsis-core:5.x:*:*:*:*:*:*:*",
+          "cpe:2.3:a:cmsis:cmsis_core:5.x:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:cmsis-core@5.x",
+        "language": "",
+        "licenses": [
+          "Apache-2.0"
+        ],
+        "locations": null,
+        "name": "cmsis-core",
+        "purl": "pkg:generic/arm/cmsis-core",
+        "type": "UnknownPackage",
+        "upstreams": [],
+        "version": "5.x"
+      }
+    },
+    {
+      "alerts": [
+        {
+          "message": "Package is from end-of-life distro: debian 10",
+          "metadata": {
+            "name": "debian",
+            "version": "10"
+          },
+          "type": "distro-eol"
+        }
+      ],
+      "package": {
+        "cpes": [
+          "cpe:2.3:a:freertos-kernel:freertos-kernel:10.0.0:*:*:*:*:*:*:*",
+          "cpe:2.3:a:freertos-kernel:freertos_kernel:10.0.0:*:*:*:*:*:*:*",
+          "cpe:2.3:a:freertos_kernel:freertos-kernel:10.0.0:*:*:*:*:*:*:*",
+          "cpe:2.3:a:freertos_kernel:freertos_kernel:10.0.0:*:*:*:*:*:*:*",
+          "cpe:2.3:a:freertos:freertos-kernel:10.0.0:*:*:*:*:*:*:*",
+          "cpe:2.3:a:freertos:freertos_kernel:10.0.0:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:freertos-kernel@10.0.0",
+        "language": "",
+        "licenses": [
+          "MIT"
+        ],
+        "locations": null,
+        "name": "freertos-kernel",
+        "purl": "pkg:generic/amazon/freertos-kernel@10.0.0",
+        "type": "UnknownPackage",
+        "upstreams": [],
+        "version": "10.0.0"
+      }
+    },
+    {
+      "alerts": [
+        {
+          "message": "Package is from end-of-life distro: debian 10",
+          "metadata": {
+            "name": "debian",
+            "version": "10"
+          },
+          "type": "distro-eol"
+        }
+      ],
+      "package": {
+        "cpes": [
+          "cpe:2.3:a:ft232h-usb-spi:ft232h-usb-spi:unknown:*:*:*:*:*:*:*",
+          "cpe:2.3:a:ft232h-usb-spi:ft232h_usb_spi:unknown:*:*:*:*:*:*:*",
+          "cpe:2.3:a:ft232h_usb_spi:ft232h-usb-spi:unknown:*:*:*:*:*:*:*",
+          "cpe:2.3:a:ft232h_usb_spi:ft232h_usb_spi:unknown:*:*:*:*:*:*:*",
+          "cpe:2.3:a:ft232h-usb:ft232h-usb-spi:unknown:*:*:*:*:*:*:*",
+          "cpe:2.3:a:ft232h-usb:ft232h_usb_spi:unknown:*:*:*:*:*:*:*",
+          "cpe:2.3:a:ft232h_usb:ft232h-usb-spi:unknown:*:*:*:*:*:*:*",
+          "cpe:2.3:a:ft232h_usb:ft232h_usb_spi:unknown:*:*:*:*:*:*:*",
+          "cpe:2.3:a:ft232h:ft232h-usb-spi:unknown:*:*:*:*:*:*:*",
+          "cpe:2.3:a:ft232h:ft232h_usb_spi:unknown:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:ft232h-usb-spi@unknown",
+        "language": "",
+        "licenses": [
+          "GPL-2.0-only"
+        ],
+        "locations": null,
+        "name": "ft232h-usb-spi",
+        "purl": "pkg:generic/ft232h-usb-spi",
+        "type": "UnknownPackage",
+        "upstreams": [],
+        "version": "unknown"
+      }
+    },
+    {
+      "alerts": [
+        {
+          "message": "Package is from end-of-life distro: debian 10",
+          "metadata": {
+            "name": "debian",
+            "version": "10"
+          },
+          "type": "distro-eol"
+        }
+      ],
+      "package": {
+        "cpes": [
+          "cpe:2.3:a:libgcc:libgcc:10.3.1:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:libgcc@10.3.1",
+        "language": "",
+        "licenses": [
+          "GPL-3.0-or-later WITH GCC-exception-3.1"
+        ],
+        "locations": null,
+        "name": "libgcc",
+        "purl": "pkg:generic/gnu/libgcc@10.3.1",
+        "type": "UnknownPackage",
+        "upstreams": [],
+        "version": "10.3.1"
+      }
+    },
+    {
+      "alerts": [
+        {
+          "message": "Package is from end-of-life distro: debian 10",
+          "metadata": {
+            "name": "debian",
+            "version": "10"
+          },
+          "type": "distro-eol"
+        }
+      ],
+      "package": {
+        "cpes": [
+          "cpe:2.3:a:mpaland-printf:mpaland-printf:unknown:*:*:*:*:*:*:*",
+          "cpe:2.3:a:mpaland-printf:mpaland_printf:unknown:*:*:*:*:*:*:*",
+          "cpe:2.3:a:mpaland_printf:mpaland-printf:unknown:*:*:*:*:*:*:*",
+          "cpe:2.3:a:mpaland_printf:mpaland_printf:unknown:*:*:*:*:*:*:*",
+          "cpe:2.3:a:mpaland:mpaland-printf:unknown:*:*:*:*:*:*:*",
+          "cpe:2.3:a:mpaland:mpaland_printf:unknown:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:mpaland-printf@unknown",
+        "language": "",
+        "licenses": [
+          "MIT"
+        ],
+        "locations": null,
+        "name": "mpaland-printf",
+        "purl": "pkg:github/mpaland/printf",
+        "type": "UnknownPackage",
+        "upstreams": [],
+        "version": "unknown"
+      }
+    },
+    {
+      "alerts": [
+        {
+          "message": "Package is from end-of-life distro: debian 10",
+          "metadata": {
+            "name": "debian",
+            "version": "10"
+          },
+          "type": "distro-eol"
+        }
+      ],
+      "package": {
+        "cpes": [
+          "cpe:2.3:a:newlib:newlib:gcc-arm-none-eabi-10.3-2021.10:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:newlib@gcc-arm-none-eabi-10.3-2021.10",
+        "language": "",
+        "licenses": [
+          "BSD-2-Clause",
+          "BSD-3-Clause",
+          "LicenseRef-newlib-multiple"
+        ],
+        "locations": null,
+        "name": "newlib",
+        "purl": "pkg:generic/newlib",
+        "type": "UnknownPackage",
+        "upstreams": [],
+        "version": "gcc-arm-none-eabi-10.3-2021.10"
+      }
+    },
+    {
+      "alerts": [
+        {
+          "message": "Package is from end-of-life distro: debian 10",
+          "metadata": {
+            "name": "debian",
+            "version": "10"
+          },
+          "type": "distro-eol"
+        }
+      ],
+      "package": {
+        "cpes": [
+          "cpe:2.3:a:nrc:nrc:1.3.3:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:nrc@1.3.3",
+        "language": "",
+        "licenses": [
+          "ISC"
+        ],
+        "locations": null,
+        "name": "nrc",
+        "purl": "pkg:generic/newracom/nrc@1.3.3",
+        "type": "UnknownPackage",
+        "upstreams": [],
+        "version": "1.3.3"
+      }
+    },
+    {
+      "alerts": [
+        {
+          "message": "Package is from end-of-life distro: debian 10",
+          "metadata": {
+            "name": "debian",
+            "version": "10"
+          },
+          "type": "distro-eol"
+        }
+      ],
+      "package": {
+        "cpes": [
+          "cpe:2.3:a:nrc-hspi-simple:nrc-hspi-simple:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:nrc-hspi-simple:nrc_hspi_simple:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:nrc_hspi_simple:nrc-hspi-simple:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:nrc_hspi_simple:nrc_hspi_simple:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:nrc-hspi:nrc-hspi-simple:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:nrc-hspi:nrc_hspi_simple:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:nrc_hspi:nrc-hspi-simple:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:nrc_hspi:nrc_hspi_simple:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:nrc:nrc-hspi-simple:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:nrc:nrc_hspi_simple:1.3.3:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:nrc_hspi_simple@1.3.3",
+        "language": "",
+        "licenses": [
+          "ISC"
+        ],
+        "locations": null,
+        "name": "nrc_hspi_simple",
+        "purl": "pkg:generic/newracom/nrc_hspi_simple@1.3.3",
+        "type": "UnknownPackage",
+        "upstreams": [],
+        "version": "1.3.3"
+      }
+    },
+    {
+      "alerts": [
+        {
+          "message": "Package is from end-of-life distro: debian 10",
+          "metadata": {
+            "name": "debian",
+            "version": "10"
+          },
+          "type": "distro-eol"
+        }
+      ],
+      "package": {
+        "cpes": [
+          "cpe:2.3:a:wireshark:wireshark:4.0.5:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:tshark@4.0.5",
+        "language": "",
+        "licenses": [
+          "GPL-2.0-or-later"
+        ],
+        "locations": null,
+        "name": "tshark",
+        "purl": "pkg:deb/debian/tshark@4.0.5?arch=armhf",
+        "type": "deb",
+        "upstreams": [],
+        "version": "4.0.5"
+      }
+    },
+    {
+      "alerts": [
+        {
+          "message": "Package is from end-of-life distro: debian 10",
+          "metadata": {
+            "name": "debian",
+            "version": "10"
+          },
+          "type": "distro-eol"
+        }
+      ],
+      "package": {
+        "cpes": [
+          "cpe:2.3:a:uni-s1g:uni-s1g:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:uni-s1g:uni_s1g:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:uni_s1g:uni-s1g:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:uni_s1g:uni_s1g:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:uni:uni-s1g:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:uni:uni_s1g:1.3.3:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:uni_s1g@1.3.3",
+        "language": "",
+        "licenses": [
+          "LicenseRef-NewracomFirmware"
+        ],
+        "locations": null,
+        "name": "uni_s1g",
+        "purl": "pkg:generic/newracom/nrc7394-firmware@1.3.3",
+        "type": "UnknownPackage",
+        "upstreams": [],
+        "version": "1.3.3"
+      }
+    },
+    {
+      "alerts": [
+        {
+          "message": "Package is from end-of-life distro: debian 10",
+          "metadata": {
+            "name": "debian",
+            "version": "10"
+          },
+          "type": "distro-eol"
+        }
+      ],
+      "package": {
+        "cpes": [
+          "cpe:2.3:a:wireshark:wireshark:4.0.5:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:wireshark@4.0.5",
+        "language": "",
+        "licenses": [
+          "GPL-2.0-or-later"
+        ],
+        "locations": null,
+        "name": "wireshark",
+        "purl": "pkg:deb/debian/wireshark@4.0.5?arch=armhf",
+        "type": "deb",
+        "upstreams": [],
+        "version": "4.0.5"
+      }
+    },
+    {
+      "alerts": [
+        {
+          "message": "Package is from end-of-life distro: debian 10",
+          "metadata": {
+            "name": "debian",
+            "version": "10"
+          },
+          "type": "distro-eol"
+        }
+      ],
+      "package": {
+        "cpes": [
+          "cpe:2.3:a:nrc7394-sw-pkg:nrc7394-sw-pkg:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:nrc7394-sw-pkg:nrc7394_sw_pkg:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:nrc7394_sw_pkg:nrc7394-sw-pkg:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:nrc7394_sw_pkg:nrc7394_sw_pkg:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:nrc7394-sw:nrc7394-sw-pkg:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:nrc7394-sw:nrc7394_sw_pkg:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:nrc7394_sw:nrc7394-sw-pkg:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:nrc7394_sw:nrc7394_sw_pkg:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:nrc7394:nrc7394-sw-pkg:1.3.3:*:*:*:*:*:*:*",
+          "cpe:2.3:a:nrc7394:nrc7394_sw_pkg:1.3.3:*:*:*:*:*:*:*"
+        ],
+        "id": "pkg:generic/nrc7394_sw_pkg@1.3.3",
+        "language": "",
+        "licenses": [],
+        "locations": null,
+        "name": "nrc7394_sw_pkg",
+        "purl": "pkg:generic/nrc7394_sw_pkg@1.3.3",
+        "type": "UnknownPackage",
+        "upstreams": [],
+        "version": "1.3.3"
+      }
+    }
+  ],
+  "descriptor": {
+    "configuration": {
+      "SortBy": {
+        "sort-by": "risk"
+      },
+      "add-cpes-if-none": true,
+      "alerts": {
+        "enable-eol-distro-warnings": true
+      },
+      "by-cve": false,
+      "check-for-app-update": true,
+      "db": {
+        "auto-update": true,
+        "ca-cert": "",
+        "cache-dir": "~/.cache/grype/db",
+        "max-allowed-built-age": 432000000000000,
+        "max-update-check-frequency": 7200000000000,
+        "require-update-check": false,
+        "update-available-timeout": 30000000000,
+        "update-download-timeout": 300000000000,
+        "update-url": "https://grype.anchore.io/databases",
+        "validate-age": true,
+        "validate-by-hash-on-start": true
+      },
+      "default-image-pull-source": "",
+      "dev": {
+        "db": {
+          "debug": false
+        }
+      },
+      "distro": "debian:10",
+      "exclude": [],
+      "exp": {},
+      "externalSources": {
+        "enable": false,
+        "maven": {
+          "baseUrl": "https://search.maven.org/solrsearch/select",
+          "rateLimit": 300000000,
+          "searchUpstreamBySha1": true
+        }
+      },
+      "fail-on-severity": "",
+      "file": "",
+      "fix-channel": {
+        "redhat-eus": {
+          "apply": "auto",
+          "versions": ">= 8.0"
+        },
+        "ubuntu-esm": {
+          "apply": "auto",
+          "versions": ""
+        }
+      },
+      "from": null,
+      "ignore": [
+        {
+          "fix-state": "",
+          "include-aliases": false,
+          "match-type": "exact-indirect-match",
+          "namespace": "",
+          "package": {
+            "language": "",
+            "location": "",
+            "name": "kernel-headers",
+            "type": "rpm",
+            "upstream-name": "kernel",
+            "version": ""
+          },
+          "reason": "",
+          "vex-justification": "",
+          "vex-status": "",
+          "vulnerability": ""
+        },
+        {
+          "fix-state": "",
+          "include-aliases": false,
+          "match-type": "exact-indirect-match",
+          "namespace": "",
+          "package": {
+            "language": "",
+            "location": "",
+            "name": "linux(-.*)?-headers-.*",
+            "type": "deb",
+            "upstream-name": "linux.*",
+            "version": ""
+          },
+          "reason": "",
+          "vex-justification": "",
+          "vex-status": "",
+          "vulnerability": ""
+        },
+        {
+          "fix-state": "",
+          "include-aliases": false,
+          "match-type": "exact-indirect-match",
+          "namespace": "",
+          "package": {
+            "language": "",
+            "location": "",
+            "name": "linux-libc-dev",
+            "type": "deb",
+            "upstream-name": "linux",
+            "version": ""
+          },
+          "reason": "",
+          "vex-justification": "",
+          "vex-status": "",
+          "vulnerability": ""
+        },
+        {
+          "fix-state": "",
+          "include-aliases": false,
+          "match-type": "exact-indirect-match",
+          "namespace": "",
+          "package": {
+            "language": "",
+            "location": "",
+            "name": "linux-kbuild-.*",
+            "type": "deb",
+            "upstream-name": "linux.*",
+            "version": ""
+          },
+          "reason": "",
+          "vex-justification": "",
+          "vex-status": "",
+          "vulnerability": ""
+        },
+        {
+          "fix-state": "",
+          "include-aliases": false,
+          "match-type": "",
+          "namespace": "",
+          "package": {
+            "language": "",
+            "location": "",
+            "name": "",
+            "type": "",
+            "upstream-name": "",
+            "version": ""
+          },
+          "reason": "",
+          "vex-justification": "",
+          "vex-status": "not_affected",
+          "vulnerability": ""
+        },
+        {
+          "fix-state": "",
+          "include-aliases": false,
+          "match-type": "",
+          "namespace": "",
+          "package": {
+            "language": "",
+            "location": "",
+            "name": "",
+            "type": "",
+            "upstream-name": "",
+            "version": ""
+          },
+          "reason": "",
+          "vex-justification": "",
+          "vex-status": "fixed",
+          "vulnerability": ""
+        }
+      ],
+      "ignore-wontfix": "",
+      "match": {
+        "dotnet": {
+          "using-cpes": false
+        },
+        "dpkg": {
+          "missing-epoch-strategy": "zero",
+          "use-cpes-for-eol": false,
+          "using-cpes": false
+        },
+        "golang": {
+          "allow-main-module-pseudo-version-comparison": false,
+          "always-use-cpe-for-stdlib": false,
+          "using-cpes": false
+        },
+        "hex": {
+          "using-cpes": false
+        },
+        "java": {
+          "using-cpes": false
+        },
+        "javascript": {
+          "using-cpes": false
+        },
+        "jvm": {
+          "using-cpes": true
+        },
+        "python": {
+          "using-cpes": false
+        },
+        "rpm": {
+          "missing-epoch-strategy": "auto",
+          "use-cpes-for-eol": false,
+          "using-cpes": false
+        },
+        "ruby": {
+          "using-cpes": false
+        },
+        "rust": {
+          "using-cpes": false
+        },
+        "stock": {
+          "using-cpes": true
+        }
+      },
+      "match-upstream-kernel-headers": false,
+      "name": "",
+      "only-fixed": false,
+      "only-notfixed": false,
+      "output": [
+        "json"
+      ],
+      "output-template-file": "",
+      "platform": "",
+      "pretty": false,
+      "registry": {
+        "ca-cert": "",
+        "insecure-skip-tls-verify": false,
+        "insecure-use-http": false
+      },
+      "search": {
+        "indexed-archives": true,
+        "scope": "squashed",
+        "unindexed-archives": false
+      },
+      "show-suppressed": false,
+      "timestamp": true,
+      "vex-add": [],
+      "vex-documents": [
+        "reuse/openvex.json"
+      ]
+    },
+    "db": {
+      "providers": {
+        "alma": {
+          "captured": "2026-09-29T00:34:01Z",
+          "input": "xxh64:2c410be7de40b2f7"
+        },
+        "alpine": {
+          "captured": "2026-09-29T00:34:31Z",
+          "input": "xxh64:15ce1a1494081fc0"
+        },
+        "amazon": {
+          "captured": "2026-09-29T00:34:29Z",
+          "input": "xxh64:7537c717b0864901"
+        },
+        "arch": {
+          "captured": "2026-09-29T00:34:03Z",
+          "input": "xxh64:8c3406a850424235"
+        },
+        "bitnami": {
+          "captured": "2026-09-29T00:34:02Z",
+          "input": "xxh64:a8bfd30bd37b4434"
+        },
+        "chainguard": {
+          "captured": "2026-09-29T00:34:11Z",
+          "input": "xxh64:2e2485ac2374a642"
+        },
+        "chainguard-libraries": {
+          "captured": "2026-09-29T00:34:06Z",
+          "input": "xxh64:875d4d096f788018"
+        },
+        "debian": {
+          "captured": "2026-09-29T00:34:41Z",
+          "input": "xxh64:8ceec73d37426857"
+        },
+        "echo": {
+          "captured": "2026-09-29T00:34:03Z",
+          "input": "xxh64:aa7f11442631dad3"
+        },
+        "eol": {
+          "captured": "2026-09-29T00:34:00Z",
+          "input": "xxh64:766ebbb5b1b7ba27"
+        },
+        "epss": {
+          "captured": "2026-09-29T00:34:08Z",
+          "input": "xxh64:62576b39a726f131"
+        },
+        "fedora": {
+          "captured": "2026-09-29T00:34:28Z",
+          "input": "xxh64:ae06c7c3200ae925"
+        },
+        "github": {
+          "captured": "2026-09-29T00:34:23Z",
+          "input": "xxh64:c57fe0f3e33e5b00"
+        },
+        "govulndb": {
+          "captured": "2026-09-29T00:34:19Z",
+          "input": "xxh64:1fe819315e296b60"
+        },
+        "hummingbird": {
+          "captured": "2026-09-29T00:36:38Z",
+          "input": "xxh64:5cebaa5a1c443bfe"
+        },
+        "kev": {
+          "captured": "2026-09-29T00:34:26Z",
+          "input": "xxh64:a7f7e45ad81b0d4e"
+        },
+        "mariner": {
+          "captured": "2026-09-29T00:34:07Z",
+          "input": "xxh64:076ee081c211255b"
+        },
+        "minimos": {
+          "captured": "2026-09-29T00:34:18Z",
+          "input": "xxh64:7d286954f22f9dd8"
+        },
+        "nvd": {
+          "captured": "2026-09-29T00:35:04Z",
+          "input": "xxh64:294e75ed40176c5b"
+        },
+        "oracle": {
+          "captured": "2026-09-29T00:34:08Z",
+          "input": "xxh64:4c875d39b0ddb79f"
+        },
+        "photon": {
+          "captured": "2026-09-29T00:34:08Z",
+          "input": "xxh64:b124d8c6386fff8a"
+        },
+        "rhel": {
+          "captured": "2026-09-29T00:35:22Z",
+          "input": "xxh64:6a3781fadfafa501"
+        },
+        "secureos": {
+          "captured": "2026-09-29T00:34:25Z",
+          "input": "xxh64:c909bfc6b2e55509"
+        },
+        "sles": {
+          "captured": "2026-09-29T00:35:56Z",
+          "input": "xxh64:6bc9457d28435855"
+        },
+        "ubuntu": {
+          "captured": "2026-09-29T00:35:02Z",
+          "input": "xxh64:77b9e2367e4fe4e0"
+        },
+        "wolfi": {
+          "captured": "2026-09-29T00:34:09Z",
+          "input": "xxh64:0d6df25a28569ce2"
+        }
+      },
+      "status": {
+        "built": "2026-09-29T06:32:31Z",
+        "from": "https://grype.anchore.io/databases/v6/vulnerability-db_v6.1.9_2026-09-29T00:34:00Z_1790663551.tar.zst?checksum=sha256%3A1e88821121dd3ec9bef68b4eb7c5524997f62da37215113ec256179d4e6da8cf",
+        "path": "~/.cache/grype/db/6/vulnerability.db",
+        "schemaVersion": "v6.1.9",
+        "valid": true
+      }
+    },
+    "name": "grype",
+    "timestamp": "2026-09-29T17:08:32.190574541-07:00",
+    "version": "0.116.0"
+  },
+  "distro": {
+    "idLike": [
+      "debian"
+    ],
+    "name": "debian",
+    "version": "10"
+  },
+  "matches": [
+    {
+      "artifact": {
+        "cpes": [
+          "cpe:2.3:a:wireshark:wireshark:4.0.5:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:wireshark@4.0.5",
+        "language": "",
+        "licenses": [
+          "GPL-2.0-or-later"
+        ],
+        "locations": null,
+        "name": "wireshark",
+        "purl": "pkg:deb/debian/wireshark@4.0.5?arch=armhf",
+        "type": "deb",
+        "upstreams": [],
+        "version": "4.0.5"
+      },
+      "matchDetails": [
+        {
+          "found": {
+            "versionConstraint": "none (unknown)",
+            "vulnerabilityID": "CVE-2023-0667"
+          },
+          "matcher": "dpkg-matcher",
+          "searchedBy": {
+            "distro": {
+              "type": "debian",
+              "version": "10"
+            },
+            "namespace": "debian:distro:debian:10",
+            "package": {
+              "name": "wireshark",
+              "version": "4.0.5"
+            }
+          },
+          "type": "exact-direct-match"
+        }
+      ],
+      "relatedVulnerabilities": [
+        {
+          "cvss": [
+            {
+              "metrics": {
+                "baseScore": 6.5,
+                "exploitabilityScore": 2.9,
+                "impactScore": 3.6
+              },
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "vendorMetadata": {},
+              "version": "3.1"
+            },
+            {
+              "metrics": {
+                "baseScore": 6.5,
+                "exploitabilityScore": 2.9,
+                "impactScore": 3.6
+              },
+              "source": "134c704f-9b21-4f2e-91b3-4a467353bcc0",
+              "type": "Secondary",
+              "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "vendorMetadata": {},
+              "version": "3.1"
+            }
+          ],
+          "cwes": [
+            {
+              "cve": "CVE-2023-0667",
+              "cwe": "CWE-122",
+              "source": "cve@takeonme.org",
+              "type": "Secondary"
+            },
+            {
+              "cve": "CVE-2023-0667",
+              "cwe": "CWE-787",
+              "source": "nvd@nist.gov",
+              "type": "Primary"
+            }
+          ],
+          "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2023-0667",
+          "description": "Due to failure in validating the length provided by an attacker-crafted MSMMS packet, Wireshark version 4.0.5 and prior, in an unusual configuration, is susceptible to a heap-based buffer overflow, and possibly code execution in the context of the process running Wireshark",
+          "epss": [
+            {
+              "cve": "CVE-2023-0667",
+              "date": "2026-09-28",
+              "epss": 0.02008,
+              "percentile": 0.80049
+            }
+          ],
+          "id": "CVE-2023-0667",
+          "namespace": "nvd:cpe",
+          "severity": "Medium",
+          "urls": [
+            "https://gitlab.com/wireshark/wireshark/-/issues/19086",
+            "https://security.gentoo.org/glsa/202309-02",
+            "https://takeonme.org/cves/CVE-2023-0667.html",
+            "https://lists.debian.org/debian-lts-announce/2024/09/msg00049.html"
+          ]
+        }
+      ],
+      "vulnerability": {
+        "advisories": [],
+        "cvss": [
+          {
+            "metrics": {
+              "baseScore": 6.5,
+              "exploitabilityScore": 2.9,
+              "impactScore": 3.6
+            },
+            "source": "nvd@nist.gov",
+            "type": "Primary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+            "vendorMetadata": {},
+            "version": "3.1"
+          }
+        ],
+        "cwes": [
+          {
+            "cve": "CVE-2023-0667",
+            "cwe": "CWE-122",
+            "source": "cve@takeonme.org",
+            "type": "Secondary"
+          },
+          {
+            "cve": "CVE-2023-0667",
+            "cwe": "CWE-787",
+            "source": "nvd@nist.gov",
+            "type": "Primary"
+          }
+        ],
+        "dataSource": "https://security-tracker.debian.org/tracker/CVE-2023-0667",
+        "description": "Due to failure in validating the length provided by an attacker-crafted MSMMS packet, Wireshark version 4.0.5 and prior, in an unusual configuration, is susceptible to a heap-based buffer overflow, and possibly code execution in the context of the process running Wireshark",
+        "epss": [
+          {
+            "cve": "CVE-2023-0667",
+            "date": "2026-09-28",
+            "epss": 0.02008,
+            "percentile": 0.80049
+          }
+        ],
+        "fix": {
+          "state": "wont-fix",
+          "versions": []
+        },
+        "id": "CVE-2023-0667",
+        "namespace": "debian:distro:debian:10",
+        "risk": 1.1545999999999998,
+        "severity": "Medium",
+        "urls": []
+      }
+    },
+    {
+      "artifact": {
+        "cpes": [
+          "cpe:2.3:a:wireshark:wireshark:4.0.5:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:wireshark@4.0.5",
+        "language": "",
+        "licenses": [
+          "GPL-2.0-or-later"
+        ],
+        "locations": null,
+        "name": "wireshark",
+        "purl": "pkg:deb/debian/wireshark@4.0.5?arch=armhf",
+        "type": "deb",
+        "upstreams": [],
+        "version": "4.0.5"
+      },
+      "matchDetails": [
+        {
+          "found": {
+            "versionConstraint": "none (unknown)",
+            "vulnerabilityID": "CVE-2024-2955"
+          },
+          "matcher": "dpkg-matcher",
+          "searchedBy": {
+            "distro": {
+              "type": "debian",
+              "version": "10"
+            },
+            "namespace": "debian:distro:debian:10",
+            "package": {
+              "name": "wireshark",
+              "version": "4.0.5"
+            }
+          },
+          "type": "exact-direct-match"
+        }
+      ],
+      "relatedVulnerabilities": [
+        {
+          "cvss": [
+            {
+              "metrics": {
+                "baseScore": 7.5,
+                "exploitabilityScore": 3.9,
+                "impactScore": 3.6
+              },
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "vendorMetadata": {},
+              "version": "3.1"
+            },
+            {
+              "metrics": {
+                "baseScore": 7.8,
+                "exploitabilityScore": 1.9,
+                "impactScore": 5.9
+              },
+              "source": "cve@gitlab.com",
+              "type": "Secondary",
+              "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "vendorMetadata": {},
+              "version": "3.1"
+            }
+          ],
+          "cwes": [
+            {
+              "cve": "CVE-2024-2955",
+              "cwe": "CWE-762",
+              "source": "cve@gitlab.com",
+              "type": "Secondary"
+            },
+            {
+              "cve": "CVE-2024-2955",
+              "cwe": "CWE-763",
+              "source": "nvd@nist.gov",
+              "type": "Primary"
+            }
+          ],
+          "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2024-2955",
+          "description": "T.38 dissector crash in Wireshark 4.2.0 to 4.0.3 and 4.0.0 to 4.0.13 allows denial of service via packet injection or crafted capture file",
+          "epss": [
+            {
+              "cve": "CVE-2024-2955",
+              "date": "2026-09-28",
+              "epss": 0.01403,
+              "percentile": 0.71459
+            }
+          ],
+          "id": "CVE-2024-2955",
+          "namespace": "nvd:cpe",
+          "severity": "High",
+          "urls": [
+            "https://gitlab.com/wireshark/wireshark/-/issues/19695",
+            "https://www.wireshark.org/security/wnpa-sec-2024-06.html",
+            "https://lists.debian.org/debian-lts-announce/2024/09/msg00049.html",
+            "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/Q7TWJQKXOV4HYI5C4TWRKTN7B5YL7GTU/",
+            "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/ZD2MNS6EW2K2SSMN4YBGPZCC47KBDNEE/"
+          ]
+        }
+      ],
+      "vulnerability": {
+        "advisories": [],
+        "cvss": [
+          {
+            "metrics": {
+              "baseScore": 7.5,
+              "exploitabilityScore": 3.9,
+              "impactScore": 3.6
+            },
+            "source": "nvd@nist.gov",
+            "type": "Primary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "vendorMetadata": {},
+            "version": "3.1"
+          }
+        ],
+        "cwes": [
+          {
+            "cve": "CVE-2024-2955",
+            "cwe": "CWE-762",
+            "source": "cve@gitlab.com",
+            "type": "Secondary"
+          },
+          {
+            "cve": "CVE-2024-2955",
+            "cwe": "CWE-763",
+            "source": "nvd@nist.gov",
+            "type": "Primary"
+          }
+        ],
+        "dataSource": "https://security-tracker.debian.org/tracker/CVE-2024-2955",
+        "description": "T.38 dissector crash in Wireshark 4.2.0 to 4.0.3 and 4.0.0 to 4.0.13 allows denial of service via packet injection or crafted capture file",
+        "epss": [
+          {
+            "cve": "CVE-2024-2955",
+            "date": "2026-09-28",
+            "epss": 0.01403,
+            "percentile": 0.71459
+          }
+        ],
+        "fix": {
+          "state": "wont-fix",
+          "versions": []
+        },
+        "id": "CVE-2024-2955",
+        "namespace": "debian:distro:debian:10",
+        "risk": 1.0522500000000001,
+        "severity": "High",
+        "urls": []
+      }
+    },
+    {
+      "artifact": {
+        "cpes": [
+          "cpe:2.3:a:wireshark:wireshark:4.0.5:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:wireshark@4.0.5",
+        "language": "",
+        "licenses": [
+          "GPL-2.0-or-later"
+        ],
+        "locations": null,
+        "name": "wireshark",
+        "purl": "pkg:deb/debian/wireshark@4.0.5?arch=armhf",
+        "type": "deb",
+        "upstreams": [],
+        "version": "4.0.5"
+      },
+      "matchDetails": [
+        {
+          "found": {
+            "versionConstraint": "none (unknown)",
+            "vulnerabilityID": "CVE-2024-4854"
+          },
+          "matcher": "dpkg-matcher",
+          "searchedBy": {
+            "distro": {
+              "type": "debian",
+              "version": "10"
+            },
+            "namespace": "debian:distro:debian:10",
+            "package": {
+              "name": "wireshark",
+              "version": "4.0.5"
+            }
+          },
+          "type": "exact-direct-match"
+        }
+      ],
+      "relatedVulnerabilities": [
+        {
+          "cvss": [
+            {
+              "metrics": {
+                "baseScore": 7.5,
+                "exploitabilityScore": 3.9,
+                "impactScore": 3.6
+              },
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "vendorMetadata": {},
+              "version": "3.1"
+            },
+            {
+              "metrics": {
+                "baseScore": 6.4,
+                "exploitabilityScore": 1.7,
+                "impactScore": 4.8
+              },
+              "source": "cve@gitlab.com",
+              "type": "Secondary",
+              "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:L/A:H",
+              "vendorMetadata": {},
+              "version": "3.1"
+            }
+          ],
+          "cwes": [
+            {
+              "cve": "CVE-2024-4854",
+              "cwe": "CWE-835",
+              "source": "cve@gitlab.com",
+              "type": "Secondary"
+            },
+            {
+              "cve": "CVE-2024-4854",
+              "cwe": "CWE-835",
+              "source": "nvd@nist.gov",
+              "type": "Primary"
+            }
+          ],
+          "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2024-4854",
+          "description": "MONGO and ZigBee TLV dissector infinite loops in Wireshark 4.2.0 to 4.2.4, 4.0.0 to 4.0.14, and 3.6.0 to 3.6.22 allow denial of service via packet injection or crafted capture file",
+          "epss": [
+            {
+              "cve": "CVE-2024-4854",
+              "date": "2026-09-28",
+              "epss": 0.00811,
+              "percentile": 0.55258
+            }
+          ],
+          "id": "CVE-2024-4854",
+          "namespace": "nvd:cpe",
+          "severity": "High",
+          "urls": [
+            "https://gitlab.com/wireshark/wireshark/-/issues/19726",
+            "https://gitlab.com/wireshark/wireshark/-/merge_requests/15047",
+            "https://gitlab.com/wireshark/wireshark/-/merge_requests/15499",
+            "https://www.wireshark.org/security/wnpa-sec-2024-07.html",
+            "https://lists.debian.org/debian-lts-announce/2024/09/msg00049.html",
+            "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/66H2BSENPSIALF2WIZF7M3QBVWYBMFGW/",
+            "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/7MKFJAZDKXGFFQPRDYLX2AANRNMYZZEZ/"
+          ]
+        }
+      ],
+      "vulnerability": {
+        "advisories": [],
+        "cvss": [
+          {
+            "metrics": {
+              "baseScore": 7.5,
+              "exploitabilityScore": 3.9,
+              "impactScore": 3.6
+            },
+            "source": "nvd@nist.gov",
+            "type": "Primary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "vendorMetadata": {},
+            "version": "3.1"
+          }
+        ],
+        "cwes": [
+          {
+            "cve": "CVE-2024-4854",
+            "cwe": "CWE-835",
+            "source": "cve@gitlab.com",
+            "type": "Secondary"
+          },
+          {
+            "cve": "CVE-2024-4854",
+            "cwe": "CWE-835",
+            "source": "nvd@nist.gov",
+            "type": "Primary"
+          }
+        ],
+        "dataSource": "https://security-tracker.debian.org/tracker/CVE-2024-4854",
+        "description": "MONGO and ZigBee TLV dissector infinite loops in Wireshark 4.2.0 to 4.2.4, 4.0.0 to 4.0.14, and 3.6.0 to 3.6.22 allow denial of service via packet injection or crafted capture file",
+        "epss": [
+          {
+            "cve": "CVE-2024-4854",
+            "date": "2026-09-28",
+            "epss": 0.00811,
+            "percentile": 0.55258
+          }
+        ],
+        "fix": {
+          "state": "wont-fix",
+          "versions": []
+        },
+        "id": "CVE-2024-4854",
+        "namespace": "debian:distro:debian:10",
+        "risk": 0.60825,
+        "severity": "High",
+        "urls": []
+      }
+    },
+    {
+      "artifact": {
+        "cpes": [
+          "cpe:2.3:a:wireshark:wireshark:4.0.5:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:wireshark@4.0.5",
+        "language": "",
+        "licenses": [
+          "GPL-2.0-or-later"
+        ],
+        "locations": null,
+        "name": "wireshark",
+        "purl": "pkg:deb/debian/wireshark@4.0.5?arch=armhf",
+        "type": "deb",
+        "upstreams": [],
+        "version": "4.0.5"
+      },
+      "matchDetails": [
+        {
+          "found": {
+            "versionConstraint": "none (unknown)",
+            "vulnerabilityID": "CVE-2024-0209"
+          },
+          "matcher": "dpkg-matcher",
+          "searchedBy": {
+            "distro": {
+              "type": "debian",
+              "version": "10"
+            },
+            "namespace": "debian:distro:debian:10",
+            "package": {
+              "name": "wireshark",
+              "version": "4.0.5"
+            }
+          },
+          "type": "exact-direct-match"
+        }
+      ],
+      "relatedVulnerabilities": [
+        {
+          "cvss": [
+            {
+              "metrics": {
+                "baseScore": 7.5,
+                "exploitabilityScore": 3.9,
+                "impactScore": 3.6
+              },
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "vendorMetadata": {},
+              "version": "3.1"
+            },
+            {
+              "metrics": {
+                "baseScore": 7.8,
+                "exploitabilityScore": 1.9,
+                "impactScore": 5.9
+              },
+              "source": "cve@gitlab.com",
+              "type": "Secondary",
+              "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "vendorMetadata": {},
+              "version": "3.1"
+            }
+          ],
+          "cwes": [
+            {
+              "cve": "CVE-2024-0209",
+              "cwe": "CWE-476",
+              "source": "cve@gitlab.com",
+              "type": "Secondary"
+            },
+            {
+              "cve": "CVE-2024-0209",
+              "cwe": "CWE-476",
+              "source": "nvd@nist.gov",
+              "type": "Primary"
+            }
+          ],
+          "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2024-0209",
+          "description": "IEEE 1609.2 dissector crash in Wireshark 4.2.0, 4.0.0 to 4.0.11, and 3.6.0 to 3.6.19 allows denial of service via packet injection or crafted capture file",
+          "epss": [
+            {
+              "cve": "CVE-2024-0209",
+              "date": "2026-09-28",
+              "epss": 0.00579,
+              "percentile": 0.45449
+            }
+          ],
+          "id": "CVE-2024-0209",
+          "namespace": "nvd:cpe",
+          "severity": "High",
+          "urls": [
+            "https://gitlab.com/wireshark/wireshark/-/issues/19501",
+            "https://www.wireshark.org/security/wnpa-sec-2024-02.html",
+            "https://lists.debian.org/debian-lts-announce/2024/09/msg00049.html"
+          ]
+        }
+      ],
+      "vulnerability": {
+        "advisories": [],
+        "cvss": [
+          {
+            "metrics": {
+              "baseScore": 7.5,
+              "exploitabilityScore": 3.9,
+              "impactScore": 3.6
+            },
+            "source": "nvd@nist.gov",
+            "type": "Primary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "vendorMetadata": {},
+            "version": "3.1"
+          }
+        ],
+        "cwes": [
+          {
+            "cve": "CVE-2024-0209",
+            "cwe": "CWE-476",
+            "source": "cve@gitlab.com",
+            "type": "Secondary"
+          },
+          {
+            "cve": "CVE-2024-0209",
+            "cwe": "CWE-476",
+            "source": "nvd@nist.gov",
+            "type": "Primary"
+          }
+        ],
+        "dataSource": "https://security-tracker.debian.org/tracker/CVE-2024-0209",
+        "description": "IEEE 1609.2 dissector crash in Wireshark 4.2.0, 4.0.0 to 4.0.11, and 3.6.0 to 3.6.19 allows denial of service via packet injection or crafted capture file",
+        "epss": [
+          {
+            "cve": "CVE-2024-0209",
+            "date": "2026-09-28",
+            "epss": 0.00579,
+            "percentile": 0.45449
+          }
+        ],
+        "fix": {
+          "state": "wont-fix",
+          "versions": []
+        },
+        "id": "CVE-2024-0209",
+        "namespace": "debian:distro:debian:10",
+        "risk": 0.43425,
+        "severity": "High",
+        "urls": []
+      }
+    },
+    {
+      "artifact": {
+        "cpes": [
+          "cpe:2.3:a:wireshark:wireshark:4.0.5:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:wireshark@4.0.5",
+        "language": "",
+        "licenses": [
+          "GPL-2.0-or-later"
+        ],
+        "locations": null,
+        "name": "wireshark",
+        "purl": "pkg:deb/debian/wireshark@4.0.5?arch=armhf",
+        "type": "deb",
+        "upstreams": [],
+        "version": "4.0.5"
+      },
+      "matchDetails": [
+        {
+          "found": {
+            "versionConstraint": "none (unknown)",
+            "vulnerabilityID": "CVE-2024-0211"
+          },
+          "matcher": "dpkg-matcher",
+          "searchedBy": {
+            "distro": {
+              "type": "debian",
+              "version": "10"
+            },
+            "namespace": "debian:distro:debian:10",
+            "package": {
+              "name": "wireshark",
+              "version": "4.0.5"
+            }
+          },
+          "type": "exact-direct-match"
+        }
+      ],
+      "relatedVulnerabilities": [
+        {
+          "cvss": [
+            {
+              "metrics": {
+                "baseScore": 7.5,
+                "exploitabilityScore": 3.9,
+                "impactScore": 3.6
+              },
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "vendorMetadata": {},
+              "version": "3.1"
+            },
+            {
+              "metrics": {
+                "baseScore": 7.8,
+                "exploitabilityScore": 1.9,
+                "impactScore": 5.9
+              },
+              "source": "cve@gitlab.com",
+              "type": "Secondary",
+              "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "vendorMetadata": {},
+              "version": "3.1"
+            }
+          ],
+          "cwes": [
+            {
+              "cve": "CVE-2024-0211",
+              "cwe": "CWE-835",
+              "source": "cve@gitlab.com",
+              "type": "Secondary"
+            },
+            {
+              "cve": "CVE-2024-0211",
+              "cwe": "CWE-835",
+              "source": "nvd@nist.gov",
+              "type": "Primary"
+            }
+          ],
+          "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2024-0211",
+          "description": "DOCSIS dissector crash in Wireshark 4.2.0 allows denial of service via packet injection or crafted capture file",
+          "epss": [
+            {
+              "cve": "CVE-2024-0211",
+              "date": "2026-09-28",
+              "epss": 0.00543,
+              "percentile": 0.43377
+            }
+          ],
+          "id": "CVE-2024-0211",
+          "namespace": "nvd:cpe",
+          "severity": "High",
+          "urls": [
+            "https://gitlab.com/wireshark/wireshark/-/issues/19557",
+            "https://www.wireshark.org/security/wnpa-sec-2024-05.html",
+            "https://lists.debian.org/debian-lts-announce/2024/09/msg00049.html"
+          ]
+        }
+      ],
+      "vulnerability": {
+        "advisories": [],
+        "cvss": [
+          {
+            "metrics": {
+              "baseScore": 7.5,
+              "exploitabilityScore": 3.9,
+              "impactScore": 3.6
+            },
+            "source": "nvd@nist.gov",
+            "type": "Primary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "vendorMetadata": {},
+            "version": "3.1"
+          }
+        ],
+        "cwes": [
+          {
+            "cve": "CVE-2024-0211",
+            "cwe": "CWE-835",
+            "source": "cve@gitlab.com",
+            "type": "Secondary"
+          },
+          {
+            "cve": "CVE-2024-0211",
+            "cwe": "CWE-835",
+            "source": "nvd@nist.gov",
+            "type": "Primary"
+          }
+        ],
+        "dataSource": "https://security-tracker.debian.org/tracker/CVE-2024-0211",
+        "description": "DOCSIS dissector crash in Wireshark 4.2.0 allows denial of service via packet injection or crafted capture file",
+        "epss": [
+          {
+            "cve": "CVE-2024-0211",
+            "date": "2026-09-28",
+            "epss": 0.00543,
+            "percentile": 0.43377
+          }
+        ],
+        "fix": {
+          "state": "wont-fix",
+          "versions": []
+        },
+        "id": "CVE-2024-0211",
+        "namespace": "debian:distro:debian:10",
+        "risk": 0.40725,
+        "severity": "High",
+        "urls": []
+      }
+    },
+    {
+      "artifact": {
+        "cpes": [
+          "cpe:2.3:a:wireshark:wireshark:4.0.5:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:wireshark@4.0.5",
+        "language": "",
+        "licenses": [
+          "GPL-2.0-or-later"
+        ],
+        "locations": null,
+        "name": "wireshark",
+        "purl": "pkg:deb/debian/wireshark@4.0.5?arch=armhf",
+        "type": "deb",
+        "upstreams": [],
+        "version": "4.0.5"
+      },
+      "matchDetails": [
+        {
+          "found": {
+            "versionConstraint": "none (unknown)",
+            "vulnerabilityID": "CVE-2023-4512"
+          },
+          "matcher": "dpkg-matcher",
+          "searchedBy": {
+            "distro": {
+              "type": "debian",
+              "version": "10"
+            },
+            "namespace": "debian:distro:debian:10",
+            "package": {
+              "name": "wireshark",
+              "version": "4.0.5"
+            }
+          },
+          "type": "exact-direct-match"
+        }
+      ],
+      "relatedVulnerabilities": [
+        {
+          "cvss": [
+            {
+              "metrics": {
+                "baseScore": 7.5,
+                "exploitabilityScore": 3.9,
+                "impactScore": 3.6
+              },
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "vendorMetadata": {},
+              "version": "3.1"
+            },
+            {
+              "metrics": {
+                "baseScore": 5.3,
+                "exploitabilityScore": 1.9,
+                "impactScore": 3.4
+              },
+              "source": "cve@gitlab.com",
+              "type": "Secondary",
+              "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:L",
+              "vendorMetadata": {},
+              "version": "3.1"
+            }
+          ],
+          "cwes": [
+            {
+              "cve": "CVE-2023-4512",
+              "cwe": "CWE-674",
+              "source": "cve@gitlab.com",
+              "type": "Secondary"
+            },
+            {
+              "cve": "CVE-2023-4512",
+              "cwe": "CWE-674",
+              "source": "nvd@nist.gov",
+              "type": "Primary"
+            }
+          ],
+          "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2023-4512",
+          "description": "CBOR dissector crash in Wireshark 4.0.0 to 4.0.6 allows denial of service via packet injection or crafted capture file",
+          "epss": [
+            {
+              "cve": "CVE-2023-4512",
+              "date": "2026-09-28",
+              "epss": 0.00514,
+              "percentile": 0.41442
+            }
+          ],
+          "id": "CVE-2023-4512",
+          "namespace": "nvd:cpe",
+          "severity": "High",
+          "urls": [
+            "https://gitlab.com/wireshark/wireshark/-/issues/19144",
+            "https://www.wireshark.org/security/wnpa-sec-2023-23.html",
+            "https://lists.debian.org/debian-lts-announce/2024/09/msg00049.html",
+            "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/6HCUPLDY7HLPO46PHMGIJSUBJFTT237C/",
+            "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/L4AVRUYSHDNEAJILVSGY5W6MPOMG2YRF/",
+            "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/TRKHFQPWFU7F3OXTL6IEIQSJG6FVXZTZ/"
+          ]
+        }
+      ],
+      "vulnerability": {
+        "advisories": [],
+        "cvss": [
+          {
+            "metrics": {
+              "baseScore": 7.5,
+              "exploitabilityScore": 3.9,
+              "impactScore": 3.6
+            },
+            "source": "nvd@nist.gov",
+            "type": "Primary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "vendorMetadata": {},
+            "version": "3.1"
+          }
+        ],
+        "cwes": [
+          {
+            "cve": "CVE-2023-4512",
+            "cwe": "CWE-674",
+            "source": "cve@gitlab.com",
+            "type": "Secondary"
+          },
+          {
+            "cve": "CVE-2023-4512",
+            "cwe": "CWE-674",
+            "source": "nvd@nist.gov",
+            "type": "Primary"
+          }
+        ],
+        "dataSource": "https://security-tracker.debian.org/tracker/CVE-2023-4512",
+        "description": "CBOR dissector crash in Wireshark 4.0.0 to 4.0.6 allows denial of service via packet injection or crafted capture file",
+        "epss": [
+          {
+            "cve": "CVE-2023-4512",
+            "date": "2026-09-28",
+            "epss": 0.00514,
+            "percentile": 0.41442
+          }
+        ],
+        "fix": {
+          "state": "wont-fix",
+          "versions": []
+        },
+        "id": "CVE-2023-4512",
+        "namespace": "debian:distro:debian:10",
+        "risk": 0.3855,
+        "severity": "High",
+        "urls": []
+      }
+    },
+    {
+      "artifact": {
+        "cpes": [
+          "cpe:2.3:a:wireshark:wireshark:4.0.5:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:wireshark@4.0.5",
+        "language": "",
+        "licenses": [
+          "GPL-2.0-or-later"
+        ],
+        "locations": null,
+        "name": "wireshark",
+        "purl": "pkg:deb/debian/wireshark@4.0.5?arch=armhf",
+        "type": "deb",
+        "upstreams": [],
+        "version": "4.0.5"
+      },
+      "matchDetails": [
+        {
+          "found": {
+            "versionConstraint": "none (unknown)",
+            "vulnerabilityID": "CVE-2023-3649"
+          },
+          "matcher": "dpkg-matcher",
+          "searchedBy": {
+            "distro": {
+              "type": "debian",
+              "version": "10"
+            },
+            "namespace": "debian:distro:debian:10",
+            "package": {
+              "name": "wireshark",
+              "version": "4.0.5"
+            }
+          },
+          "type": "exact-direct-match"
+        }
+      ],
+      "relatedVulnerabilities": [
+        {
+          "cvss": [
+            {
+              "metrics": {
+                "baseScore": 5.5,
+                "exploitabilityScore": 1.9,
+                "impactScore": 3.6
+              },
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "vendorMetadata": {},
+              "version": "3.1"
+            },
+            {
+              "metrics": {
+                "baseScore": 5.3,
+                "exploitabilityScore": 1.9,
+                "impactScore": 3.4
+              },
+              "source": "cve@gitlab.com",
+              "type": "Secondary",
+              "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:L",
+              "vendorMetadata": {},
+              "version": "3.1"
+            }
+          ],
+          "cwes": [
+            {
+              "cve": "CVE-2023-3649",
+              "cwe": "CWE-126",
+              "source": "cve@gitlab.com",
+              "type": "Secondary"
+            },
+            {
+              "cve": "CVE-2023-3649",
+              "cwe": "CWE-125",
+              "source": "nvd@nist.gov",
+              "type": "Primary"
+            }
+          ],
+          "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2023-3649",
+          "description": "iSCSI dissector crash in Wireshark 4.0.0 to 4.0.6 allows denial of service via packet injection or crafted capture file",
+          "epss": [
+            {
+              "cve": "CVE-2023-3649",
+              "date": "2026-09-28",
+              "epss": 0.00239,
+              "percentile": 0.13443
+            }
+          ],
+          "id": "CVE-2023-3649",
+          "namespace": "nvd:cpe",
+          "severity": "Medium",
+          "urls": [
+            "https://gitlab.com/wireshark/wireshark/-/issues/19164",
+            "https://www.wireshark.org/security/wnpa-sec-2023-22.html",
+            "https://lists.debian.org/debian-lts-announce/2024/09/msg00049.html"
+          ]
+        }
+      ],
+      "vulnerability": {
+        "advisories": [],
+        "cvss": [
+          {
+            "metrics": {
+              "baseScore": 5.5,
+              "exploitabilityScore": 1.9,
+              "impactScore": 3.6
+            },
+            "source": "nvd@nist.gov",
+            "type": "Primary",
+            "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+            "vendorMetadata": {},
+            "version": "3.1"
+          }
+        ],
+        "cwes": [
+          {
+            "cve": "CVE-2023-3649",
+            "cwe": "CWE-126",
+            "source": "cve@gitlab.com",
+            "type": "Secondary"
+          },
+          {
+            "cve": "CVE-2023-3649",
+            "cwe": "CWE-125",
+            "source": "nvd@nist.gov",
+            "type": "Primary"
+          }
+        ],
+        "dataSource": "https://security-tracker.debian.org/tracker/CVE-2023-3649",
+        "description": "iSCSI dissector crash in Wireshark 4.0.0 to 4.0.6 allows denial of service via packet injection or crafted capture file",
+        "epss": [
+          {
+            "cve": "CVE-2023-3649",
+            "date": "2026-09-28",
+            "epss": 0.00239,
+            "percentile": 0.13443
+          }
+        ],
+        "fix": {
+          "state": "wont-fix",
+          "versions": []
+        },
+        "id": "CVE-2023-3649",
+        "namespace": "debian:distro:debian:10",
+        "risk": 0.12547500000000003,
+        "severity": "Medium",
+        "urls": []
+      }
+    },
+    {
+      "artifact": {
+        "cpes": [
+          "cpe:2.3:a:wireshark:wireshark:4.0.5:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:wireshark@4.0.5",
+        "language": "",
+        "licenses": [
+          "GPL-2.0-or-later"
+        ],
+        "locations": null,
+        "name": "wireshark",
+        "purl": "pkg:deb/debian/wireshark@4.0.5?arch=armhf",
+        "type": "deb",
+        "upstreams": [],
+        "version": "4.0.5"
+      },
+      "matchDetails": [
+        {
+          "found": {
+            "versionConstraint": "none (unknown)",
+            "vulnerabilityID": "CVE-2024-4853"
+          },
+          "matcher": "dpkg-matcher",
+          "searchedBy": {
+            "distro": {
+              "type": "debian",
+              "version": "10"
+            },
+            "namespace": "debian:distro:debian:10",
+            "package": {
+              "name": "wireshark",
+              "version": "4.0.5"
+            }
+          },
+          "type": "exact-direct-match"
+        }
+      ],
+      "relatedVulnerabilities": [
+        {
+          "cvss": [
+            {
+              "metrics": {
+                "baseScore": 5.5,
+                "exploitabilityScore": 1.9,
+                "impactScore": 3.6
+              },
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "vendorMetadata": {},
+              "version": "3.1"
+            },
+            {
+              "metrics": {
+                "baseScore": 3.6,
+                "exploitabilityScore": 1.1,
+                "impactScore": 2.6
+              },
+              "source": "cve@gitlab.com",
+              "type": "Secondary",
+              "vector": "CVSS:3.1/AV:L/AC:H/PR:N/UI:R/S:U/C:N/I:L/A:L",
+              "vendorMetadata": {},
+              "version": "3.1"
+            }
+          ],
+          "cwes": [
+            {
+              "cve": "CVE-2024-4853",
+              "cwe": "CWE-762",
+              "source": "cve@gitlab.com",
+              "type": "Secondary"
+            },
+            {
+              "cve": "CVE-2024-4853",
+              "cwe": "CWE-787",
+              "source": "nvd@nist.gov",
+              "type": "Primary"
+            }
+          ],
+          "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2024-4853",
+          "description": "Memory handling issue in editcap could cause denial of service via crafted capture file",
+          "epss": [
+            {
+              "cve": "CVE-2024-4853",
+              "date": "2026-09-28",
+              "epss": 0.00416,
+              "percentile": 0.33361
+            }
+          ],
+          "id": "CVE-2024-4853",
+          "namespace": "nvd:cpe",
+          "severity": "Medium",
+          "urls": [
+            "https://gitlab.com/wireshark/wireshark/-/issues/19724",
+            "https://www.wireshark.org/security/wnpa-sec-2024-08.html",
+            "https://lists.debian.org/debian-lts-announce/2024/09/msg00049.html",
+            "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/66H2BSENPSIALF2WIZF7M3QBVWYBMFGW/",
+            "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/7MKFJAZDKXGFFQPRDYLX2AANRNMYZZEZ/"
+          ]
+        }
+      ],
+      "vulnerability": {
+        "advisories": [],
+        "cvss": [],
+        "cwes": [
+          {
+            "cve": "CVE-2024-4853",
+            "cwe": "CWE-762",
+            "source": "cve@gitlab.com",
+            "type": "Secondary"
+          },
+          {
+            "cve": "CVE-2024-4853",
+            "cwe": "CWE-787",
+            "source": "nvd@nist.gov",
+            "type": "Primary"
+          }
+        ],
+        "dataSource": "https://security-tracker.debian.org/tracker/CVE-2024-4853",
+        "description": "Memory handling issue in editcap could cause denial of service via crafted capture file",
+        "epss": [
+          {
+            "cve": "CVE-2024-4853",
+            "date": "2026-09-28",
+            "epss": 0.00416,
+            "percentile": 0.33361
+          }
+        ],
+        "fix": {
+          "state": "not-fixed",
+          "versions": []
+        },
+        "id": "CVE-2024-4853",
+        "namespace": "debian:distro:debian:10",
+        "risk": 0.0208,
+        "severity": "Negligible",
+        "urls": []
+      }
+    },
+    {
+      "artifact": {
+        "cpes": [
+          "cpe:2.3:a:wireshark:wireshark:4.0.5:*:*:*:*:*:*:*"
+        ],
+        "id": "newracom-curated:wireshark@4.0.5",
+        "language": "",
+        "licenses": [
+          "GPL-2.0-or-later"
+        ],
+        "locations": null,
+        "name": "wireshark",
+        "purl": "pkg:deb/debian/wireshark@4.0.5?arch=armhf",
+        "type": "deb",
+        "upstreams": [],
+        "version": "4.0.5"
+      },
+      "matchDetails": [
+        {
+          "found": {
+            "versionConstraint": "none (unknown)",
+            "vulnerabilityID": "CVE-2024-4855"
+          },
+          "matcher": "dpkg-matcher",
+          "searchedBy": {
+            "distro": {
+              "type": "debian",
+              "version": "10"
+            },
+            "namespace": "debian:distro:debian:10",
+            "package": {
+              "name": "wireshark",
+              "version": "4.0.5"
+            }
+          },
+          "type": "exact-direct-match"
+        }
+      ],
+      "relatedVulnerabilities": [
+        {
+          "cvss": [
+            {
+              "metrics": {
+                "baseScore": 5.5,
+                "exploitabilityScore": 1.9,
+                "impactScore": 3.6
+              },
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "vendorMetadata": {},
+              "version": "3.1"
+            },
+            {
+              "metrics": {
+                "baseScore": 3.6,
+                "exploitabilityScore": 1.1,
+                "impactScore": 2.6
+              },
+              "source": "cve@gitlab.com",
+              "type": "Secondary",
+              "vector": "CVSS:3.1/AV:L/AC:H/PR:N/UI:R/S:U/C:N/I:L/A:L",
+              "vendorMetadata": {},
+              "version": "3.1"
+            }
+          ],
+          "cwes": [
+            {
+              "cve": "CVE-2024-4855",
+              "cwe": "CWE-416",
+              "source": "cve@gitlab.com",
+              "type": "Secondary"
+            }
+          ],
+          "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2024-4855",
+          "description": "Use after free issue in editcap could cause denial of service via crafted capture file",
+          "epss": [
+            {
+              "cve": "CVE-2024-4855",
+              "date": "2026-09-28",
+              "epss": 0.00373,
+              "percentile": 0.28645
+            }
+          ],
+          "id": "CVE-2024-4855",
+          "namespace": "nvd:cpe",
+          "severity": "Medium",
+          "urls": [
+            "https://gitlab.com/wireshark/wireshark/-/issues/19782",
+            "https://gitlab.com/wireshark/wireshark/-/issues/19783",
+            "https://gitlab.com/wireshark/wireshark/-/issues/19784",
+            "https://www.wireshark.org/security/wnpa-sec-2024-08.html",
+            "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/66H2BSENPSIALF2WIZF7M3QBVWYBMFGW/",
+            "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/7MKFJAZDKXGFFQPRDYLX2AANRNMYZZEZ/"
+          ]
+        }
+      ],
+      "vulnerability": {
+        "advisories": [],
+        "cvss": [],
+        "cwes": [
+          {
+            "cve": "CVE-2024-4855",
+            "cwe": "CWE-416",
+            "source": "cve@gitlab.com",
+            "type": "Secondary"
+          }
+        ],
+        "dataSource": "https://security-tracker.debian.org/tracker/CVE-2024-4855",
+        "description": "Use after free issue in editcap could cause denial of service via crafted capture file",
+        "epss": [
+          {
+            "cve": "CVE-2024-4855",
+            "date": "2026-09-28",
+            "epss": 0.00373,
+            "percentile": 0.28645
+          }
+        ],
+        "fix": {
+          "state": "not-fixed",
+          "versions": []
+        },
+        "id": "CVE-2024-4855",
+        "namespace": "debian:distro:debian:10",
+        "risk": 0.01865,
+        "severity": "Negligible",
+        "urls": []
+      }
+    }
+  ],
+  "source": {
+    "target": "./sbom/sbom-cyclonedx-1.6-v1.3.3.json",
+    "type": "sbom-file"
+  }
+}

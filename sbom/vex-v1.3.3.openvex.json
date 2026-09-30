@@ -1,0 +1,368 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://newracom.com/vex/nrc7394_sw_pkg-1.3.3-001",
+  "author": "Newracom, Inc.",
+  "role": "Software Vendor",
+  "timestamp": "2026-09-24T00:00:00Z",
+  "version": 2,
+  "$comment": [
+    "VEX statements for nrc7394_sw_pkg.",
+    "",
+    "Scope: the bundled armhf Wireshark 4.0.5 build under",
+    "package/evk/sw_pkg/nrc_pkg/script/sniffer/. These findings appear because",
+    "third_party.json gives the bundled packages the upstream Wireshark CPE, so",
+    "NVD matching works without a distro hint. That is intentional - silence here",
+    "would be a matching failure, not an absence of vulnerabilities.",
+    "",
+    "All seven are recorded as 'affected'. None is suppressed. Claiming",
+    "not_affected would require asserting what the customer does with the tool,",
+    "which we cannot know: the vulnerable code is present in the build we ship.",
+    "The action_statement gives the remedy instead.",
+    "",
+    "Source: Wireshark 4.0.6 release notes (7 CVEs, plus wnpa-sec-2023-14 GDSDB",
+    "and wnpa-sec-2023-20 XRA infinite loops which carry no CVE ID and therefore",
+    "cannot appear in a scanner report).",
+    "",
+    "MAINTENANCE: reconcile this file against the actual grype output each",
+    "release. Statements for CVEs that no scanner reports are harmless; findings",
+    "with no statement are what the release gate stops on."
+  ],
+  "statements": [
+    {
+      "vulnerability": {
+        "name": "CVE-2023-2854"
+      },
+      "products": [
+        {
+          "@id": "pkg:generic/nrc7394_sw_pkg@1.3.3",
+          "subcomponents": [
+            {
+              "@id": "pkg:deb/debian/wireshark@4.0.5?arch=armhf"
+            },
+            {
+              "@id": "pkg:deb/debian/tshark@4.0.5?arch=armhf"
+            }
+          ]
+        }
+      ],
+      "status": "affected",
+      "action_statement": "Triggered by opening a malformed capture file in the BLF format. The documented workflow for these packages is live capture to pcapng and does not read that format, but the affected code is present in this build. These packages are an optional evaluation convenience for the NRC7394 EVK. They are not loaded on the NRC7394 device and are not part of the product's runtime. To remove this finding, install Wireshark from your distribution's package repository and delete the bundled .deb files under package/evk/sw_pkg/nrc_pkg/script/sniffer/; the documented capture workflow is unchanged. Fixed upstream in Wireshark 4.0.6.",
+      "action_statement_timestamp": "2026-09-23T00:00:00Z"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2023-2855"
+      },
+      "products": [
+        {
+          "@id": "pkg:generic/nrc7394_sw_pkg@1.3.3",
+          "subcomponents": [
+            {
+              "@id": "pkg:deb/debian/wireshark@4.0.5?arch=armhf"
+            },
+            {
+              "@id": "pkg:deb/debian/tshark@4.0.5?arch=armhf"
+            }
+          ]
+        }
+      ],
+      "status": "affected",
+      "action_statement": "Triggered by opening a malformed capture file in the Candump log format. The documented workflow for these packages is live capture to pcapng and does not read that format, but the affected code is present in this build. These packages are an optional evaluation convenience for the NRC7394 EVK. They are not loaded on the NRC7394 device and are not part of the product's runtime. To remove this finding, install Wireshark from your distribution's package repository and delete the bundled .deb files under package/evk/sw_pkg/nrc_pkg/script/sniffer/; the documented capture workflow is unchanged. Fixed upstream in Wireshark 4.0.6.",
+      "action_statement_timestamp": "2026-09-23T00:00:00Z"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2023-2856"
+      },
+      "products": [
+        {
+          "@id": "pkg:generic/nrc7394_sw_pkg@1.3.3",
+          "subcomponents": [
+            {
+              "@id": "pkg:deb/debian/wireshark@4.0.5?arch=armhf"
+            },
+            {
+              "@id": "pkg:deb/debian/tshark@4.0.5?arch=armhf"
+            }
+          ]
+        }
+      ],
+      "status": "affected",
+      "action_statement": "Triggered by opening a malformed capture file in the VMS TCPIPtrace format. The documented workflow for these packages is live capture to pcapng and does not read that format, but the affected code is present in this build. These packages are an optional evaluation convenience for the NRC7394 EVK. They are not loaded on the NRC7394 device and are not part of the product's runtime. To remove this finding, install Wireshark from your distribution's package repository and delete the bundled .deb files under package/evk/sw_pkg/nrc_pkg/script/sniffer/; the documented capture workflow is unchanged. Fixed upstream in Wireshark 4.0.6.",
+      "action_statement_timestamp": "2026-09-23T00:00:00Z"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2023-2857"
+      },
+      "products": [
+        {
+          "@id": "pkg:generic/nrc7394_sw_pkg@1.3.3",
+          "subcomponents": [
+            {
+              "@id": "pkg:deb/debian/wireshark@4.0.5?arch=armhf"
+            },
+            {
+              "@id": "pkg:deb/debian/tshark@4.0.5?arch=armhf"
+            }
+          ]
+        }
+      ],
+      "status": "affected",
+      "action_statement": "Triggered by opening a malformed capture file in the BLF format. The documented workflow for these packages is live capture to pcapng and does not read that format, but the affected code is present in this build. These packages are an optional evaluation convenience for the NRC7394 EVK. They are not loaded on the NRC7394 device and are not part of the product's runtime. To remove this finding, install Wireshark from your distribution's package repository and delete the bundled .deb files under package/evk/sw_pkg/nrc_pkg/script/sniffer/; the documented capture workflow is unchanged. Fixed upstream in Wireshark 4.0.6.",
+      "action_statement_timestamp": "2026-09-23T00:00:00Z"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2023-2858"
+      },
+      "products": [
+        {
+          "@id": "pkg:generic/nrc7394_sw_pkg@1.3.3",
+          "subcomponents": [
+            {
+              "@id": "pkg:deb/debian/wireshark@4.0.5?arch=armhf"
+            },
+            {
+              "@id": "pkg:deb/debian/tshark@4.0.5?arch=armhf"
+            }
+          ]
+        }
+      ],
+      "status": "affected",
+      "action_statement": "Triggered by opening a malformed capture file in the NetScaler format. The documented workflow for these packages is live capture to pcapng and does not read that format, but the affected code is present in this build. These packages are an optional evaluation convenience for the NRC7394 EVK. They are not loaded on the NRC7394 device and are not part of the product's runtime. To remove this finding, install Wireshark from your distribution's package repository and delete the bundled .deb files under package/evk/sw_pkg/nrc_pkg/script/sniffer/; the documented capture workflow is unchanged. Fixed upstream in Wireshark 4.0.6.",
+      "action_statement_timestamp": "2026-09-23T00:00:00Z"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2023-0666"
+      },
+      "products": [
+        {
+          "@id": "pkg:generic/nrc7394_sw_pkg@1.3.3",
+          "subcomponents": [
+            {
+              "@id": "pkg:deb/debian/wireshark@4.0.5?arch=armhf"
+            },
+            {
+              "@id": "pkg:deb/debian/tshark@4.0.5?arch=armhf"
+            }
+          ]
+        }
+      ],
+      "status": "affected",
+      "action_statement": "Triggered while dissecting malformed RTPS traffic. 802.11ah capture payloads are dissected by the same code paths as any other capture, so this is reachable in principle. These packages are an optional evaluation convenience for the NRC7394 EVK. They are not loaded on the NRC7394 device and are not part of the product's runtime. To remove this finding, install Wireshark from your distribution's package repository and delete the bundled .deb files under package/evk/sw_pkg/nrc_pkg/script/sniffer/; the documented capture workflow is unchanged. Fixed upstream in Wireshark 4.0.6.",
+      "action_statement_timestamp": "2026-09-23T00:00:00Z"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2023-0668"
+      },
+      "products": [
+        {
+          "@id": "pkg:generic/nrc7394_sw_pkg@1.3.3",
+          "subcomponents": [
+            {
+              "@id": "pkg:deb/debian/wireshark@4.0.5?arch=armhf"
+            },
+            {
+              "@id": "pkg:deb/debian/tshark@4.0.5?arch=armhf"
+            }
+          ]
+        }
+      ],
+      "status": "affected",
+      "action_statement": "Triggered while dissecting malformed IEEE C37.118 Synchrophasor traffic. 802.11ah capture payloads are dissected by the same code paths as any other capture, so this is reachable in principle. These packages are an optional evaluation convenience for the NRC7394 EVK. They are not loaded on the NRC7394 device and are not part of the product's runtime. To remove this finding, install Wireshark from your distribution's package repository and delete the bundled .deb files under package/evk/sw_pkg/nrc_pkg/script/sniffer/; the documented capture workflow is unchanged. Fixed upstream in Wireshark 4.0.6.",
+      "action_statement_timestamp": "2026-09-23T00:00:00Z"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2023-0667"
+      },
+      "products": [
+        {
+          "@id": "pkg:generic/nrc7394_sw_pkg@1.3.3",
+          "subcomponents": [
+            {
+              "@id": "pkg:deb/debian/wireshark@4.0.5?arch=armhf"
+            },
+            {
+              "@id": "pkg:deb/debian/tshark@4.0.5?arch=armhf"
+            }
+          ]
+        }
+      ],
+      "status": "affected",
+      "action_statement": "Triggered while dissecting malformed MS-MMS traffic. Fixed upstream in Wireshark 4.0.6. Reported against the bundled Wireshark 4.0.5 Debian packages for Raspbian 10 (Debian buster), for which Debian has marked this issue as won't-fix because the release is end of life. These packages are an optional evaluation convenience for the NRC7394 EVK: they are not loaded on the NRC7394 device and are not part of the product's runtime. Newracom made no changes to the Wireshark source. To remove this finding, install Wireshark from a maintained distribution and delete the bundled .deb files under package/evk/sw_pkg/nrc_pkg/script/sniffer/; the documented capture workflow is unchanged.",
+      "action_statement_timestamp": "2026-09-24T00:00:00Z"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2023-3649"
+      },
+      "products": [
+        {
+          "@id": "pkg:generic/nrc7394_sw_pkg@1.3.3",
+          "subcomponents": [
+            {
+              "@id": "pkg:deb/debian/wireshark@4.0.5?arch=armhf"
+            },
+            {
+              "@id": "pkg:deb/debian/tshark@4.0.5?arch=armhf"
+            }
+          ]
+        }
+      ],
+      "status": "affected",
+      "action_statement": "Triggered while dissecting malformed iSCSI traffic. Fixed upstream in Wireshark 4.0.7. Reported against the bundled Wireshark 4.0.5 Debian packages for Raspbian 10 (Debian buster), for which Debian has marked this issue as won't-fix because the release is end of life. These packages are an optional evaluation convenience for the NRC7394 EVK: they are not loaded on the NRC7394 device and are not part of the product's runtime. Newracom made no changes to the Wireshark source. To remove this finding, install Wireshark from a maintained distribution and delete the bundled .deb files under package/evk/sw_pkg/nrc_pkg/script/sniffer/; the documented capture workflow is unchanged.",
+      "action_statement_timestamp": "2026-09-24T00:00:00Z"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2023-4512"
+      },
+      "products": [
+        {
+          "@id": "pkg:generic/nrc7394_sw_pkg@1.3.3",
+          "subcomponents": [
+            {
+              "@id": "pkg:deb/debian/wireshark@4.0.5?arch=armhf"
+            },
+            {
+              "@id": "pkg:deb/debian/tshark@4.0.5?arch=armhf"
+            }
+          ]
+        }
+      ],
+      "status": "affected",
+      "action_statement": "Triggered by opening a malformed CBOR file. Fixed upstream in Wireshark 4.0.8. Reported against the bundled Wireshark 4.0.5 Debian packages for Raspbian 10 (Debian buster), for which Debian has marked this issue as won't-fix because the release is end of life. These packages are an optional evaluation convenience for the NRC7394 EVK: they are not loaded on the NRC7394 device and are not part of the product's runtime. Newracom made no changes to the Wireshark source. To remove this finding, install Wireshark from a maintained distribution and delete the bundled .deb files under package/evk/sw_pkg/nrc_pkg/script/sniffer/; the documented capture workflow is unchanged.",
+      "action_statement_timestamp": "2026-09-24T00:00:00Z"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2024-0209"
+      },
+      "products": [
+        {
+          "@id": "pkg:generic/nrc7394_sw_pkg@1.3.3",
+          "subcomponents": [
+            {
+              "@id": "pkg:deb/debian/wireshark@4.0.5?arch=armhf"
+            },
+            {
+              "@id": "pkg:deb/debian/tshark@4.0.5?arch=armhf"
+            }
+          ]
+        }
+      ],
+      "status": "affected",
+      "action_statement": "Triggered while dissecting malformed IEEE 1609.2 traffic. Fixed upstream in Wireshark 4.0.12. Reported against the bundled Wireshark 4.0.5 Debian packages for Raspbian 10 (Debian buster), for which Debian has marked this issue as won't-fix because the release is end of life. These packages are an optional evaluation convenience for the NRC7394 EVK: they are not loaded on the NRC7394 device and are not part of the product's runtime. Newracom made no changes to the Wireshark source. To remove this finding, install Wireshark from a maintained distribution and delete the bundled .deb files under package/evk/sw_pkg/nrc_pkg/script/sniffer/; the documented capture workflow is unchanged.",
+      "action_statement_timestamp": "2026-09-24T00:00:00Z"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2024-0211"
+      },
+      "products": [
+        {
+          "@id": "pkg:generic/nrc7394_sw_pkg@1.3.3",
+          "subcomponents": [
+            {
+              "@id": "pkg:deb/debian/wireshark@4.0.5?arch=armhf"
+            },
+            {
+              "@id": "pkg:deb/debian/tshark@4.0.5?arch=armhf"
+            }
+          ]
+        }
+      ],
+      "status": "affected",
+      "action_statement": "Triggered while dissecting malformed DOCSIS traffic. Fixed upstream in Wireshark 4.0.12. Reported against the bundled Wireshark 4.0.5 Debian packages for Raspbian 10 (Debian buster), for which Debian has marked this issue as won't-fix because the release is end of life. These packages are an optional evaluation convenience for the NRC7394 EVK: they are not loaded on the NRC7394 device and are not part of the product's runtime. Newracom made no changes to the Wireshark source. To remove this finding, install Wireshark from a maintained distribution and delete the bundled .deb files under package/evk/sw_pkg/nrc_pkg/script/sniffer/; the documented capture workflow is unchanged.",
+      "action_statement_timestamp": "2026-09-24T00:00:00Z"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2024-2955"
+      },
+      "products": [
+        {
+          "@id": "pkg:generic/nrc7394_sw_pkg@1.3.3",
+          "subcomponents": [
+            {
+              "@id": "pkg:deb/debian/wireshark@4.0.5?arch=armhf"
+            },
+            {
+              "@id": "pkg:deb/debian/tshark@4.0.5?arch=armhf"
+            }
+          ]
+        }
+      ],
+      "status": "affected",
+      "action_statement": "Triggered while dissecting malformed T.38 traffic. Fixed upstream in Wireshark 4.0.14. Reported against the bundled Wireshark 4.0.5 Debian packages for Raspbian 10 (Debian buster), for which Debian has marked this issue as won't-fix because the release is end of life. These packages are an optional evaluation convenience for the NRC7394 EVK: they are not loaded on the NRC7394 device and are not part of the product's runtime. Newracom made no changes to the Wireshark source. To remove this finding, install Wireshark from a maintained distribution and delete the bundled .deb files under package/evk/sw_pkg/nrc_pkg/script/sniffer/; the documented capture workflow is unchanged.",
+      "action_statement_timestamp": "2026-09-24T00:00:00Z"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2024-4853"
+      },
+      "products": [
+        {
+          "@id": "pkg:generic/nrc7394_sw_pkg@1.3.3",
+          "subcomponents": [
+            {
+              "@id": "pkg:deb/debian/wireshark@4.0.5?arch=armhf"
+            },
+            {
+              "@id": "pkg:deb/debian/tshark@4.0.5?arch=armhf"
+            }
+          ]
+        }
+      ],
+      "status": "affected",
+      "action_statement": "Triggered while dissecting malformed traffic via the editcap tool. Fixed upstream in Wireshark 4.0.15. Reported against the bundled Wireshark 4.0.5 Debian packages for Raspbian 10 (Debian buster), for which Debian has marked this issue as won't-fix because the release is end of life. These packages are an optional evaluation convenience for the NRC7394 EVK: they are not loaded on the NRC7394 device and are not part of the product's runtime. Newracom made no changes to the Wireshark source. To remove this finding, install Wireshark from a maintained distribution and delete the bundled .deb files under package/evk/sw_pkg/nrc_pkg/script/sniffer/; the documented capture workflow is unchanged.",
+      "action_statement_timestamp": "2026-09-24T00:00:00Z"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2024-4854"
+      },
+      "products": [
+        {
+          "@id": "pkg:generic/nrc7394_sw_pkg@1.3.3",
+          "subcomponents": [
+            {
+              "@id": "pkg:deb/debian/wireshark@4.0.5?arch=armhf"
+            },
+            {
+              "@id": "pkg:deb/debian/tshark@4.0.5?arch=armhf"
+            }
+          ]
+        }
+      ],
+      "status": "affected",
+      "action_statement": "Triggered while dissecting malformed MONGO or ZigBee TLV traffic. Fixed upstream in Wireshark 4.0.15. Reported against the bundled Wireshark 4.0.5 Debian packages for Raspbian 10 (Debian buster), for which Debian has marked this issue as won't-fix because the release is end of life. These packages are an optional evaluation convenience for the NRC7394 EVK: they are not loaded on the NRC7394 device and are not part of the product's runtime. Newracom made no changes to the Wireshark source. To remove this finding, install Wireshark from a maintained distribution and delete the bundled .deb files under package/evk/sw_pkg/nrc_pkg/script/sniffer/; the documented capture workflow is unchanged.",
+      "action_statement_timestamp": "2026-09-24T00:00:00Z"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2024-4855"
+      },
+      "products": [
+        {
+          "@id": "pkg:generic/nrc7394_sw_pkg@1.3.3",
+          "subcomponents": [
+            {
+              "@id": "pkg:deb/debian/wireshark@4.0.5?arch=armhf"
+            },
+            {
+              "@id": "pkg:deb/debian/tshark@4.0.5?arch=armhf"
+            }
+          ]
+        }
+      ],
+      "status": "affected",
+      "action_statement": "Triggered while dissecting malformed traffic via the editcap tool. Fixed upstream in Wireshark 4.0.15. Reported against the bundled Wireshark 4.0.5 Debian packages for Raspbian 10 (Debian buster), for which Debian has marked this issue as won't-fix because the release is end of life. These packages are an optional evaluation convenience for the NRC7394 EVK: they are not loaded on the NRC7394 device and are not part of the product's runtime. Newracom made no changes to the Wireshark source. To remove this finding, install Wireshark from a maintained distribution and delete the bundled .deb files under package/evk/sw_pkg/nrc_pkg/script/sniffer/; the documented capture workflow is unchanged.",
+      "action_statement_timestamp": "2026-09-24T00:00:00Z"
+    }
+  ]
+}
